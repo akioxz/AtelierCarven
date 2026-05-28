@@ -1,9 +1,8 @@
 import { useRouter } from "expo-router";
 import { useEffect, useRef } from "react";
 import { Animated, Easing, StyleSheet, Text, View } from "react-native";
-import { supabase } from "../lib/supabase";
 
-export default function Index() {
+export default function Splash() {
   const router = useRouter();
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(30)).current;
@@ -33,14 +32,12 @@ export default function Index() {
       }),
     ]).start();
 
-    // Sign out any existing session, then go to onboarding
-    const timer = setTimeout(async () => {
-      await supabase.auth.signOut();
-      router.replace("/(auth)/onboarding");
+    const timer = setTimeout(() => {
+      router.replace("/home-redirect");
     }, 2500);
 
     return () => clearTimeout(timer);
-  }, []);
+  }, [fadeAnim, slideAnim, lineAnim, router]);
 
   return (
     <View style={styles.container}>
