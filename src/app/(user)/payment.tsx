@@ -25,7 +25,15 @@ const BOTTOM_NAV = [
 
 export default function Payment() {
   const router = useRouter();
-  const { method, total } = useLocalSearchParams<{ method: string; total: string }>();
+  const { method, total, fullName, address, city, mobile, notes } = useLocalSearchParams<{
+    method: string;
+    total: string;
+    fullName?: string;
+    address?: string;
+    city?: string;
+    mobile?: string;
+    notes?: string;
+  }>();
   const paymentMethod = method || "cod";
   const orderTotal = total ? Number(total) : 0;
 
@@ -99,6 +107,57 @@ export default function Payment() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) { router.replace("/(auth)/onboarding"); return; }
 
+      // Retrieve user's current cart items
+      const { data: cartItems, error: cartFetchErr } = await supabase
+        .from("cart")
+        .select("*, furniture(*)")
+        .eq("user_id", user.id);
+
+      if (cartFetchErr || !cartItems || cartItems.length === 0) {
+        Alert.alert("Empty Cart", "No items in your cart to checkout.");
+        setProcessing(false);
+        return;
+      }
+
+      // Format shipping details in a single clean string for address column
+      const formattedAddress = `Name: ${fullName || ""} | Mobile: ${mobile || ""} | City: ${city || ""} | Address: ${address || ""} | Notes: ${notes || ""}`;
+
+      // Insert new order row
+      const { data: newOrder, error: orderErr } = await supabase
+        .from("orders")
+        .insert({
+          user_id: user.id,
+          total: orderTotal,
+          status: "Pending",
+          address: formattedAddress,
+          payment_method: paymentMethod
+        })
+        .select()
+        .single();
+
+      if (orderErr) {
+        console.error("Orders Insert Error:", orderErr);
+        Alert.alert("Checkout Error", "Failed to place your order. Please try again.");
+        setProcessing(false);
+        return;
+      }
+
+      // Insert order items
+      const itemsToInsert = cartItems.map((item) => ({
+        order_id: newOrder.id,
+        furniture_id: item.furniture_id,
+        quantity: item.quantity,
+        price: Number(item.furniture?.price || 0)
+      }));
+
+      const { error: itemsErr } = await supabase
+        .from("order_items")
+        .insert(itemsToInsert);
+
+      if (itemsErr) {
+        console.error("Order Items Insert Error:", itemsErr);
+      }
+
       // Clear the cart after successful payment
       await supabase.from("cart").delete().eq("user_id", user.id);
 
@@ -106,7 +165,8 @@ export default function Payment() {
       await new Promise((resolve) => setTimeout(resolve, 1500));
 
       router.replace("/(user)/order-success");
-    } catch {
+    } catch (err) {
+      console.error("Confirm order payment transaction failed:", err);
       setProcessing(false);
       Alert.alert("Payment Error", "Something went wrong. Please try again.");
     }

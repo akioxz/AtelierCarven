@@ -67,7 +67,12 @@ export default function Checkout() {
       pathname: "/(user)/payment",
       params: {
         method: paymentMethod,
-        total: getTotal().toString()
+        total: getTotal().toString(),
+        fullName,
+        address,
+        city,
+        mobile,
+        notes,
       }
     });
   };

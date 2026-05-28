@@ -14,7 +14,7 @@ import { supabase } from "../../lib/supabase";
 
 export default function Dashboard() {
   const router = useRouter();
-  const [stats, setStats] = useState({ furniture: 0, users: 0, logs: 0 });
+  const [stats, setStats] = useState({ furniture: 0, users: 0, logs: 0, orders: 0, revenue: 0 });
   const [recentLogs, setRecentLogs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [username, setUsername] = useState("");
@@ -46,6 +46,21 @@ export default function Dashboard() {
     const { count: logsCount } = await supabase
       .from("activity_logs")
       .select("*", { count: "exact", head: true });
+
+    // Fetch active orders count
+    const { count: ordersCount } = await supabase
+      .from("orders")
+      .select("*", { count: "exact", head: true })
+      .neq("status", "Cancelled");
+
+    // Fetch order totals to compute revenue
+    const { data: orderTotals } = await supabase
+      .from("orders")
+      .select("total")
+      .neq("status", "Cancelled");
+
+    const totalRevenue = orderTotals ? orderTotals.reduce((sum, ord) => sum + Number(ord.total || 0), 0) : 0;
+
     const { data: logs } = await supabase
       .from("activity_logs")
       .select("*")
@@ -55,6 +70,8 @@ export default function Dashboard() {
       furniture: furnitureCount || 0,
       users: usersCount || 0,
       logs: logsCount || 0,
+      orders: ordersCount || 0,
+      revenue: totalRevenue || 0
     });
     setRecentLogs(logs || []);
     setLoading(false);
@@ -92,17 +109,32 @@ export default function Dashboard() {
 
         <Text style={styles.welcome}>Welcome back, {username}</Text>
 
+        {/* Row 1: Primary Business KPIs */}
         <View style={styles.statsGrid}>
+          <View style={[styles.statCard, { flex: 1.5, backgroundColor: "#EDE5D8" }]}>
+            <Text style={[styles.statNumber, { color: "#8B7355", fontSize: 24 }]}>
+              ₱{stats.revenue.toLocaleString()}
+            </Text>
+            <Text style={styles.statLabel}>TOTAL REVENUE</Text>
+          </View>
+          <View style={[styles.statCard, { flex: 1 }]}>
+            <Text style={styles.statNumber}>{stats.orders}</Text>
+            <Text style={styles.statLabel}>ORDERS</Text>
+          </View>
+        </View>
+
+        {/* Row 2: Secondary Supporting KPIs */}
+        <View style={[styles.statsGrid, { paddingTop: 0 }]}>
           <View style={styles.statCard}>
-            <Text style={styles.statNumber}>{stats.furniture}</Text>
+            <Text style={[styles.statNumber, { fontSize: 20 }]}>{stats.furniture}</Text>
             <Text style={styles.statLabel}>FURNITURE</Text>
           </View>
           <View style={styles.statCard}>
-            <Text style={styles.statNumber}>{stats.users}</Text>
+            <Text style={[styles.statNumber, { fontSize: 20 }]}>{stats.users}</Text>
             <Text style={styles.statLabel}>USERS</Text>
           </View>
           <View style={styles.statCard}>
-            <Text style={styles.statNumber}>{stats.logs}</Text>
+            <Text style={[styles.statNumber, { fontSize: 20 }]}>{stats.logs}</Text>
             <Text style={styles.statLabel}>ACTIONS</Text>
           </View>
         </View>
@@ -122,15 +154,28 @@ export default function Dashboard() {
             </TouchableOpacity>
             <TouchableOpacity
               style={styles.actionCard}
-              onPress={() => router.push("/(admin)/activity-logs")}
+              onPress={() => router.push("/(admin)/manage-orders")}
             >
               <View style={styles.actionIconBox}>
-                <Feather name="clipboard" size={18} color="#8B7355" />
+                <Feather name="shopping-bag" size={18} color="#8B7355" />
               </View>
-              <Text style={styles.actionTitle}>Activity Logs</Text>
-              <Text style={styles.actionSubtext}>View all admin actions</Text>
+              <Text style={styles.actionTitle}>Manage Orders</Text>
+              <Text style={styles.actionSubtext}>Verify and update orders</Text>
             </TouchableOpacity>
           </View>
+
+          <TouchableOpacity
+            style={[styles.actionCard, { marginTop: 12, flexDirection: "row", alignItems: "center", gap: 16 }]}
+            onPress={() => router.push("/(admin)/activity-logs")}
+          >
+            <View style={styles.actionIconBox}>
+              <Feather name="clipboard" size={18} color="#8B7355" />
+            </View>
+            <View>
+              <Text style={styles.actionTitle}>View Activity Audit Logs</Text>
+              <Text style={styles.actionSubtext}>Track administrative audits and actions</Text>
+            </View>
+          </TouchableOpacity>
         </View>
 
         <View style={styles.section}>
@@ -199,10 +244,10 @@ export default function Dashboard() {
         </TouchableOpacity>
         <TouchableOpacity
           style={styles.navItem}
-          onPress={() => router.push("/(admin)/activity-logs")}
+          onPress={() => router.push("/(admin)/manage-orders")}
         >
           <Feather name="clipboard" size={20} color="#C4B8A8" />
-          <Text style={styles.navLabel}>LOGS</Text>
+          <Text style={styles.navLabel}>ORDERS</Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={styles.navItem}

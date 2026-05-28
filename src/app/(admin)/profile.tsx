@@ -256,10 +256,10 @@ export default function UserProfile() {
         </TouchableOpacity>
         <TouchableOpacity
           style={styles.navItem}
-          onPress={() => router.push("/(admin)/activity-logs")}
+          onPress={() => router.push("/(admin)/manage-orders")}
         >
           <Feather name="clipboard" size={20} color="#C4B8A8" />
-          <Text style={styles.navLabel}>LOGS</Text>
+          <Text style={styles.navLabel}>ORDERS</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.navItem}>
           <Feather name="user" size={20} color="#1C1C1A" />
