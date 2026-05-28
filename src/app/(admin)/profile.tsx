@@ -242,31 +242,24 @@ export default function UserProfile() {
       <View style={styles.bottomNav}>
         <TouchableOpacity
           style={styles.navItem}
-          onPress={() => router.push("/(user)/home")}
+          onPress={() => router.push("/(admin)/dashboard")}
         >
           <Feather name="home" size={20} color="#C4B8A8" />
-          <Text style={styles.navLabel}>HOME</Text>
+          <Text style={styles.navLabel}>DASHBOARD</Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={styles.navItem}
-          onPress={() => router.push("/(user)/favorites")}
+          onPress={() => router.push("/(admin)/manage-furniture")}
         >
-          <Feather name="heart" size={20} color="#C4B8A8" />
-          <Text style={styles.navLabel}>SAVED</Text>
+          <Feather name="grid" size={20} color="#C4B8A8" />
+          <Text style={styles.navLabel}>FURNITURE</Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={styles.navItem}
-          onPress={() => router.push("/(user)/image-placement")}
+          onPress={() => router.push("/(admin)/activity-logs")}
         >
-          <Feather name="image" size={20} color="#C4B8A8" />
-          <Text style={styles.navLabel}>PLACE</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.navItem}
-          onPress={() => router.push("/(user)/cart")}
-        >
-          <Feather name="shopping-cart" size={20} color="#C4B8A8" />
-          <Text style={styles.navLabel}>CART</Text>
+          <Feather name="clipboard" size={20} color="#C4B8A8" />
+          <Text style={styles.navLabel}>LOGS</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.navItem}>
           <Feather name="user" size={20} color="#1C1C1A" />

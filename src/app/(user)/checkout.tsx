@@ -32,7 +32,7 @@ export default function Checkout() {
   const [city, setCity] = useState("");
   const [mobile, setMobile] = useState("");
   const [notes, setNotes] = useState("");
-  const [paymentMethod, setPaymentMethod] = useState<"cod" | "gcash">("cod");
+  const [paymentMethod, setPaymentMethod] = useState<"cod" | "gcash" | "maya" | "card">("cod");
 
   const fetchData = useCallback(async () => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -63,7 +63,13 @@ export default function Checkout() {
       Alert.alert("Missing Info", "Please fill in all required fields.");
       return;
     }
-    router.push("/(user)/payment");
+    router.push({
+      pathname: "/(user)/payment",
+      params: {
+        method: paymentMethod,
+        total: getTotal().toString()
+      }
+    });
   };
 
   if (loading) return (
@@ -75,7 +81,7 @@ export default function Checkout() {
   return (
     <View style={styles.container}>
       <StatusBar barStyle="dark-content" />
-      <ScrollView showsVerticalScrollIndicator={false}>
+      <ScrollView showsVerticalScrollIndicator={false} style={styles.scrollContainer} contentContainerStyle={{ paddingBottom: 24 }}>
         <View style={styles.header}>
           <TouchableOpacity onPress={() => router.back()}>
             <Feather name="arrow-left" size={22} color="#1C1C1A" />
@@ -153,6 +159,8 @@ export default function Checkout() {
             {[
               { key: "cod", icon: "package", title: "Cash on Delivery", sub: "Pay when your order arrives" },
               { key: "gcash", icon: "smartphone", title: "GCash", sub: "Pay via GCash mobile wallet" },
+              { key: "maya", icon: "tablet", title: "Maya Wallet", sub: "Pay via Maya mobile wallet" },
+              { key: "card", icon: "credit-card", title: "Credit / Debit Card", sub: "Visa, Mastercard, JCB, or AMEX" },
             ].map((method, i) => (
               <View key={method.key}>
                 {i > 0 && <View style={styles.rowDivider} />}
@@ -174,9 +182,9 @@ export default function Checkout() {
             ))}
           </View>
         </View>
-        <View style={{ height: 160 }} />
       </ScrollView>
 
+      {/* Footer and nav stacked naturally — no absolute positioning */}
       <View style={styles.footer}>
         <View style={styles.footerTotal}>
           <Text style={styles.footerTotalLabel}>ORDER TOTAL</Text>
@@ -231,13 +239,14 @@ const styles = StyleSheet.create({
   radio: { width: 20, height: 20, borderRadius: 10, borderWidth: 1.5, borderColor: "#E8E0D0", justifyContent: "center", alignItems: "center" },
   radioActive: { borderColor: "#C9A96E" },
   radioDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: "#C9A96E" },
-  footer: { position: "absolute", bottom: 72, left: 0, right: 0, backgroundColor: "#FAFAF8", borderTopWidth: 0.5, borderTopColor: "#E8E0D0", padding: 20 },
+  scrollContainer: { flex: 1 },
+  footer: { backgroundColor: "#FAFAF8", borderTopWidth: 0.5, borderTopColor: "#E8E0D0", padding: 20 },
   footerTotal: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 14 },
   footerTotalLabel: { fontSize: 10, letterSpacing: 2, color: "#8B7355" },
   footerTotalAmount: { fontSize: 20, fontWeight: "500", color: "#1C1C1A" },
   placeOrderBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, backgroundColor: "#1C1C1A", borderRadius: 10, padding: 18 },
   placeOrderText: { color: "#FAFAF8", fontSize: 11, letterSpacing: 2 },
-  bottomNav: { position: "absolute", bottom: 0, left: 0, right: 0, backgroundColor: "#FAFAF8", borderTopWidth: 0.5, borderTopColor: "#E8E0D0", flexDirection: "row", justifyContent: "space-around", paddingVertical: 12, paddingBottom: 24 },
+  bottomNav: { backgroundColor: "#FAFAF8", borderTopWidth: 0.5, borderTopColor: "#E8E0D0", flexDirection: "row", justifyContent: "space-around", paddingVertical: 12, paddingBottom: 24 },
   navItem: { alignItems: "center", gap: 3 },
   navLabel: { fontSize: 8, color: "#C4B8A8", letterSpacing: 1 },
 });

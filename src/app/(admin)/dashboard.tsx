@@ -164,7 +164,9 @@ export default function Dashboard() {
                         ? "ADDED"
                         : log.action.includes("Edited")
                           ? "EDITED"
-                          : "DELETED"}
+                          : log.action.includes("Deleted")
+                            ? "DELETED"
+                            : "ACTION"}
                     </Text>
                   </View>
                   <View style={styles.logContent}>
