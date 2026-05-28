@@ -2,15 +2,15 @@ import { Feather } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
 import {
-    ActivityIndicator,
-    Image,
-    Modal,
-    ScrollView,
-    StatusBar,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Image,
+  Modal,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import { supabase } from "../../lib/supabase";
 
@@ -50,6 +50,7 @@ export default function Product() {
   const [quantity, setQuantity] = useState(1);
   const [adding, setAdding] = useState(false);
   const [added, setAdded] = useState(false);
+  const [buyingNow, setBuyingNow] = useState(false);
 
   const fetchItem = useCallback(async () => {
     const { data } = await supabase
@@ -126,6 +127,31 @@ export default function Product() {
     setAdded(true);
     setModalVisible(false);
     setTimeout(() => setAdded(false), 2000);
+  };
+
+  const handleBuyNow = async () => {
+    setAdding(true);
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+    const { data: existing } = await supabase
+      .from("cart")
+      .select("*")
+      .eq("user_id", user.id)
+      .eq("furniture_id", id)
+      .single();
+    if (existing) {
+      await supabase
+        .from("cart")
+        .update({ quantity: existing.quantity + quantity })
+        .eq("id", existing.id);
+    } else {
+      await supabase
+        .from("cart")
+        .insert({ user_id: user.id, furniture_id: id, quantity });
+    }
+    setAdding(false);
+    setModalVisible(false);
+    router.push("/(user)/checkout");
   };
 
   if (loading)
@@ -216,7 +242,7 @@ export default function Product() {
             {added ? "ADDED" : "ADD TO CART"}
           </Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.buyNowBtn}>
+        <TouchableOpacity style={styles.buyNowBtn} onPress={() => { setQuantity(1); setBuyingNow(true); setModalVisible(true); }}>
           <Feather name="zap" size={15} color="#C9A96E" />
           <Text style={styles.buyNowText}>BUY NOW</Text>
         </TouchableOpacity>
@@ -231,7 +257,7 @@ export default function Product() {
               <Text style={styles.modalTitle}>SELECT VARIATION</Text>
               <TouchableOpacity
                 style={styles.modalClose}
-                onPress={() => setModalVisible(false)}
+                onPress={() => { setModalVisible(false); setBuyingNow(false); }}
               >
                 <Feather name="x" size={18} color="#8B7355" />
               </TouchableOpacity>
@@ -339,14 +365,16 @@ export default function Product() {
 
             <TouchableOpacity
               style={styles.confirmBtn}
-              onPress={handleConfirmAdd}
+              onPress={buyingNow ? handleBuyNow : handleConfirmAdd}
               disabled={adding}
             >
-              <Feather name="shopping-cart" size={15} color="#C9A96E" />
+              <Feather name={buyingNow ? "zap" : "shopping-cart"} size={15} color="#C9A96E" />
               <Text style={styles.confirmBtnText}>
                 {adding
-                  ? "ADDING..."
-                  : `CONFIRM ADD · ₱${(Number(item.price) * quantity).toLocaleString()}`}
+                  ? (buyingNow ? "PROCESSING..." : "ADDING...")
+                  : buyingNow
+                    ? `BUY NOW · ₱${(Number(item.price) * quantity).toLocaleString()}`
+                    : `CONFIRM ADD · ₱${(Number(item.price) * quantity).toLocaleString()}`}
               </Text>
             </TouchableOpacity>
           </View>
