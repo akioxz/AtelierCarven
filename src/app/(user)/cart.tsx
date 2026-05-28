@@ -2,13 +2,13 @@ import { Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
 import {
-    ActivityIndicator,
-    ScrollView,
-    StatusBar,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import { supabase } from "../../lib/supabase";
 
@@ -148,7 +148,10 @@ export default function Cart() {
                 ₱{getTotal().toLocaleString()}
               </Text>
             </View>
-            <TouchableOpacity style={styles.checkoutBtn}>
+            <TouchableOpacity
+              style={styles.checkoutBtn}
+              onPress={() => router.push("/(user)/checkout")}
+            >
               <Text style={styles.checkoutBtnText}>PROCEED TO CHECKOUT</Text>
             </TouchableOpacity>
           </View>
