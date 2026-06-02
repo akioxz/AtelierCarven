@@ -2,29 +2,25 @@ import { Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
 import {
-    ActivityIndicator,
-    Image,
-    ScrollView,
-    StatusBar,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Image,
+  Modal,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import { pickAndUploadImage } from "../../lib/imageUpload";
 import { supabase } from "../../lib/supabase";
 
-export default function UserProfile() {
+export default function AdminProfile() {
   const router = useRouter();
   const [profile, setProfile] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [editing, setEditing] = useState(false);
-  const [username, setUsername] = useState("");
-  const [address, setAddress] = useState("");
-  const [mobile, setMobile] = useState("");
-  const [saving, setSaving] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [logoutModalVisible, setLogoutModalVisible] = useState(false);
 
   const fetchProfile = useCallback(async () => {
     const {
@@ -37,9 +33,6 @@ export default function UserProfile() {
       .eq("id", user.id)
       .single();
     setProfile(data);
-    setUsername(data?.username || "");
-    setAddress(data?.address || "");
-    setMobile(data?.mobile_number || "");
     setLoading(false);
   }, []);
 
@@ -63,21 +56,12 @@ export default function UserProfile() {
     setUploadingAvatar(false);
   };
 
-  const handleSave = async () => {
-    setSaving(true);
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    await supabase
-      .from("profiles")
-      .update({ username, address, mobile_number: mobile })
-      .eq("id", user!.id);
-    setSaving(false);
-    setEditing(false);
-    fetchProfile();
+  const handleLogout = () => {
+    setLogoutModalVisible(true);
   };
 
-  const handleLogout = async () => {
+  const confirmLogout = async () => {
+    setLogoutModalVisible(false);
     await supabase.auth.signOut();
     router.replace("/(auth)/onboarding");
   };
@@ -93,17 +77,19 @@ export default function UserProfile() {
     <View style={styles.container}>
       <StatusBar barStyle="dark-content" />
       <ScrollView showsVerticalScrollIndicator={false}>
+        {/* Header */}
         <View style={styles.header}>
           <TouchableOpacity onPress={() => router.back()}>
             <Feather name="arrow-left" size={22} color="#1C1C1A" />
           </TouchableOpacity>
           <View style={{ marginTop: 20 }}>
-            <Text style={styles.headerSmall}>YOUR</Text>
+            <Text style={styles.headerSmall}>ADMIN</Text>
             <Text style={styles.headerLarge}>Profile</Text>
             <View style={styles.goldDivider} />
           </View>
         </View>
 
+        {/* Avatar */}
         <View style={styles.avatarSection}>
           <TouchableOpacity
             style={styles.avatarContainer}
@@ -118,7 +104,7 @@ export default function UserProfile() {
             ) : (
               <View style={styles.avatar}>
                 <Text style={styles.avatarText}>
-                  {profile?.username?.charAt(0)?.toUpperCase() || "U"}
+                  {profile?.username?.charAt(0)?.toUpperCase() || "A"}
                 </Text>
               </View>
             )}
@@ -130,45 +116,30 @@ export default function UserProfile() {
               />
             </View>
           </TouchableOpacity>
-          <Text style={styles.avatarName}>{profile?.username || "User"}</Text>
+          <Text style={styles.avatarName}>{profile?.username || "Admin"}</Text>
           <Text style={styles.avatarEmail}>{profile?.email}</Text>
           <Text style={styles.avatarHint}>Tap photo to change</Text>
         </View>
 
+        {/* Info — read only */}
         <View style={styles.infoSection}>
-          <View style={styles.infoHeader}>
-            <Text style={styles.sectionLabel}>PERSONAL INFO</Text>
-            <TouchableOpacity
-              style={styles.editToggle}
-              onPress={() => setEditing(!editing)}
-            >
-              <Feather
-                name={editing ? "x" : "edit-2"}
-                size={13}
-                color="#C9A96E"
-              />
-              <Text style={styles.editBtn}>{editing ? "CANCEL" : "EDIT"}</Text>
-            </TouchableOpacity>
-          </View>
+          <Text style={styles.sectionLabel}>ACCOUNT INFO</Text>
           <View style={styles.infoCard}>
+            {/* Username — read only */}
             <View style={styles.infoRow}>
               <View style={styles.infoLabelRow}>
                 <Feather name="user" size={13} color="#8B7355" />
                 <Text style={styles.infoLabel}>USERNAME</Text>
               </View>
-              {editing ? (
-                <TextInput
-                  style={styles.infoInput}
-                  value={username}
-                  onChangeText={setUsername}
-                  placeholder="Your name"
-                  placeholderTextColor="#C4B8A8"
-                />
-              ) : (
-                <Text style={styles.infoValue}>{profile?.username || "—"}</Text>
-              )}
+              <View style={styles.readOnlyBadge}>
+                <Text style={styles.infoValue}>
+                  {profile?.username || "—"}
+                </Text>
+                <Feather name="lock" size={10} color="#C4B8A8" />
+              </View>
             </View>
             <View style={styles.infoDivider} />
+            {/* Email — read only */}
             <View style={styles.infoRow}>
               <View style={styles.infoLabelRow}>
                 <Feather name="mail" size={13} color="#8B7355" />
@@ -177,68 +148,70 @@ export default function UserProfile() {
               <Text style={styles.infoValue}>{profile?.email || "—"}</Text>
             </View>
             <View style={styles.infoDivider} />
+            {/* Role */}
             <View style={styles.infoRow}>
               <View style={styles.infoLabelRow}>
-                <Feather name="phone" size={13} color="#8B7355" />
-                <Text style={styles.infoLabel}>MOBILE</Text>
+                <Feather name="shield" size={13} color="#8B7355" />
+                <Text style={styles.infoLabel}>ROLE</Text>
               </View>
-              {editing ? (
-                <TextInput
-                  style={styles.infoInput}
-                  value={mobile}
-                  onChangeText={setMobile}
-                  placeholder="+63 XXX XXX XXXX"
-                  placeholderTextColor="#C4B8A8"
-                  keyboardType="phone-pad"
-                />
-              ) : (
-                <Text style={styles.infoValue}>
-                  {profile?.mobile_number || "—"}
-                </Text>
-              )}
-            </View>
-            <View style={styles.infoDivider} />
-            <View style={styles.infoRow}>
-              <View style={styles.infoLabelRow}>
-                <Feather name="map-pin" size={13} color="#8B7355" />
-                <Text style={styles.infoLabel}>ADDRESS</Text>
+              <View style={styles.roleBadge}>
+                <Text style={styles.roleBadgeText}>ADMINISTRATOR</Text>
               </View>
-              {editing ? (
-                <TextInput
-                  style={styles.infoInput}
-                  value={address}
-                  onChangeText={setAddress}
-                  placeholder="Your address"
-                  placeholderTextColor="#C4B8A8"
-                />
-              ) : (
-                <Text style={styles.infoValue}>{profile?.address || "—"}</Text>
-              )}
             </View>
           </View>
-          {editing && (
-            <TouchableOpacity
-              style={styles.saveBtn}
-              onPress={handleSave}
-              disabled={saving}
-            >
-              <Feather name="check" size={15} color="#FAFAF8" />
-              <Text style={styles.saveBtnText}>
-                {saving ? "SAVING..." : "SAVE CHANGES"}
-              </Text>
-            </TouchableOpacity>
-          )}
+
+          {/* Note about username */}
+          <View style={styles.noteRow}>
+            <Feather name="info" size={11} color="#C4B8A8" />
+            <Text style={styles.noteText}>
+              Admin username cannot be changed.
+            </Text>
+          </View>
         </View>
 
+        {/* Logout */}
         <View style={styles.logoutSection}>
           <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout}>
             <Feather name="log-out" size={14} color="#9E8E7E" />
             <Text style={styles.logoutText}>SIGN OUT</Text>
           </TouchableOpacity>
         </View>
+
         <View style={{ height: 100 }} />
       </ScrollView>
 
+      {/* Logout Confirmation Modal */}
+      <Modal visible={logoutModalVisible} transparent animationType="fade">
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalBox}>
+            <View style={styles.modalIconWrap}>
+              <Feather name="log-out" size={24} color="#8B7355" />
+            </View>
+            <Text style={styles.modalTitle}>Sign Out</Text>
+            <View style={styles.modalDivider} />
+            <Text style={styles.modalMessage}>
+              Are you sure you want to sign out of your admin account?
+            </Text>
+            <View style={styles.modalButtons}>
+              <TouchableOpacity
+                style={styles.modalCancelBtn}
+                onPress={() => setLogoutModalVisible(false)}
+              >
+                <Text style={styles.modalCancelText}>CANCEL</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.modalConfirmBtn}
+                onPress={confirmLogout}
+              >
+                <Feather name="log-out" size={13} color="#FAFAF8" />
+                <Text style={styles.modalConfirmText}>SIGN OUT</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Bottom Nav */}
       <View style={styles.bottomNav}>
         <TouchableOpacity
           style={styles.navItem}
@@ -334,15 +307,12 @@ const styles = StyleSheet.create({
   avatarEmail: { fontSize: 12, color: "#9E8E7E", marginBottom: 4 },
   avatarHint: { fontSize: 10, color: "#C9A96E", letterSpacing: 1 },
   infoSection: { paddingHorizontal: 24, marginBottom: 20 },
-  infoHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
+  sectionLabel: {
+    fontSize: 10,
+    letterSpacing: 2,
+    color: "#8B7355",
     marginBottom: 12,
   },
-  sectionLabel: { fontSize: 10, letterSpacing: 2, color: "#8B7355" },
-  editToggle: { flexDirection: "row", alignItems: "center", gap: 5 },
-  editBtn: { fontSize: 10, letterSpacing: 2, color: "#C9A96E" },
   infoCard: {
     backgroundColor: "#F5F0E8",
     borderRadius: 12,
@@ -359,27 +329,25 @@ const styles = StyleSheet.create({
   infoLabelRow: { flexDirection: "row", alignItems: "center", gap: 6 },
   infoLabel: { fontSize: 10, letterSpacing: 1, color: "#8B7355" },
   infoValue: { fontSize: 13, color: "#1C1C1A" },
-  infoInput: {
-    fontSize: 13,
-    color: "#1C1C1A",
-    borderBottomWidth: 1,
-    borderBottomColor: "#C9A96E",
-    paddingVertical: 4,
-    minWidth: 160,
-    textAlign: "right",
-  },
+  readOnlyBadge: { flexDirection: "row", alignItems: "center", gap: 6 },
   infoDivider: { height: 0.5, backgroundColor: "#E8E0D0" },
-  saveBtn: {
+  roleBadge: {
+    backgroundColor: "#EDE5D8",
+    borderRadius: 20,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderWidth: 0.5,
+    borderColor: "#C9A96E",
+  },
+  roleBadgeText: { fontSize: 9, letterSpacing: 1.5, color: "#8B7355" },
+  noteRow: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-    backgroundColor: "#1C1C1A",
-    borderRadius: 10,
-    padding: 16,
-    marginTop: 16,
+    gap: 6,
+    marginTop: 10,
+    paddingHorizontal: 4,
   },
-  saveBtnText: { color: "#FAFAF8", fontSize: 11, letterSpacing: 2 },
+  noteText: { fontSize: 11, color: "#C4B8A8" },
   logoutSection: { paddingHorizontal: 24 },
   logoutBtn: {
     flexDirection: "row",
@@ -409,4 +377,72 @@ const styles = StyleSheet.create({
   navDot: { width: 4, height: 4, borderRadius: 2, backgroundColor: "#C9A96E" },
   navLabel: { fontSize: 8, color: "#C4B8A8", letterSpacing: 1 },
   navLabelActive: { fontSize: 8, color: "#1C1C1A", letterSpacing: 1 },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.45)",
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 32,
+  },
+  modalBox: {
+    backgroundColor: "#FAFAF8",
+    borderRadius: 20,
+    padding: 28,
+    width: "100%",
+    alignItems: "center",
+    borderWidth: 0.5,
+    borderColor: "#E8E0D0",
+  },
+  modalIconWrap: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: "#EDE5D8",
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 16,
+    borderWidth: 0.5,
+    borderColor: "#C9A96E",
+  },
+  modalTitle: {
+    fontSize: 16,
+    fontWeight: "500",
+    color: "#1C1C1A",
+    marginBottom: 12,
+    letterSpacing: 1,
+  },
+  modalDivider: {
+    width: 32,
+    height: 1.5,
+    backgroundColor: "#C9A96E",
+    marginBottom: 12,
+  },
+  modalMessage: {
+    fontSize: 13,
+    color: "#6B5E4E",
+    textAlign: "center",
+    lineHeight: 20,
+    marginBottom: 24,
+  },
+  modalButtons: { flexDirection: "row", gap: 12, width: "100%" },
+  modalCancelBtn: {
+    flex: 1,
+    borderWidth: 1,
+    borderColor: "#E8E0D0",
+    borderRadius: 10,
+    paddingVertical: 14,
+    alignItems: "center",
+  },
+  modalCancelText: { fontSize: 11, letterSpacing: 2, color: "#9E8E7E" },
+  modalConfirmBtn: {
+    flex: 1,
+    flexDirection: "row",
+    gap: 6,
+    backgroundColor: "#1C1C1A",
+    borderRadius: 10,
+    paddingVertical: 14,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  modalConfirmText: { fontSize: 11, letterSpacing: 2, color: "#FAFAF8" },
 });
