@@ -140,7 +140,13 @@ export default function ManageFurniture() {
     }
     setSaving(false);
     setModalVisible(false);
-    fetchFurniture();
+    // Force a fresh fetch by calling directly instead of cached callback
+    const { data } = await supabase
+      .from("furniture")
+      .select("*")
+      .eq("is_deleted", false)
+      .order("created_at", { ascending: false });
+    setFurniture(data || []);
   };
 
   const handleDelete = (item: any) => {
