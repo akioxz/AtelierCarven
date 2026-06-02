@@ -114,7 +114,7 @@ export default function Home() {
       <StatusBar barStyle="dark-content" />
       <ScrollView showsVerticalScrollIndicator={false}>
         <View style={[styles.inner, isWeb && styles.innerWeb]}>
-          <View style={styles.header}>
+          <View style={[styles.header, isWeb && styles.headerWeb]}>
             <View>
               <Text style={styles.greeting}>{getGreeting()}</Text>
               <Text style={styles.username}>{username}</Text>
@@ -181,7 +181,7 @@ export default function Home() {
                 {furniture.map((item) => (
                   <TouchableOpacity
                     key={item.id}
-                    style={styles.card}
+                    style={[styles.card, isWeb && styles.cardWeb]}
                     onPress={() => router.push({ pathname: "/(user)/product", params: { id: item.id } })}
                   >
                     <View style={styles.cardImage}>
@@ -254,6 +254,7 @@ const styles = StyleSheet.create({
   inner: { flex: 1 },
   innerWeb: { maxWidth: 1200, width: "100%", alignSelf: "center" as any },
   header: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", padding: 24, paddingTop: 56 },
+  headerWeb: { paddingTop: 32 },
   greeting: { fontSize: 11, color: "#9E8E7E", letterSpacing: 1 },
   username: { fontSize: 20, fontWeight: "500", color: "#1C1C1A" },
   headerIcons: { flexDirection: "row", gap: 8 },
@@ -271,8 +272,9 @@ const styles = StyleSheet.create({
   categoryText: { fontSize: 12, color: "#8B7355" },
   categoryTextActive: { color: "#FAFAF8" },
   grid: { flexDirection: "row", flexWrap: "wrap", gap: 12 },
-  gridWeb: { display: "grid" as any, gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))" },
+  gridWeb: { display: "grid" as any, gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))", gap: 16 },
   card: { width: "48%", backgroundColor: "#F5F0E8", borderRadius: 12, overflow: "hidden", borderWidth: 0.5, borderColor: "#E8E0D0" },
+  cardWeb: { width: "100%" as any },
   cardImage: { height: 160, backgroundColor: "#EDE5D8", justifyContent: "center", alignItems: "center", position: "relative" },
   cardImg: { width: "100%", height: 160 },
   heartBtn: { position: "absolute", top: 6, right: 6, width: 26, height: 26, borderRadius: 13, backgroundColor: "#FAFAF8", justifyContent: "center", alignItems: "center", borderWidth: 0.5, borderColor: "#E8E0D0" },
