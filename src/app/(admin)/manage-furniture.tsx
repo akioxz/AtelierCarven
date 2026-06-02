@@ -263,6 +263,17 @@ export default function ManageFurniture() {
                 )}
               </TouchableOpacity>
 
+              <Text style={styles.inputLabel}>OR PASTE IMAGE URL</Text>
+              <TextInput
+                style={styles.input}
+                value={imageUrl}
+                onChangeText={setImageUrl}
+                placeholder="https://images.unsplash.com/..."
+                placeholderTextColor="#C4B8A8"
+                autoCapitalize="none"
+                autoCorrect={false}
+              />
+
               <Text style={styles.inputLabel}>NAME</Text>
               <TextInput
                 style={styles.input}
