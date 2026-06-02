@@ -38,7 +38,7 @@ export default function OrderSuccess() {
         }),
       ]),
     ]).start();
-  }, []);
+  }, [scaleAnim, fadeAnim, slideAnim]);
 
   return (
     <View style={styles.container}>

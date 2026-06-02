@@ -5,6 +5,7 @@ import {
   Alert,
   Animated,
   Easing,
+  Platform,
   ScrollView,
   StatusBar,
   StyleSheet,
@@ -47,6 +48,14 @@ export default function Payment() {
   const [cardCVV, setCardCVV] = useState("");
   const [cardName, setCardName] = useState("");
 
+  const showAlert = (title: string, message: string) => {
+    if (Platform.OS === "web") {
+      alert(`${title}: ${message}`);
+    } else {
+      Alert.alert(title, message);
+    }
+  };
+
   useEffect(() => {
     Animated.loop(
       Animated.sequence([
@@ -54,7 +63,7 @@ export default function Payment() {
         Animated.timing(pulseAnim, { toValue: 1, duration: 800, useNativeDriver: true, easing: Easing.inOut(Easing.ease) }),
       ])
     ).start();
-  }, []);
+  }, [pulseAnim]);
 
   const handleCardNumberChange = (text: string) => {
     const cleanText = text.replace(/[^0-9]/g, "");
@@ -79,19 +88,19 @@ export default function Payment() {
   const handleConfirmPayment = async () => {
     if (paymentMethod === "card") {
       if (!cardNumber || !cardExpiry || !cardCVV || !cardName) {
-        Alert.alert("Missing Details", "Please fill in all card details.");
+        showAlert("Missing Details", "Please fill in all card details.");
         return;
       }
       if (cardNumber.replace(/\s/g, "").length < 16) {
-        Alert.alert("Invalid Card Number", "Card number must be 16 digits.");
+        showAlert("Invalid Card Number", "Card number must be 16 digits.");
         return;
       }
       if (cardExpiry.length < 5) {
-        Alert.alert("Invalid Expiry", "Please enter expiry date in MM/YY format.");
+        showAlert("Invalid Expiry", "Please enter expiry date in MM/YY format.");
         return;
       }
       if (cardCVV.length < 3) {
-        Alert.alert("Invalid CVV", "CVV must be 3 or 4 digits.");
+        showAlert("Invalid CVV", "CVV must be 3 or 4 digits.");
         return;
       }
     }
@@ -114,7 +123,7 @@ export default function Payment() {
         .eq("user_id", user.id);
 
       if (cartFetchErr || !cartItems || cartItems.length === 0) {
-        Alert.alert("Empty Cart", "No items in your cart to checkout.");
+        showAlert("Empty Cart", "No items in your cart to checkout.");
         setProcessing(false);
         return;
       }
@@ -137,7 +146,7 @@ export default function Payment() {
 
       if (orderErr) {
         console.error("Orders Insert Error:", orderErr);
-        Alert.alert("Checkout Error", "Failed to place your order. Please try again.");
+        showAlert("Checkout Error", "Failed to place your order. Please try again.");
         setProcessing(false);
         return;
       }
@@ -168,7 +177,7 @@ export default function Payment() {
     } catch (err) {
       console.error("Confirm order payment transaction failed:", err);
       setProcessing(false);
-      Alert.alert("Payment Error", "Something went wrong. Please try again.");
+      showAlert("Payment Error", "Something went wrong. Please try again.");
     }
   };
 

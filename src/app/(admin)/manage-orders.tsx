@@ -261,7 +261,7 @@ export default function ManageOrders() {
       ) : orders.length === 0 ? (
         <View style={styles.emptyContainer}>
           <Feather name="shopping-bag" size={44} color="#E8E0D0" />
-          <Text style={styles.emptyText}>No orders found under "{selectedStatus}" status.</Text>
+          <Text style={styles.emptyText}>No orders found under &quot;{selectedStatus}&quot; status.</Text>
         </View>
       ) : (
         <FlatList
