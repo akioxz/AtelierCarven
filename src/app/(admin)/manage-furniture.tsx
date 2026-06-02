@@ -3,7 +3,6 @@ import { useRouter } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
-  Alert,
   Image,
   Modal,
   Platform,
@@ -47,6 +46,8 @@ export default function ManageFurniture() {
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
+  const [deleteModalVisible, setDeleteModalVisible] = useState(false);
+  const [itemToDelete, setItemToDelete] = useState<any>(null);
 
   const fetchFurniture = useCallback(async () => {
     setLoading(true);
@@ -137,21 +138,17 @@ export default function ManageFurniture() {
   };
 
   const handleDelete = (item: any) => {
-    Alert.alert(
-      "Delete Furniture",
-      `Are you sure you want to delete "${item.name}"?`,
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Delete", style: "destructive",
-          onPress: async () => {
-            await supabase.from("furniture").update({ is_deleted: true }).eq("id", item.id);
-            await logAction("Deleted furniture", item.name);
-            fetchFurniture();
-          },
-        },
-      ]
-    );
+    setItemToDelete(item);
+    setDeleteModalVisible(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!itemToDelete) return;
+    await supabase.from("furniture").update({ is_deleted: true }).eq("id", itemToDelete.id);
+    await logAction("Deleted furniture", itemToDelete.name);
+    setDeleteModalVisible(false);
+    setItemToDelete(null);
+    fetchFurniture();
   };
 
   const renderCard = (item: any) => (
@@ -261,6 +258,35 @@ export default function ManageFurniture() {
         <Feather name="plus" size={16} color="#FAFAF8" />
         <Text style={styles.addBtnText}>ADD FURNITURE</Text>
       </TouchableOpacity>
+
+      {/* Delete Confirmation Modal */}
+      <Modal visible={deleteModalVisible} animationType="fade" transparent>
+        <View style={styles.modalOverlay}>
+          <View style={styles.deleteModalContent}>
+            <View style={styles.deleteIconWrap}>
+              <Feather name="trash-2" size={28} color="#A32D2D" />
+            </View>
+            <Text style={styles.deleteModalTitle}>DELETE FURNITURE</Text>
+            <View style={styles.goldDivider} />
+            <Text style={styles.deleteModalMsg}>
+              Are you sure you want to delete{"\n"}
+              <Text style={styles.deleteModalName}>"{itemToDelete?.name}"</Text>?
+            </Text>
+            <Text style={styles.deleteModalSub}>This action cannot be undone.</Text>
+            <View style={styles.modalButtons}>
+              <TouchableOpacity
+                style={styles.cancelBtn}
+                onPress={() => { setDeleteModalVisible(false); setItemToDelete(null); }}
+              >
+                <Text style={styles.cancelBtnText}>CANCEL</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.deleteConfirmBtn} onPress={confirmDelete}>
+                <Text style={styles.deleteConfirmText}>DELETE</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
 
       <Modal visible={modalVisible} animationType="slide" transparent>
         <View style={styles.modalOverlay}>
@@ -662,4 +688,32 @@ const styles = StyleSheet.create({
   },
   uploadText: { fontSize: 10, letterSpacing: 2, color: "#8B7355" },
   uploadedImage: { width: "100%", height: 160 },
+  deleteModalContent: {
+    backgroundColor: "#FAFAF8",
+    borderRadius: 20,
+    padding: 28,
+    marginHorizontal: 32,
+    alignItems: "center",
+  },
+  deleteIconWrap: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: "#FCEBEB",
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 16,
+  },
+  deleteModalTitle: { fontSize: 12, letterSpacing: 3, color: "#A32D2D", marginBottom: 12 },
+  deleteModalMsg: { fontSize: 14, color: "#1C1C1A", textAlign: "center", marginTop: 12, lineHeight: 22 },
+  deleteModalName: { fontWeight: "600", color: "#1C1C1A" },
+  deleteModalSub: { fontSize: 11, color: "#9E8E7E", marginTop: 6, marginBottom: 20 },
+  deleteConfirmBtn: {
+    flex: 1,
+    backgroundColor: "#A32D2D",
+    borderRadius: 10,
+    padding: 16,
+    alignItems: "center",
+  },
+  deleteConfirmText: { fontSize: 11, letterSpacing: 2, color: "#FAFAF8" },
 });

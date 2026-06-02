@@ -3,7 +3,7 @@ import { useRouter } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
-  Alert,
+  Modal,
   ScrollView,
   StatusBar,
   StyleSheet,
@@ -33,6 +33,7 @@ export default function Checkout() {
   const [mobile, setMobile] = useState("");
   const [notes, setNotes] = useState("");
   const [paymentMethod, setPaymentMethod] = useState<"cod" | "gcash" | "maya" | "card">("cod");
+  const [errorModalVisible, setErrorModalVisible] = useState(false);
 
   const fetchData = useCallback(async () => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -60,7 +61,7 @@ export default function Checkout() {
 
   const handlePlaceOrder = () => {
     if (!fullName || !address || !city || !mobile) {
-      Alert.alert("Missing Info", "Please fill in all required fields.");
+      setErrorModalVisible(true);
       return;
     }
     router.push({
@@ -209,6 +210,25 @@ export default function Checkout() {
           </TouchableOpacity>
         ))}
       </View>
+      {/* Missing Fields Modal */}
+      <Modal visible={errorModalVisible} animationType="fade" transparent>
+        <View style={styles.modalOverlay}>
+          <View style={styles.errorModalContent}>
+            <View style={styles.errorIconWrap}>
+              <Feather name="alert-circle" size={28} color="#C9A96E" />
+            </View>
+            <Text style={styles.errorModalTitle}>MISSING INFORMATION</Text>
+            <View style={styles.goldDivider} />
+            <Text style={styles.errorModalMsg}>
+              Please fill in all required fields before placing your order.
+            </Text>
+            <Text style={styles.errorModalSub}>Full name, mobile, address, and city are required.</Text>
+            <TouchableOpacity style={styles.errorCloseBtn} onPress={() => setErrorModalVisible(false)}>
+              <Text style={styles.errorCloseBtnText}>GOT IT</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -254,4 +274,38 @@ const styles = StyleSheet.create({
   bottomNav: { backgroundColor: "#FAFAF8", borderTopWidth: 0.5, borderTopColor: "#E8E0D0", flexDirection: "row", justifyContent: "space-around", paddingVertical: 12, paddingBottom: 24 },
   navItem: { alignItems: "center", gap: 3 },
   navLabel: { fontSize: 8, color: "#C4B8A8", letterSpacing: 1 },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.4)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  errorModalContent: {
+    backgroundColor: "#FAFAF8",
+    borderRadius: 20,
+    padding: 28,
+    marginHorizontal: 32,
+    alignItems: "center",
+  },
+  errorIconWrap: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: "#F5F0E8",
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 16,
+  },
+  errorModalTitle: { fontSize: 12, letterSpacing: 3, color: "#8B7355", marginBottom: 12 },
+  goldDivider: { width: 40, height: 1.5, backgroundColor: "#C9A96E", marginBottom: 12 },
+  errorModalMsg: { fontSize: 14, color: "#1C1C1A", textAlign: "center", lineHeight: 22, marginTop: 4 },
+  errorModalSub: { fontSize: 11, color: "#9E8E7E", marginTop: 6, marginBottom: 20, textAlign: "center" },
+  errorCloseBtn: {
+    backgroundColor: "#1C1C1A",
+    borderRadius: 10,
+    paddingVertical: 14,
+    paddingHorizontal: 40,
+    alignItems: "center",
+  },
+  errorCloseBtnText: { fontSize: 11, letterSpacing: 2, color: "#FAFAF8" },
 });
