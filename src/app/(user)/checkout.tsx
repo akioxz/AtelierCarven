@@ -239,7 +239,7 @@ const styles = StyleSheet.create({
   header: { backgroundColor: "#F5F0E8", padding: 28, paddingTop: 56, paddingBottom: 28 },
   headerSmall: { fontSize: 10, letterSpacing: 4, color: "#8B7355" },
   headerLarge: { fontSize: 36, fontWeight: "300", color: "#1C1C1A", letterSpacing: 2, marginBottom: 16 },
-  goldDivider: { width: 40, height: 1.5, backgroundColor: "#C9A96E" },
+  goldDivider: { width: 40, height: 1.5, backgroundColor: "#C9A96E", marginBottom: 12 },
   section: { paddingHorizontal: 24, paddingTop: 24 },
   sectionLabel: { fontSize: 10, letterSpacing: 2, color: "#8B7355", marginBottom: 12 },
   card: { backgroundColor: "#F5F0E8", borderRadius: 12, padding: 16, borderWidth: 0.5, borderColor: "#E8E0D0" },
@@ -297,7 +297,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   errorModalTitle: { fontSize: 12, letterSpacing: 3, color: "#8B7355", marginBottom: 12 },
-  goldDivider: { width: 40, height: 1.5, backgroundColor: "#C9A96E", marginBottom: 12 },
+
   errorModalMsg: { fontSize: 14, color: "#1C1C1A", textAlign: "center", lineHeight: 22, marginTop: 4 },
   errorModalSub: { fontSize: 11, color: "#9E8E7E", marginTop: 6, marginBottom: 20, textAlign: "center" },
   errorCloseBtn: {
