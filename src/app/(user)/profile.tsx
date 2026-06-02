@@ -36,6 +36,7 @@ export default function UserProfile() {
   const [mobile, setMobile] = useState("");
   const [saving, setSaving] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [logoutModalVisible, setLogoutModalVisible] = useState(false);
 
   // Orders
   const [orders, setOrders] = useState<any[]>([]);
@@ -110,7 +111,12 @@ export default function UserProfile() {
     fetchProfile();
   };
 
-  const handleLogout = async () => {
+  const handleLogout = () => {
+    setLogoutModalVisible(true);
+  };
+
+  const confirmLogout = async () => {
+    setLogoutModalVisible(false);
     await supabase.auth.signOut();
     router.replace("/(auth)/onboarding");
   };
@@ -196,7 +202,7 @@ export default function UserProfile() {
                     </Text>
                     <Text style={styles.orderDate}>
                       {new Date(order.created_at).toLocaleDateString("en-PH", {
-                        year: "numeric", month: "short", day: "numeric"
+                        year: "numeric", month: "short", day: "numeric",
                       })}
                     </Text>
                     <Text style={styles.orderTotal}>
@@ -305,28 +311,23 @@ export default function UserProfile() {
                         #{selectedOrder.id.substring(0, 8).toUpperCase()}
                       </Text>
                     </View>
-                    <TouchableOpacity
-                      style={styles.closeBtn}
-                      onPress={() => setSelectedOrder(null)}
-                    >
+                    <TouchableOpacity style={styles.closeBtn} onPress={() => setSelectedOrder(null)}>
                       <Feather name="x" size={18} color="#8B7355" />
                     </TouchableOpacity>
                   </View>
                   <View style={styles.goldDivider} />
 
-                  {/* Status & Date */}
                   <View style={styles.modalInfoRow}>
                     <View style={[styles.statusBadge, { backgroundColor: badge.bg }]}>
                       <Text style={[styles.statusText, { color: badge.color }]}>{badge.label}</Text>
                     </View>
                     <Text style={styles.modalDate}>
                       {new Date(selectedOrder.created_at).toLocaleDateString("en-PH", {
-                        year: "numeric", month: "long", day: "numeric"
+                        year: "numeric", month: "long", day: "numeric",
                       })}
                     </Text>
                   </View>
 
-                  {/* Items */}
                   <Text style={styles.modalSectionLabel}>ITEMS ORDERED</Text>
                   <View style={styles.modalCard}>
                     {loadingItems ? (
@@ -340,22 +341,14 @@ export default function UserProfile() {
                           <View style={styles.itemRow}>
                             <View style={styles.itemImageWrap}>
                               {item.furniture?.image_url ? (
-                                <Image
-                                  source={{ uri: item.furniture.image_url }}
-                                  style={styles.itemImage}
-                                  resizeMode="cover"
-                                />
+                                <Image source={{ uri: item.furniture.image_url }} style={styles.itemImage} resizeMode="cover" />
                               ) : (
                                 <Feather name="box" size={20} color="#8B7355" />
                               )}
                             </View>
                             <View style={{ flex: 1 }}>
-                              <Text style={styles.itemName} numberOfLines={1}>
-                                {item.furniture?.name}
-                              </Text>
-                              <Text style={styles.itemMeta}>
-                                {item.furniture?.category} · Qty {item.quantity}
-                              </Text>
+                              <Text style={styles.itemName} numberOfLines={1}>{item.furniture?.name}</Text>
+                              <Text style={styles.itemMeta}>{item.furniture?.category} · Qty {item.quantity}</Text>
                             </View>
                             <Text style={styles.itemPrice}>
                               ₱{(Number(item.price) * item.quantity).toLocaleString()}
@@ -366,18 +359,45 @@ export default function UserProfile() {
                     )}
                   </View>
 
-                  {/* Total */}
                   <View style={styles.modalTotalRow}>
                     <Text style={styles.modalTotalLabel}>TOTAL PAID</Text>
-                    <Text style={styles.modalTotalAmt}>
-                      ₱{Number(selectedOrder.total).toLocaleString()}
-                    </Text>
+                    <Text style={styles.modalTotalAmt}>₱{Number(selectedOrder.total).toLocaleString()}</Text>
                   </View>
-
                   <View style={{ height: 20 }} />
                 </ScrollView>
               );
             })()}
+          </View>
+        </View>
+      </Modal>
+
+      {/* Logout Confirmation Modal */}
+      <Modal visible={logoutModalVisible} transparent animationType="fade">
+        <View style={styles.logoutModalOverlay}>
+          <View style={styles.logoutModalBox}>
+            <View style={styles.logoutModalIcon}>
+              <Feather name="log-out" size={24} color="#8B7355" />
+            </View>
+            <Text style={styles.logoutModalTitle}>Sign Out</Text>
+            <View style={styles.logoutModalDivider} />
+            <Text style={styles.logoutModalMessage}>
+              Are you sure you want to sign out of your account?
+            </Text>
+            <View style={styles.logoutModalButtons}>
+              <TouchableOpacity
+                style={styles.logoutModalCancelBtn}
+                onPress={() => setLogoutModalVisible(false)}
+              >
+                <Text style={styles.logoutModalCancelText}>CANCEL</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.logoutModalConfirmBtn}
+                onPress={confirmLogout}
+              >
+                <Feather name="log-out" size={13} color="#FAFAF8" />
+                <Text style={styles.logoutModalConfirmText}>SIGN OUT</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
       </Modal>
@@ -459,6 +479,7 @@ const styles = StyleSheet.create({
   logoutBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, borderWidth: 1, borderColor: "#E8E0D0", borderRadius: 10, padding: 16 },
   logoutText: { fontSize: 11, letterSpacing: 2, color: "#9E8E7E" },
 
+  // Order detail modal
   modalOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.4)", justifyContent: "flex-end" },
   modalContent: { backgroundColor: "#FAFAF8", borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, paddingBottom: 40, maxHeight: "85%" },
   modalHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 12 },
@@ -480,6 +501,19 @@ const styles = StyleSheet.create({
   modalTotalRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingHorizontal: 4 },
   modalTotalLabel: { fontSize: 10, letterSpacing: 2, color: "#8B7355" },
   modalTotalAmt: { fontSize: 20, fontWeight: "500", color: "#1C1C1A" },
+
+  // Logout modal
+  logoutModalOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.45)", justifyContent: "center", alignItems: "center", padding: 32 },
+  logoutModalBox: { backgroundColor: "#FAFAF8", borderRadius: 20, padding: 28, width: "100%", alignItems: "center", borderWidth: 0.5, borderColor: "#E8E0D0" },
+  logoutModalIcon: { width: 56, height: 56, borderRadius: 28, backgroundColor: "#EDE5D8", justifyContent: "center", alignItems: "center", marginBottom: 16, borderWidth: 0.5, borderColor: "#C9A96E" },
+  logoutModalTitle: { fontSize: 16, fontWeight: "500", color: "#1C1C1A", marginBottom: 12, letterSpacing: 1 },
+  logoutModalDivider: { width: 32, height: 1.5, backgroundColor: "#C9A96E", marginBottom: 12 },
+  logoutModalMessage: { fontSize: 13, color: "#6B5E4E", textAlign: "center", lineHeight: 20, marginBottom: 24 },
+  logoutModalButtons: { flexDirection: "row", gap: 12, width: "100%" },
+  logoutModalCancelBtn: { flex: 1, borderWidth: 1, borderColor: "#E8E0D0", borderRadius: 10, paddingVertical: 14, alignItems: "center" },
+  logoutModalCancelText: { fontSize: 11, letterSpacing: 2, color: "#9E8E7E" },
+  logoutModalConfirmBtn: { flex: 1, flexDirection: "row", gap: 6, backgroundColor: "#1C1C1A", borderRadius: 10, paddingVertical: 14, alignItems: "center", justifyContent: "center" },
+  logoutModalConfirmText: { fontSize: 11, letterSpacing: 2, color: "#FAFAF8" },
 
   bottomNav: { position: "absolute", bottom: 0, left: 0, right: 0, backgroundColor: "#FAFAF8", borderTopWidth: 0.5, borderTopColor: "#E8E0D0", flexDirection: "row", justifyContent: "space-around", paddingVertical: 12, paddingBottom: 24 },
   navItem: { alignItems: "center", gap: 3 },
