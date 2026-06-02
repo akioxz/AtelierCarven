@@ -99,10 +99,13 @@ export default function ManageFurniture() {
   };
 
   const handleSave = async () => {
-    if (!name || !price || !category) return;
+    if (!name || !price || !category) {
+      Alert.alert("Missing Fields", "Please fill in name, price, and category.");
+      return;
+    }
     setSaving(true);
     if (editing) {
-      await supabase
+      const { error } = await supabase
         .from("furniture")
         .update({
           name,
@@ -113,15 +116,26 @@ export default function ManageFurniture() {
           updated_at: new Date().toISOString(),
         })
         .eq("id", editing.id);
+      if (error) {
+        Alert.alert("Error", "Failed to update furniture: " + error.message);
+        setSaving(false);
+        return;
+      }
       await logAction("Edited furniture", name);
     } else {
-      await supabase.from("furniture").insert({
+      const { error } = await supabase.from("furniture").insert({
         name,
         price: Number(price),
         category,
         description,
         image_url: imageUrl,
+        is_deleted: false,
       });
+      if (error) {
+        Alert.alert("Error", "Failed to add furniture: " + error.message);
+        setSaving(false);
+        return;
+      }
       await logAction("Added furniture", name);
     }
     setSaving(false);
