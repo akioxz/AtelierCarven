@@ -47,8 +47,10 @@ export default function ManageFurniture() {
   const [imageUrl, setImageUrl] = useState("");
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [errorMsg, setErrorMsg] = useState("");
 
   const fetchFurniture = useCallback(async () => {
+    setLoading(true);
     const { data } = await supabase
       .from("furniture")
       .select("*")
@@ -78,6 +80,7 @@ export default function ManageFurniture() {
     setCategory("Sofa");
     setDescription("");
     setImageUrl("");
+    setErrorMsg("");
     setModalVisible(true);
   };
 
@@ -88,6 +91,7 @@ export default function ManageFurniture() {
     setCategory(item.category);
     setDescription(item.description || "");
     setImageUrl(item.image_url || "");
+    setErrorMsg("");
     setModalVisible(true);
   };
 
@@ -99,8 +103,11 @@ export default function ManageFurniture() {
   };
 
   const handleSave = async () => {
-    if (!name || !price || !category) {
-      Alert.alert("Missing Fields", "Please fill in name, price, and category.");
+    setErrorMsg("");
+    // Strip peso sign, commas, and spaces before parsing
+    const parsedPrice = parseFloat(price.replace(/[₱,\s]/g, ""));
+    if (!name || !category || isNaN(parsedPrice) || parsedPrice <= 0) {
+      setErrorMsg("Please enter a valid name, price (numbers only), and category.");
       return;
     }
     setSaving(true);
@@ -109,7 +116,7 @@ export default function ManageFurniture() {
         .from("furniture")
         .update({
           name,
-          price: Number(price),
+          price: parsedPrice,
           category,
           description,
           image_url: imageUrl,
@@ -117,7 +124,7 @@ export default function ManageFurniture() {
         })
         .eq("id", editing.id);
       if (error) {
-        Alert.alert("Error", "Failed to update furniture: " + error.message);
+        setErrorMsg("Failed to update: " + error.message);
         setSaving(false);
         return;
       }
@@ -125,14 +132,14 @@ export default function ManageFurniture() {
     } else {
       const { error } = await supabase.from("furniture").insert({
         name,
-        price: Number(price),
+        price: parsedPrice,
         category,
         description,
         image_url: imageUrl,
         is_deleted: false,
       });
       if (error) {
-        Alert.alert("Error", "Failed to add furniture: " + error.message);
+        setErrorMsg("Failed to add: " + error.message);
         setSaving(false);
         return;
       }
@@ -140,13 +147,15 @@ export default function ManageFurniture() {
     }
     setSaving(false);
     setModalVisible(false);
-    // Force a fresh fetch by calling directly instead of cached callback
+    // Force a fresh fetch after save
+    setLoading(true);
     const { data } = await supabase
       .from("furniture")
       .select("*")
       .eq("is_deleted", false)
       .order("created_at", { ascending: false });
     setFurniture(data || []);
+    setLoading(false);
   };
 
   const handleDelete = (item: any) => {
@@ -303,12 +312,12 @@ export default function ManageFurniture() {
                 placeholderTextColor="#C4B8A8"
               />
 
-              <Text style={styles.inputLabel}>PRICE (₱)</Text>
+              <Text style={styles.inputLabel}>PRICE (numbers only, e.g. 55000)</Text>
               <TextInput
                 style={styles.input}
                 value={price}
                 onChangeText={setPrice}
-                placeholder="0.00"
+                placeholder="55000"
                 placeholderTextColor="#C4B8A8"
                 keyboardType="numeric"
               />
@@ -346,6 +355,12 @@ export default function ManageFurniture() {
                 multiline
                 numberOfLines={3}
               />
+
+              {errorMsg ? (
+                <Text style={{ color: "red", fontSize: 12, marginTop: 12, textAlign: "center" }}>
+                  {errorMsg}
+                </Text>
+              ) : null}
 
               <View style={styles.modalButtons}>
                 <TouchableOpacity
