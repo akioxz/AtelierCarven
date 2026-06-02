@@ -34,24 +34,30 @@ export default function Index() {
     ]).start();
 
     const timer = setTimeout(async () => {
-      const { data: { session } } = await supabase.auth.getSession();
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession();
 
-      if (!session) {
+        if (error || !session) {
+          await supabase.auth.signOut();
+          router.replace("/(auth)/onboarding");
+          return;
+        }
+
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("role")
+          .eq("id", session.user.id)
+          .single();
+
+        const role = profile?.role || session.user.user_metadata?.role;
+        if (role === "admin") {
+          router.replace("/(admin)/dashboard");
+        } else {
+          router.replace("/(user)/home");
+        }
+      } catch {
+        await supabase.auth.signOut();
         router.replace("/(auth)/onboarding");
-        return;
-      }
-
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("role")
-        .eq("id", session.user.id)
-        .single();
-
-      const role = profile?.role || session.user.user_metadata?.role;
-      if (role === "admin") {
-        router.replace("/(admin)/dashboard");
-      } else {
-        router.replace("/(user)/home");
       }
     }, 2500);
 
