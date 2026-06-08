@@ -270,7 +270,7 @@ export default function ManageFurniture() {
             <View style={styles.goldDivider} />
             <Text style={styles.deleteModalMsg}>
               Are you sure you want to delete{"\n"}
-              <Text style={styles.deleteModalName}>"{itemToDelete?.name}"</Text>?
+              <Text style={styles.deleteModalName}>&quot;{itemToDelete?.name}&quot;</Text>?
             </Text>
             <Text style={styles.deleteModalSub}>This action cannot be undone.</Text>
             <View style={styles.modalButtons}>

@@ -1,4 +1,4 @@
-import { Feather } from "@expo/vector-icons";
+import { AntDesign, Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
 import {
@@ -190,8 +190,12 @@ export default function Home() {
                       ) : (
                         <Feather name={getCategoryIcon(item.category) as any} size={36} color="#8B7355" />
                       )}
-                      <TouchableOpacity style={styles.heartBtn} onPress={() => toggleFavorite(item.id)}>
-                        <Feather name="heart" size={12} color={favorites.includes(item.id) ? "#C9A96E" : "#C4B8A8"} />
+                       <TouchableOpacity style={styles.heartBtn} onPress={() => toggleFavorite(item.id)}>
+                        <AntDesign
+                          name={(favorites.includes(item.id) ? "heart" : "hearto") as any}
+                          size={12}
+                          color={favorites.includes(item.id) ? "#C9A96E" : "#C4B8A8"}
+                        />
                       </TouchableOpacity>
                     </View>
                     <View style={styles.cardContent}>

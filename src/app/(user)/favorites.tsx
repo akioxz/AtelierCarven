@@ -1,4 +1,4 @@
-import { Feather } from "@expo/vector-icons";
+import { AntDesign, Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
 import {
@@ -112,7 +112,7 @@ export default function Favorites() {
             style={styles.favBadge}
             onPress={() => removeFavorite(product.id)}
           >
-            <Feather name="heart" size={14} color="#C9A96E" fill="#C9A96E" />
+            <AntDesign name="heart" size={14} color="#C9A96E" />
           </TouchableOpacity>
         </View>
         <View style={styles.cardContent}>
