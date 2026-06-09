@@ -107,7 +107,9 @@ export default function Checkout() {
                 <View style={styles.orderRow}>
                   <View style={styles.orderInfo}>
                     <Text style={styles.orderName} numberOfLines={1}>{item.furniture?.name}</Text>
-                    <Text style={styles.orderMeta}>{item.furniture?.category} · Qty {item.quantity}</Text>
+                    <Text style={styles.orderMeta}>
+                      {item.furniture?.category}{(item.color || item.material) ? ` · ${[item.color, item.material].filter(Boolean).join(" · ")}` : ""} · Qty {item.quantity}
+                    </Text>
                   </View>
                   <Text style={styles.orderPrice}>
                     ₱{(Number(item.furniture?.price) * item.quantity).toLocaleString()}

@@ -82,11 +82,11 @@ export default function Home() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
     if (favorites.includes(furnitureId)) {
-      await supabase.from("favorites").delete().eq("user_id", user.id).eq("furniture_id", furnitureId);
       setFavorites((prev) => prev.filter((id) => id !== furnitureId));
+      await supabase.from("favorites").delete().eq("user_id", user.id).eq("furniture_id", furnitureId);
     } else {
-      await supabase.from("favorites").insert({ user_id: user.id, furniture_id: furnitureId });
       setFavorites((prev) => [...prev, furnitureId]);
+      await supabase.from("favorites").insert({ user_id: user.id, furniture_id: furnitureId });
     }
   };
 
@@ -121,7 +121,7 @@ export default function Home() {
             </View>
             <View style={styles.headerIcons}>
               <TouchableOpacity style={styles.iconBtn} onPress={() => router.push("/(user)/favorites")}>
-                <Feather name="heart" size={18} color="#1C1C1A" />
+                <AntDesign name="heart" size={18} color="#C4B8A8" />
               </TouchableOpacity>
               <TouchableOpacity style={styles.iconBtn} onPress={() => router.push("/(user)/cart")}>
                 <Feather name="shopping-cart" size={18} color="#1C1C1A" />
@@ -190,21 +190,29 @@ export default function Home() {
                       ) : (
                         <Feather name={getCategoryIcon(item.category) as any} size={36} color="#8B7355" />
                       )}
-                       <TouchableOpacity style={styles.heartBtn} onPress={() => toggleFavorite(item.id)}>
-                        <AntDesign
-                          name={(favorites.includes(item.id) ? "heart" : "hearto") as any}
-                          size={12}
-                          color={favorites.includes(item.id) ? "#C9A96E" : "#C4B8A8"}
-                        />
+                      <TouchableOpacity style={styles.heartBtn} onPress={() => toggleFavorite(item.id)}>
+                        {favorites.includes(item.id)
+                          ? <AntDesign name="heart" size={12} color="#C9A96E" />
+                          : <Feather name="heart" size={12} color="#C4B8A8" />
+                        }
                       </TouchableOpacity>
                     </View>
                     <View style={styles.cardContent}>
                       <Text style={styles.cardCat}>{item.category?.toUpperCase()}</Text>
                       <Text style={styles.cardName} numberOfLines={1}>{item.name}</Text>
-                      <View style={styles.starsRow}>
-                        {[1, 2, 3, 4, 5].map((i) => <Feather key={i} name="star" size={9} color="#C9A96E" />)}
-                        <Text style={styles.ratingText}>4.8 (124)</Text>
-                      </View>
+                      {item.rating != null && (
+                        <View style={styles.starsRow}>
+                          {[1, 2, 3, 4, 5].map((i) => (
+                            <Feather
+                              key={i}
+                              name="star"
+                              size={9}
+                              color={i <= Math.round(item.rating) ? "#C9A96E" : "#E8E0D0"}
+                            />
+                          ))}
+                          <Text style={styles.ratingText}>{Number(item.rating).toFixed(1)}</Text>
+                        </View>
+                      )}
                       <Text style={styles.cardPrice}>₱{Number(item.price).toLocaleString()}</Text>
                       <View style={styles.cardBtns}>
                         <TouchableOpacity style={styles.btnAdd} onPress={() => handleAddToCart(item.id)}>
@@ -233,7 +241,7 @@ export default function Home() {
           <Text style={styles.navLabelActive}>HOME</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.navItem} onPress={() => router.push("/(user)/favorites")}>
-          <Feather name="heart" size={20} color="#C4B8A8" />
+          <AntDesign name="heart" size={20} color="#C4B8A8" />
           <Text style={styles.navLabel}>SAVED</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.navItem} onPress={() => router.push("/(user)/image-placement")}>

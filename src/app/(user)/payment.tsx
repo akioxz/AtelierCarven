@@ -2,10 +2,9 @@ import { Feather } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useRef, useState } from "react";
 import {
-  Alert,
   Animated,
   Easing,
-  Platform,
+  Modal,
   ScrollView,
   StatusBar,
   StyleSheet,
@@ -42,6 +41,11 @@ export default function Payment() {
   const spinAnim = useRef(new Animated.Value(0)).current;
   const pulseAnim = useRef(new Animated.Value(1)).current;
 
+  // Alert modal state
+  const [alertVisible, setAlertVisible] = useState(false);
+  const [alertTitle, setAlertTitle] = useState("");
+  const [alertMessage, setAlertMessage] = useState("");
+
   // Credit Card States
   const [cardNumber, setCardNumber] = useState("");
   const [cardExpiry, setCardExpiry] = useState("");
@@ -49,11 +53,9 @@ export default function Payment() {
   const [cardName, setCardName] = useState("");
 
   const showAlert = (title: string, message: string) => {
-    if (Platform.OS === "web") {
-      alert(`${title}: ${message}`);
-    } else {
-      Alert.alert(title, message);
-    }
+    setAlertTitle(title);
+    setAlertMessage(message);
+    setAlertVisible(true);
   };
 
   useEffect(() => {
@@ -310,16 +312,16 @@ export default function Payment() {
         {paymentMethod === "card" && (
           <View style={styles.section}>
             <Text style={styles.sectionLabel}>CREDIT / DEBIT CARD</Text>
-            
+
             {/* Elegant Luxury Credit Card UI */}
             <View style={styles.creditCardContainer}>
               <Text style={styles.creditCardTitle}>ATELIER CARVÉN</Text>
               <View style={styles.creditCardChip} />
-              
+
               <Text style={styles.creditCardNumber}>
                 {cardNumber || "•••• •••• •••• ••••"}
               </Text>
-              
+
               <View style={styles.creditCardBottom}>
                 <View style={{ flex: 1, marginRight: 12 }}>
                   <Text style={styles.creditCardLabel}>CARDHOLDER NAME</Text>
@@ -439,6 +441,23 @@ export default function Payment() {
           </TouchableOpacity>
         ))}
       </View>
+
+      {/* Custom Alert Modal */}
+      <Modal visible={alertVisible} animationType="fade" transparent>
+        <View style={styles.alertOverlay}>
+          <View style={styles.alertContent}>
+            <View style={styles.alertIconWrap}>
+              <Feather name="alert-circle" size={28} color="#C9A96E" />
+            </View>
+            <Text style={styles.alertTitle}>{alertTitle.toUpperCase()}</Text>
+            <View style={styles.alertDivider} />
+            <Text style={styles.alertMessage}>{alertMessage}</Text>
+            <TouchableOpacity style={styles.alertBtn} onPress={() => setAlertVisible(false)}>
+              <Text style={styles.alertBtnText}>GOT IT</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -493,4 +512,55 @@ const styles = StyleSheet.create({
   bottomNav: { backgroundColor: "#FAFAF8", borderTopWidth: 0.5, borderTopColor: "#E8E0D0", flexDirection: "row", justifyContent: "space-around", paddingVertical: 12, paddingBottom: 24 },
   navItem: { alignItems: "center", gap: 3 },
   navLabel: { fontSize: 8, color: "#C4B8A8", letterSpacing: 1 },
+  alertOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.4)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  alertContent: {
+    backgroundColor: "#FAFAF8",
+    borderRadius: 20,
+    padding: 28,
+    marginHorizontal: 32,
+    alignItems: "center",
+    minWidth: 280,
+  },
+  alertIconWrap: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: "#F5F0E8",
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 16,
+  },
+  alertTitle: {
+    fontSize: 12,
+    letterSpacing: 3,
+    color: "#8B7355",
+    marginBottom: 12,
+    textAlign: "center",
+  },
+  alertDivider: {
+    width: 40,
+    height: 1.5,
+    backgroundColor: "#C9A96E",
+    marginBottom: 12,
+  },
+  alertMessage: {
+    fontSize: 14,
+    color: "#1C1C1A",
+    textAlign: "center",
+    lineHeight: 22,
+    marginBottom: 24,
+  },
+  alertBtn: {
+    backgroundColor: "#1C1C1A",
+    borderRadius: 10,
+    paddingVertical: 14,
+    paddingHorizontal: 40,
+    alignItems: "center",
+  },
+  alertBtnText: { fontSize: 11, letterSpacing: 2, color: "#FAFAF8" },
 });

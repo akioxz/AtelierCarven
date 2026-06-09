@@ -127,6 +127,11 @@ export default function Cart() {
                     <View style={{ flex: 1 }}>
                       <Text style={styles.cartCategory}>{item.furniture?.category?.toUpperCase()}</Text>
                       <Text style={styles.cartName} numberOfLines={2}>{item.furniture?.name}</Text>
+                      {(item.color || item.material) && (
+                        <Text style={styles.cartVariation}>
+                          {[item.color, item.material].filter(Boolean).join(" · ")}
+                        </Text>
+                      )}
                     </View>
                     <TouchableOpacity onPress={() => removeItem(item.id)} style={styles.removeBtn}>
                       <Feather name="x" size={14} color="#C4B8A8" />
@@ -312,6 +317,7 @@ const styles = StyleSheet.create({
   cartInfoTop: { flexDirection: "row", alignItems: "flex-start", gap: 8 },
   cartCategory: { fontSize: 9, letterSpacing: 1.5, color: "#8B7355", marginBottom: 3 },
   cartName: { fontSize: 13, fontWeight: "500", color: "#1C1C1A", lineHeight: 18 },
+  cartVariation: { fontSize: 10, color: "#9E8E7E", marginTop: 3, letterSpacing: 0.5 },
   removeBtn: {
     width: 24,
     height: 24,

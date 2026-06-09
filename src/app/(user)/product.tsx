@@ -87,17 +87,17 @@ export default function Product() {
     } = await supabase.auth.getUser();
     if (!user) return;
     if (isFavorite) {
+      setIsFavorite(false);
       await supabase
         .from("favorites")
         .delete()
         .eq("user_id", user.id)
         .eq("furniture_id", id);
-      setIsFavorite(false);
     } else {
+      setIsFavorite(true);
       await supabase
         .from("favorites")
         .insert({ user_id: user.id, furniture_id: id });
-      setIsFavorite(true);
     }
   };
 
@@ -112,6 +112,8 @@ export default function Product() {
       .select("*")
       .eq("user_id", user.id)
       .eq("furniture_id", id)
+      .eq("color", selectedColor)
+      .eq("material", selectedMaterial)
       .single();
     if (existing) {
       await supabase
@@ -121,7 +123,7 @@ export default function Product() {
     } else {
       await supabase
         .from("cart")
-        .insert({ user_id: user.id, furniture_id: id, quantity });
+        .insert({ user_id: user.id, furniture_id: id, quantity, color: selectedColor, material: selectedMaterial });
     }
     setAdding(false);
     setAdded(true);
@@ -138,6 +140,8 @@ export default function Product() {
       .select("*")
       .eq("user_id", user.id)
       .eq("furniture_id", id)
+      .eq("color", selectedColor)
+      .eq("material", selectedMaterial)
       .single();
     if (existing) {
       await supabase
@@ -147,7 +151,7 @@ export default function Product() {
     } else {
       await supabase
         .from("cart")
-        .insert({ user_id: user.id, furniture_id: id, quantity });
+        .insert({ user_id: user.id, furniture_id: id, quantity, color: selectedColor, material: selectedMaterial });
     }
     setAdding(false);
     setModalVisible(false);
@@ -174,11 +178,10 @@ export default function Product() {
         <Feather name="arrow-left" size={20} color="#1C1C1A" />
       </TouchableOpacity>
       <TouchableOpacity style={styles.heartBtn} onPress={toggleFavorite}>
-        <AntDesign
-          name={(isFavorite ? "heart" : "hearto") as any}
-          size={18}
-          color={isFavorite ? "#C9A96E" : "#C4B8A8"}
-        />
+        {isFavorite
+          ? <AntDesign name="heart" size={18} color="#C9A96E" />
+          : <Feather name="heart" size={18} color="#C4B8A8" />
+        }
       </TouchableOpacity>
 
       <ScrollView showsVerticalScrollIndicator={false}>
@@ -207,12 +210,22 @@ export default function Product() {
           </View>
           <Text style={styles.name}>{item.name}</Text>
           <View style={styles.goldDivider} />
-          <View style={styles.starsRow}>
-            {[1, 2, 3, 4, 5].map((i) => (
-              <Feather key={i} name="star" size={12} color="#C9A96E" />
-            ))}
-            <Text style={styles.ratingText}>4.8 (124 reviews)</Text>
-          </View>
+          {item.rating != null && (
+            <View style={styles.starsRow}>
+              {[1, 2, 3, 4, 5].map((i) => (
+                <Feather
+                  key={i}
+                  name="star"
+                  size={12}
+                  color={i <= Math.round(item.rating) ? "#C9A96E" : "#E8E0D0"}
+                />
+              ))}
+              <Text style={styles.ratingText}>
+                {Number(item.rating).toFixed(1)}
+                {item.review_count != null ? ` (${item.review_count} reviews)` : ""}
+              </Text>
+            </View>
+          )}
           <Text style={styles.price}>
             ₱{Number(item.price).toLocaleString()}
           </Text>

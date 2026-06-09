@@ -1,4 +1,5 @@
 import * as ImagePicker from "expo-image-picker";
+import { Alert } from "react-native";
 import { supabase } from "./supabase";
 
 export const pickAndUploadImage = async (
@@ -7,7 +8,7 @@ export const pickAndUploadImage = async (
 ): Promise<string | null> => {
   const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
   if (status !== "granted") {
-    alert("Permission to access photos is required!");
+    Alert.alert("Permission Required", "Permission to access photos is required to upload an image.");
     return null;
   }
 

@@ -151,7 +151,7 @@ export default function Favorites() {
         </View>
       ) : favorites.length === 0 ? (
         <View style={styles.emptyContainer}>
-          <Feather name="heart" size={48} color="#C4B8A8" style={{ marginBottom: 16 }} />
+          <Feather name="heart" size={48} color="#E8E0D0" style={{ marginBottom: 16 }} />
           <Text style={styles.emptyTitle}>No Favorites Yet</Text>
           <Text style={styles.emptySubtext}>
             Tap the heart icon on any piece of furniture to save it to your wishlist.
@@ -181,7 +181,7 @@ export default function Favorites() {
       )}
 
       {/* Bottom Nav */}
-            <View style={styles.bottomNav}>
+      <View style={styles.bottomNav}>
         <TouchableOpacity
           style={styles.navItem}
           onPress={() => router.push("/(user)/home")}
