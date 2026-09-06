@@ -62,7 +62,7 @@ export default function Index() {
     }, 2500);
 
     return () => clearTimeout(timer);
-  }, []);
+  }, [fadeAnim, lineAnim, router, slideAnim]);
 
   return (
     <View style={styles.container}>

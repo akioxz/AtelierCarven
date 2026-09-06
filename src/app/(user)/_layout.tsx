@@ -37,7 +37,7 @@ export default function UserLayout() {
     };
 
     verify();
-  }, []);
+  }, [router]);
 
   if (checking) {
     return (

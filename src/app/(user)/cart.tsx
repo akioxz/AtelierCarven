@@ -4,7 +4,6 @@ import { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Image,
-  Platform,
   ScrollView,
   StatusBar,
   StyleSheet,
@@ -13,8 +12,6 @@ import {
   View,
 } from "react-native";
 import { supabase } from "../../lib/supabase";
-
-const isWeb = Platform.OS === "web";
 
 const getCategoryIcon = (category: string) => {
   switch (category) {

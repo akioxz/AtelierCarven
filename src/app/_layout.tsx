@@ -1,4 +1,4 @@
-import { Stack, useRouter, useSegments } from "expo-router";
+import { Stack, useRouter } from "expo-router";
 import { useEffect } from "react";
 import { supabase } from "../lib/supabase";
 import { useFonts } from "expo-font";
@@ -7,7 +7,6 @@ import Feather from "@expo/vector-icons/Feather";
 
 export default function RootLayout() {
   const router = useRouter();
-  const segments = useSegments();
 
   const [fontsLoaded, fontError] = useFonts({
     ...AntDesign.font,
@@ -52,7 +51,7 @@ export default function RootLayout() {
     handleTokenError();
 
     return () => subscription.unsubscribe();
-  }, []);
+  }, [router]);
 
   if (!fontsLoaded && !fontError) {
     return null;

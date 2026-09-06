@@ -37,7 +37,7 @@ export default function AdminLayout() {
     };
 
     verify();
-  }, []);
+  }, [router]);
 
   if (checking) {
     return (
