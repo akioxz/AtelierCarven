@@ -311,7 +311,14 @@ export default function Payment() {
         {/* Credit/Debit Card Form */}
         {paymentMethod === "card" && (
           <View style={styles.section}>
-            <Text style={styles.sectionLabel}>CREDIT / DEBIT CARD</Text>
+            <Text style={styles.sectionLabel}>CREDIT / DEBIT CARD (DEMO)</Text>
+
+            <View style={styles.demoNotice}>
+              <Feather name="info" size={14} color="#8B7355" />
+              <Text style={styles.demoNoticeText}>
+                This is a simulated payment flow. Do not enter real card details.
+              </Text>
+            </View>
 
             {/* Elegant Luxury Credit Card UI */}
             <View style={styles.creditCardContainer}>
@@ -494,6 +501,8 @@ const styles = StyleSheet.create({
   gcashLabel: { fontSize: 9, letterSpacing: 2, color: "#8B7355", marginBottom: 6 },
   gcashNumber: { fontSize: 22, fontWeight: "500", color: "#1C1C1A", letterSpacing: 2, marginBottom: 4 },
   gcashName: { fontSize: 12, color: "#6B5E4E" },
+  demoNotice: { flexDirection: "row", gap: 10, alignItems: "center", backgroundColor: "#FDF9F0", borderRadius: 10, borderWidth: 0.5, borderColor: "#E8E0D0", padding: 12, marginBottom: 16 },
+  demoNoticeText: { flex: 1, fontSize: 12, color: "#6B5E4E", lineHeight: 18 },
   stepList: { gap: 12 },
   stepRow: { flexDirection: "row", alignItems: "flex-start", gap: 10 },
   stepBadge: { width: 22, height: 22, borderRadius: 11, backgroundColor: "#C9A96E", justifyContent: "center", alignItems: "center", marginTop: 1 },

@@ -168,7 +168,7 @@ export default function Checkout() {
               { key: "cod", icon: "package", title: "Cash on Delivery", sub: "Pay when your order arrives" },
               { key: "gcash", icon: "smartphone", title: "GCash", sub: "Pay via GCash mobile wallet" },
               { key: "maya", icon: "tablet", title: "Maya Wallet", sub: "Pay via Maya mobile wallet" },
-              { key: "card", icon: "credit-card", title: "Credit / Debit Card", sub: "Visa, Mastercard, JCB, or AMEX" },
+              { key: "card", icon: "credit-card", title: "Credit / Debit Card (Demo)", sub: "Simulated only — do not enter real card details" },
             ].map((method, i) => (
               <View key={method.key}>
                 {i > 0 && <View style={styles.rowDivider} />}
