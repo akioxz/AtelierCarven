@@ -1,0 +1,175 @@
+import { AntDesign, Feather } from "@expo/vector-icons";
+import * as Haptics from "expo-haptics";
+import { useRouter } from "expo-router";
+import { useEffect, useRef, useState } from "react";
+import { ActivityIndicator, Image, Platform, Pressable, ScrollView, StatusBar, StyleSheet, Text, TextInput, useWindowDimensions, View } from "react-native";
+import Animated, { FadeInDown } from "react-native-reanimated";
+import { CategoryTiles } from "../../components/category-tiles";
+import { ContentFrame } from "../../components/app-ui";
+import { Design, layout } from "../../constants/design";
+import { supabase } from "../../lib/supabase";
+
+const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
+
+const CATEGORIES = ["All", "Sofa", "Chair", "Table", "Bed"];
+const SORTS = [
+  { key: "newest", label: "Newest" },
+  { key: "price-asc", label: "Price: Low to High" },
+  { key: "price-desc", label: "Price: High to Low" },
+  { key: "rating", label: "Top Rated" },
+] as const;
+type SortKey = (typeof SORTS)[number]["key"];
+const iconFor = (category: string) => ({ Sofa: "airplay", Chair: "sidebar", Table: "minus-square", Bed: "moon" }[category] || "box") as React.ComponentProps<typeof Feather>["name"];
+
+export default function Search() {
+  const router = useRouter();
+  const inputRef = useRef<TextInput>(null);
+  const { width } = useWindowDimensions();
+  const wide = Platform.OS === "web" && width >= layout.desktopBreakpoint;
+  const [query, setQuery] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("All");
+  const [sort, setSort] = useState<SortKey>("newest");
+  const [furniture, setFurniture] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [favorites, setFavorites] = useState<string[]>([]);
+  const trimmed = query.trim();
+
+  useEffect(() => {
+    (async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      const { data } = await supabase.from("favorites").select("furniture_id").eq("user_id", user.id);
+      setFavorites((data || []).map((item: any) => item.furniture_id));
+    })();
+  }, []);
+
+  // debounce + stale-response guard
+  const latestRequest = useRef(0);
+
+  useEffect(() => {
+    const queryTrigger = setTimeout(() => {
+      const requestId = ++latestRequest.current;
+      const run = async () => {
+        setLoading(true);
+        let queryBuilder = supabase.from("furniture").select("*").eq("is_deleted", false);
+        if (selectedCategory !== "All") queryBuilder = queryBuilder.eq("category", selectedCategory);
+        const term = query.trim();
+        if (term) queryBuilder = queryBuilder.or(`name.ilike.%${term}%,description.ilike.%${term}%,category.ilike.%${term}%`);
+        switch (sort) {
+          case "price-asc": queryBuilder = queryBuilder.order("price", { ascending: true }); break;
+          case "price-desc": queryBuilder = queryBuilder.order("price", { ascending: false }); break;
+          case "rating": queryBuilder = queryBuilder.order("rating", { ascending: false, nullsFirst: false }).order("review_count", { ascending: false }); break;
+          default: queryBuilder = queryBuilder.order("created_at", { ascending: false });
+        }
+        const { data } = await queryBuilder;
+        if (latestRequest.current !== requestId) return;
+        setFurniture(data || []);
+        setLoading(false);
+      };
+      run();
+    }, query.trim() ? 300 : 0);
+    return () => clearTimeout(queryTrigger);
+  }, [selectedCategory, sort, query]);
+  useEffect(() => {
+    const timer = setTimeout(() => inputRef.current?.focus(), 80);
+    return () => clearTimeout(timer);
+  }, []);
+
+  const toggleFavorite = async (furnitureId: string) => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+    Haptics.selectionAsync();
+    if (favorites.includes(furnitureId)) {
+      setFavorites((previous) => previous.filter((id) => id !== furnitureId));
+      await supabase.from("favorites").delete().eq("user_id", user.id).eq("furniture_id", furnitureId);
+    } else {
+      setFavorites((previous) => [...previous, furnitureId]);
+      await supabase.from("favorites").insert({ user_id: user.id, furniture_id: furnitureId });
+    }
+  };
+  const addToCart = async (furnitureId: string) => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+    Haptics.selectionAsync();
+    const { data: existing } = await supabase.from("cart").select("*").eq("user_id", user.id).eq("furniture_id", furnitureId).single();
+    if (existing) await supabase.from("cart").update({ quantity: existing.quantity + 1 }).eq("id", existing.id);
+    else await supabase.from("cart").insert({ user_id: user.id, furniture_id: furnitureId, quantity: 1 });
+  };
+
+  return (
+    <View style={styles.screen}>
+      <StatusBar barStyle="dark-content" />
+      <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+        <ContentFrame style={styles.frame}>
+          <View style={styles.topbar}>
+            <Pressable accessibilityLabel="Go back" onPress={() => router.back()} style={({ pressed }) => [styles.iconAction, pressed && styles.pressed]}><Feather name="arrow-left" size={19} color={Design.color.ink} /></Pressable>
+            <View style={styles.search}>
+              <Feather name="search" size={17} color={Design.color.inkMuted} />
+              <TextInput ref={inputRef} value={query} onChangeText={setQuery} placeholder="Search pieces, materials, categories" placeholderTextColor={Design.color.inkMuted} style={styles.searchInput} returnKeyType="search" autoCorrect={false} />
+              {trimmed ? <Pressable onPress={() => setQuery("")} hitSlop={8}><Feather name="x" size={16} color={Design.color.inkMuted} /></Pressable> : null}
+            </View>
+          </View>
+
+          <CategoryTiles categories={CATEGORIES} selected={selectedCategory} onSelect={setSelectedCategory} />
+
+          {selectedCategory !== "All" ? (
+            <View style={styles.activeRow}>
+              <Pressable onPress={() => setSelectedCategory("All")} style={({ pressed }) => [styles.activeChip, pressed && styles.pressed]}>
+                <Text style={styles.activeChipText}>{selectedCategory}</Text>
+                <Feather name="x" size={12} color={Design.color.surface} />
+              </Pressable>
+              <Pressable onPress={() => setSelectedCategory("All")} hitSlop={8}><Text style={styles.clearAll}>Clear all</Text></Pressable>
+            </View>
+          ) : null}
+
+          <View style={styles.sortRow}>
+            <Text style={styles.resultCount}>{loading ? "" : `${furniture.length} piece${furniture.length === 1 ? "" : "s"} found`}</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.sortScroll}>
+              {SORTS.map((option) => {
+                const selected = option.key === sort;
+                return <Pressable key={option.key} onPress={() => setSort(option.key)} style={({ pressed }) => [styles.sortChip, selected && styles.sortChipSelected, pressed && styles.pressed]}><Text style={[styles.sortText, selected && styles.sortTextSelected]}>{option.label}</Text></Pressable>;
+              })}
+            </ScrollView>
+          </View>
+
+          {loading ? <ActivityIndicator color={Design.color.gold} style={styles.loading} /> : furniture.length === 0 ? (
+            <View style={styles.empty}><Feather name="search" size={28} color={Design.color.gold} /><Text style={styles.emptyTitle}>No pieces found</Text><Text style={styles.emptyCopy}>Try a different search term or category.</Text></View>
+          ) : (
+            <View style={[styles.grid, wide && styles.gridWide]}>
+              {furniture.map((item, index) => (
+                <AnimatedPressable key={item.id} entering={FadeInDown.delay((index % 6) * 55).duration(320)} onPress={() => router.push({ pathname: "/(user)/product", params: { id: item.id } })} style={({ pressed }) => [styles.card, wide && styles.cardWide, pressed && styles.cardPressed]}>
+                  <View style={styles.imageWrap}>
+                    {item.image_url ? <Image source={{ uri: item.image_url }} style={styles.image} /> : <Feather name={iconFor(item.category)} size={42} color={Design.color.inkMuted} />}
+                    <Pressable accessibilityLabel={favorites.includes(item.id) ? "Remove from saved" : "Save furniture"} onPress={(event) => { event.stopPropagation(); toggleFavorite(item.id); }} style={({ pressed }) => [styles.heart, pressed && styles.pressed]}>
+                      {favorites.includes(item.id) ? <AntDesign name="heart" size={14} color={Design.color.gold} /> : <Feather name="heart" size={15} color={Design.color.ink} />}
+                    </Pressable>
+                  </View>
+                  <View style={styles.cardBody}>
+                    <View style={styles.tagRow}><View style={styles.tag}><Text style={styles.tagText}>{item.category}</Text></View>{item.rating != null ? <View style={styles.rating}><Feather name="star" size={11} color={Design.color.gold} /><Text style={styles.ratingText}>{Number(item.rating).toFixed(1)}</Text></View> : null}</View>
+                    <Text style={styles.productName} numberOfLines={1}>{item.name}</Text>
+                    <View style={styles.cardFooter}><Text style={styles.price}>₱{Number(item.price).toLocaleString()}</Text><Pressable onPress={(event) => { event.stopPropagation(); addToCart(item.id); }} style={({ pressed }) => [styles.add, pressed && styles.pressed]}><Feather name="plus" size={15} color={Design.color.surface} /></Pressable></View>
+                  </View>
+                </AnimatedPressable>
+              ))}
+            </View>
+          )}
+        </ContentFrame>
+      </ScrollView>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  screen: { backgroundColor: Design.color.canvas, flex: 1 }, scroll: { paddingBottom: 16 }, frame: { paddingHorizontal: 20, paddingTop: 20 },
+  topbar: { alignItems: "center", flexDirection: "row", gap: 10, marginBottom: 18 }, iconAction: { alignItems: "center", backgroundColor: Design.color.surface, borderColor: Design.color.line, borderRadius: 22, borderWidth: StyleSheet.hairlineWidth, height: 44, justifyContent: "center", width: 44 },
+  search: { alignItems: "center", backgroundColor: Design.color.surface, borderColor: Design.color.line, borderRadius: Design.radius.card, borderWidth: StyleSheet.hairlineWidth, flex: 1, flexDirection: "row", gap: 10, minHeight: 52, paddingHorizontal: 15 }, searchInput: { color: Design.color.ink, flex: 1, fontFamily: Design.font.bodyMedium, fontSize: 13, minHeight: 50 },
+  activeRow: { alignItems: "center", flexDirection: "row", gap: 10, marginBottom: 14 }, activeChip: { alignItems: "center", backgroundColor: Design.color.ink, borderRadius: Design.radius.pill, flexDirection: "row", gap: 5, minHeight: 30, paddingHorizontal: 12 }, activeChipText: { color: Design.color.surface, fontFamily: Design.font.bodyMedium, fontSize: 11 }, clearAll: { color: Design.color.inkMuted, fontFamily: Design.font.body, fontSize: 11 },
+  sortRow: { alignItems: "center", flexDirection: "row", gap: 12, justifyContent: "space-between", marginBottom: 14 }, resultCount: { color: Design.color.inkMuted, fontFamily: Design.font.body, fontSize: 11 }, sortScroll: { flexDirection: "row", gap: 6 },
+  sortChip: { borderColor: Design.color.line, borderRadius: Design.radius.pill, borderWidth: StyleSheet.hairlineWidth, minHeight: 30, paddingHorizontal: 12, justifyContent: "center" }, sortChipSelected: { borderColor: Design.color.gold, backgroundColor: Design.color.goldSoft }, sortText: { color: Design.color.inkSoft, fontFamily: Design.font.bodyMedium, fontSize: 10 }, sortTextSelected: { color: Design.color.ink },
+  loading: { marginTop: 48 },
+  grid: { flexDirection: "row", flexWrap: "wrap", gap: 14 }, gridWide: { gap: 20 }, card: { backgroundColor: Design.color.surface, borderColor: Design.color.line, borderRadius: Design.radius.card, borderWidth: StyleSheet.hairlineWidth, overflow: "hidden", width: "47.8%" }, cardWide: { width: "31.7%" }, cardPressed: { opacity: 0.84, transform: [{ scale: 0.99 }] }, imageWrap: { alignItems: "center", aspectRatio: 0.96, backgroundColor: Design.color.surfaceMuted, justifyContent: "center", position: "relative" }, image: { height: "100%", width: "100%" },
+  heart: { alignItems: "center", backgroundColor: "rgba(255,252,248,0.94)", borderRadius: 18, height: 36, justifyContent: "center", position: "absolute", right: 10, top: 10, width: 36 },   cardBody: { padding: 13 }, tagRow: { alignItems: "center", flexDirection: "row", justifyContent: "space-between" }, tag: { alignSelf: "flex-start", backgroundColor: Design.color.goldSoft, borderRadius: Design.radius.small, paddingHorizontal: 8, paddingVertical: 3 }, tagText: { color: Design.color.inkMuted, fontFamily: Design.font.bodySemibold, fontSize: 9, letterSpacing: 0.7, textTransform: "uppercase" }, rating: { alignItems: "center", flexDirection: "row", gap: 3 }, ratingText: { color: Design.color.inkMuted, fontFamily: Design.font.body, fontSize: 10 }, productName: { color: Design.color.ink, fontFamily: Design.font.bodySemibold, fontSize: 13, marginTop: 8 },
+  cardFooter: { alignItems: "center", flexDirection: "row", justifyContent: "space-between", marginTop: 12 }, price: { color: Design.color.gold, fontFamily: Design.font.bodyBold, fontSize: 13 }, add: { alignItems: "center", backgroundColor: Design.color.ink, borderRadius: 16, height: 32, justifyContent: "center", width: 32 },
+  empty: { alignItems: "center", backgroundColor: Design.color.surface, borderColor: Design.color.line, borderRadius: Design.radius.card, borderWidth: StyleSheet.hairlineWidth, marginTop: 8, padding: 36 }, emptyTitle: { color: Design.color.ink, fontFamily: Design.font.display, fontSize: 26, marginTop: 12 }, emptyCopy: { color: Design.color.inkSoft, fontFamily: Design.font.body, fontSize: 12, marginTop: 4 },
+  pressed: { opacity: 0.76, transform: [{ scale: 0.97 }] },
+});

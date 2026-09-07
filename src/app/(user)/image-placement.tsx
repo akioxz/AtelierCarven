@@ -4,9 +4,7 @@ import { useRouter } from "expo-router";
 import { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
-  Animated,
   Image,
-  PanResponder,
   ScrollView,
   StatusBar,
   StyleSheet,
@@ -14,7 +12,12 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { Gesture, GestureDetector } from "react-native-gesture-handler";
+import Animated, { useAnimatedStyle, useSharedValue } from "react-native-reanimated";
+import { scheduleOnRN } from "react-native-worklets";
+import { Design } from "../../constants/design";
 import { supabase } from "../../lib/supabase";
+import { CustomerNavigation } from "../../components/app-ui";
 
 export default function ImagePlacement() {
   const router = useRouter();
@@ -28,33 +31,39 @@ export default function ImagePlacement() {
   const [rotationValue, setRotationValue] = useState(0);
   const [isFlipped, setIsFlipped] = useState(false);
 
-  const pan = useRef(new Animated.ValueXY()).current;
+  const panX = useSharedValue(0);
+  const panY = useSharedValue(0);
+  const panStartX = useSharedValue(0);
+  const panStartY = useSharedValue(0);
   const scrollRef = useRef<ScrollView>(null);
 
-  const panResponder = useRef(
-    PanResponder.create({
-      onStartShouldSetPanResponder: () => true,
-      onStartShouldSetPanResponderCapture: () => true,
-      onMoveShouldSetPanResponder: () => true,
-      onMoveShouldSetPanResponderCapture: () => true,
-      onPanResponderGrant: () => {
-        setIsDragging(true);
-        pan.extractOffset();
-      },
-      onPanResponderMove: Animated.event(
-        [null, { dx: pan.x, dy: pan.y }],
-        { useNativeDriver: false }
-      ),
-      onPanResponderRelease: () => {
-        setIsDragging(false);
-        pan.flattenOffset();
-      },
-      onPanResponderTerminate: () => {
-        setIsDragging(false);
-        pan.flattenOffset();
-      },
+  const panGesture = Gesture.Pan()
+    .minDistance(2)
+    .onStart(() => {
+      panStartX.set(panX.get());
+      panStartY.set(panY.get());
+      scheduleOnRN(() => setIsDragging(true));
     })
-  ).current;
+    .onUpdate((event) => {
+      panX.set(panStartX.get() + event.translationX);
+      panY.set(panStartY.get() + event.translationY);
+    })
+    .onEnd(() => {
+      scheduleOnRN(() => setIsDragging(false));
+    })
+    .onFinalize(() => {
+      scheduleOnRN(() => setIsDragging(false));
+    });
+
+  const overlayStyle = useAnimatedStyle(() => ({
+    transform: [
+      { translateX: panX.get() },
+      { translateY: panY.get() },
+      { scale: scaleValue },
+      { rotate: `${rotationValue}deg` },
+      { scaleX: isFlipped ? -1 : 1 },
+    ],
+  }));
 
   useEffect(() => {
     const fetchFurniture = async () => {
@@ -100,7 +109,10 @@ export default function ImagePlacement() {
 
   const handleSelectFurniture = (item: any) => {
     setSelectedFurniture(item);
-    pan.setValue({ x: 0, y: 0 });
+    panX.set(0);
+    panY.set(0);
+    panStartX.set(0);
+    panStartY.set(0);
     setScaleValue(1.0);
     setRotationValue(0);
     setIsFlipped(false);
@@ -130,6 +142,7 @@ export default function ImagePlacement() {
   return (
     <View style={styles.container}>
       <StatusBar barStyle="dark-content" />
+      <CustomerNavigation active="placement" />
 
       {/* ScrollView disabled while dragging to prevent conflict */}
       <ScrollView
@@ -141,7 +154,7 @@ export default function ImagePlacement() {
         {/* Header */}
         <View style={styles.header}>
           <TouchableOpacity onPress={() => router.back()}>
-            <Feather name="arrow-left" size={22} color="#1C1C1A" />
+            <Feather name="arrow-left" size={22} color={Design.color.ink} />
           </TouchableOpacity>
           <View style={{ marginTop: 20 }}>
             <Text style={styles.headerSmall}>PLACE</Text>
@@ -163,44 +176,35 @@ export default function ImagePlacement() {
                   resizeMode="cover"
                 />
                 {selectedFurniture && (
-                  <Animated.View
-                    style={[
-                      styles.furnitureOverlay,
-                      {
-                        transform: [
-                          ...pan.getTranslateTransform(),
-                          { scale: scaleValue },
-                          { rotate: `${rotationValue}deg` },
-                          { scaleX: isFlipped ? -1 : 1 },
-                        ],
-                      },
-                    ]}
-                    {...panResponder.panHandlers}
-                  >
-                    <View style={styles.dragHandle}>
-                      <Feather name="move" size={10} color="#FAFAF8" />
-                    </View>
-                    {selectedFurniture.image_url ? (
-                      <Image
-                        source={{ uri: selectedFurniture.image_url }}
-                        style={styles.furnitureImage}
-                        resizeMode="contain"
-                      />
-                    ) : (
-                      <View style={styles.furniturePlaceholder}>
-                        <Feather
-                          name={getCategoryIcon(selectedFurniture.category) as any}
-                          size={48}
-                          color="#8B7355"
-                        />
-                        <Text style={styles.placeholderLabel}>{selectedFurniture.name}</Text>
+                  <GestureDetector gesture={panGesture}>
+                    <Animated.View
+                      style={[styles.furnitureOverlay, overlayStyle]}
+                    >
+                      <View style={styles.dragHandle}>
+                        <Feather name="move" size={10} color={Design.color.surface} />
                       </View>
-                    )}
-                  </Animated.View>
+                      {selectedFurniture.image_url ? (
+                        <Image
+                          source={{ uri: selectedFurniture.image_url }}
+                          style={styles.furnitureImage}
+                          resizeMode="contain"
+                        />
+                      ) : (
+                        <View style={styles.furniturePlaceholder}>
+                          <Feather
+                            name={getCategoryIcon(selectedFurniture.category) as any}
+                            size={48}
+                            color={Design.color.inkSoft}
+                          />
+                          <Text style={styles.placeholderLabel}>{selectedFurniture.name}</Text>
+                        </View>
+                      )}
+                    </Animated.View>
+                  </GestureDetector>
                 )}
                 {!selectedFurniture && (
                   <View style={styles.canvasOverlayHint}>
-                    <Feather name="arrow-down" size={12} color="#FAFAF8" />
+                    <Feather name="arrow-down" size={12} color={Design.color.surface} />
                     <Text style={styles.canvasOverlayHintText}>
                       Select a furniture piece below
                     </Text>
@@ -214,7 +218,7 @@ export default function ImagePlacement() {
               </View>
             ) : (
               <View style={styles.previewPlaceholder}>
-                <Feather name="image" size={48} color="#E8E0D0" />
+                <Feather name="image" size={48} color={Design.color.line} />
                 <Text style={styles.previewTitle}>No image selected</Text>
                 <Text style={styles.previewSubtext}>
                   Upload a photo of your room to visualize furniture placement
@@ -229,7 +233,7 @@ export default function ImagePlacement() {
           <View style={styles.section}>
             <Text style={styles.sectionLabel}>SELECT FURNITURE</Text>
             {fetchingFurniture ? (
-              <ActivityIndicator color="#C9A96E" style={{ marginVertical: 20 }} />
+              <ActivityIndicator color={Design.color.gold} style={{ marginVertical: 20 }} />
             ) : furnitureList.length === 0 ? (
               <Text style={styles.emptyCatalogText}>No furniture pieces available.</Text>
             ) : (
@@ -257,13 +261,13 @@ export default function ImagePlacement() {
                           <Feather
                             name={getCategoryIcon(item.category) as any}
                             size={22}
-                            color="#8B7355"
+                            color={Design.color.inkSoft}
                           />
                         )}
                       </View>
                       {isSelected && (
                         <View style={styles.selectedCheck}>
-                          <Feather name="check" size={10} color="#FAFAF8" />
+                          <Feather name="check" size={10} color={Design.color.surface} />
                         </View>
                       )}
                       <View style={styles.catalogCardInfo}>
@@ -290,19 +294,19 @@ export default function ImagePlacement() {
               {/* Scale */}
               <View style={styles.controlRow}>
                 <View style={styles.controlInfo}>
-                  <Feather name="maximize-2" size={14} color="#8B7355" />
+                  <Feather name="maximize-2" size={14} color={Design.color.inkSoft} />
                   <Text style={styles.controlTitle}>Scale</Text>
                   <Text style={styles.controlValue}>{Math.round(scaleValue * 100)}%</Text>
                 </View>
                 <View style={styles.controlButtons}>
                   <TouchableOpacity style={styles.adjustButton} onPress={decreaseScale}>
-                    <Feather name="minus" size={14} color="#8B7355" />
+                    <Feather name="minus" size={14} color={Design.color.inkSoft} />
                   </TouchableOpacity>
                   <TouchableOpacity style={styles.adjustButtonReset} onPress={resetScale}>
                     <Text style={styles.resetButtonText}>Reset</Text>
                   </TouchableOpacity>
                   <TouchableOpacity style={styles.adjustButton} onPress={increaseScale}>
-                    <Feather name="plus" size={14} color="#8B7355" />
+                    <Feather name="plus" size={14} color={Design.color.inkSoft} />
                   </TouchableOpacity>
                 </View>
               </View>
@@ -312,13 +316,13 @@ export default function ImagePlacement() {
               {/* Rotation */}
               <View style={styles.controlRow}>
                 <View style={styles.controlInfo}>
-                  <Feather name="rotate-cw" size={14} color="#8B7355" />
+                  <Feather name="rotate-cw" size={14} color={Design.color.inkSoft} />
                   <Text style={styles.controlTitle}>Rotate</Text>
                   <Text style={styles.controlValue}>{rotationValue}°</Text>
                 </View>
                 <View style={styles.controlButtons}>
                   <TouchableOpacity style={styles.adjustButton} onPress={rotateLeft}>
-                    <Feather name="chevron-left" size={14} color="#8B7355" />
+                    <Feather name="chevron-left" size={14} color={Design.color.inkSoft} />
                   </TouchableOpacity>
                   <TouchableOpacity style={styles.adjustButton} onPress={rotate90Left}>
                     <Text style={styles.quickRotationText}>-90°</Text>
@@ -330,7 +334,7 @@ export default function ImagePlacement() {
                     <Text style={styles.quickRotationText}>+90°</Text>
                   </TouchableOpacity>
                   <TouchableOpacity style={styles.adjustButton} onPress={rotateRight}>
-                    <Feather name="chevron-right" size={14} color="#8B7355" />
+                    <Feather name="chevron-right" size={14} color={Design.color.inkSoft} />
                   </TouchableOpacity>
                 </View>
               </View>
@@ -343,13 +347,13 @@ export default function ImagePlacement() {
                   style={[styles.flipButton, isFlipped && styles.flipButtonActive]}
                   onPress={toggleFlip}
                 >
-                  <Feather name="repeat" size={14} color={isFlipped ? "#FAFAF8" : "#8B7355"} />
-                  <Text style={[styles.flipButtonText, { color: isFlipped ? "#FAFAF8" : "#8B7355" }]}>
+                  <Feather name="repeat" size={14} color={isFlipped ? Design.color.surface : Design.color.inkSoft} />
+                  <Text style={[styles.flipButtonText, { color: isFlipped ? Design.color.surface : Design.color.inkSoft }]}>
                     FLIP
                   </Text>
                 </TouchableOpacity>
                 <TouchableOpacity style={styles.deleteButton} onPress={handleRemoveFurniture}>
-                  <Feather name="trash-2" size={14} color="#FAFAF8" />
+                  <Feather name="trash-2" size={14} color={Design.color.surface} />
                   <Text style={styles.deleteButtonText}>REMOVE</Text>
                 </TouchableOpacity>
               </View>
@@ -390,11 +394,11 @@ export default function ImagePlacement() {
             {selectedImage ? "CHANGE ROOM IMAGE" : "SELECT ROOM IMAGE"}
           </Text>
           <TouchableOpacity style={styles.primaryButton} onPress={pickImage}>
-            <Feather name="image" size={16} color="#FAFAF8" />
+            <Feather name="image" size={16} color={Design.color.surface} />
             <Text style={styles.primaryButtonText}>CHOOSE FROM GALLERY</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.secondaryButton} onPress={takePhoto}>
-            <Feather name="camera" size={16} color="#8B7355" />
+            <Feather name="camera" size={16} color={Design.color.inkSoft} />
             <Text style={styles.secondaryButtonText}>TAKE A PHOTO</Text>
           </TouchableOpacity>
           {selectedImage && (
@@ -422,115 +426,88 @@ export default function ImagePlacement() {
         </View>
       </ScrollView>
 
-      {/* Bottom Nav */}
-      <View style={styles.bottomNav}>
-        <TouchableOpacity style={styles.navItem} onPress={() => router.push("/(user)/home")}>
-          <Feather name="home" size={20} color="#C4B8A8" />
-          <Text style={styles.navLabel}>HOME</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.navItem} onPress={() => router.push("/(user)/favorites")}>
-          <Feather name="heart" size={20} color="#C4B8A8" />
-          <Text style={styles.navLabel}>SAVED</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.navItem}>
-          <Feather name="image" size={20} color="#1C1C1A" />
-          <View style={styles.navDot} />
-          <Text style={styles.navLabelActive}>PLACE</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.navItem} onPress={() => router.push("/(user)/cart")}>
-          <Feather name="shopping-cart" size={20} color="#C4B8A8" />
-          <Text style={styles.navLabel}>CART</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.navItem} onPress={() => router.push("/(user)/profile")}>
-          <Feather name="user" size={20} color="#C4B8A8" />
-          <Text style={styles.navLabel}>PROFILE</Text>
-        </TouchableOpacity>
-      </View>
+
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#FAFAF8" },
-  header: { backgroundColor: "#F5F0E8", padding: 28, paddingTop: 56, paddingBottom: 28 },
-  headerSmall: { fontSize: 10, letterSpacing: 4, color: "#8B7355" },
-  headerLarge: { fontSize: 36, fontWeight: "300", color: "#1C1C1A", letterSpacing: 2, marginBottom: 16 },
-  goldDivider: { width: 40, height: 1.5, backgroundColor: "#C9A96E", marginBottom: 12 },
-  headerSubtext: { fontSize: 13, color: "#6B5E4E" },
+  container: { flex: 1, backgroundColor: Design.color.surface },
+  header: { backgroundColor: Design.color.surfaceMuted, padding: 28, paddingTop: 56, paddingBottom: 28 },
+  headerSmall: { fontSize: 10, letterSpacing: 4, color: Design.color.inkSoft },
+  headerLarge: { fontFamily: Design.font.display, fontSize: 34, letterSpacing: -0.8, lineHeight: 34, color: Design.color.ink, marginBottom: 16 },
+  goldDivider: { width: 40, height: 1.5, backgroundColor: Design.color.gold, marginBottom: 12 },
+  headerSubtext: { fontSize: 13, color: Design.color.inkMuted },
   section: { padding: 24, paddingBottom: 0 },
-  sectionLabel: { fontSize: 10, letterSpacing: 2, color: "#8B7355", marginBottom: 12 },
+  sectionLabel: { fontSize: 10, letterSpacing: 2, color: Design.color.inkSoft, marginBottom: 12 },
 
-  previewContainer: { width: "100%", height: 320, backgroundColor: "#F5F0E8", borderRadius: 16, overflow: "hidden", borderWidth: 0.5, borderColor: "#E8E0D0" },
+  previewContainer: { width: "100%", height: 320, backgroundColor: Design.color.surfaceMuted, borderRadius: Design.radius.card, overflow: "hidden", borderWidth: 0.5, borderColor: Design.color.line },
   previewImage: { width: "100%", height: "100%" },
   previewPlaceholder: { flex: 1, justifyContent: "center", alignItems: "center", padding: 24, gap: 12 },
-  previewTitle: { fontSize: 15, fontWeight: "500", color: "#1C1C1A" },
-  previewSubtext: { fontSize: 12, color: "#9E8E7E", textAlign: "center", lineHeight: 20 },
+  previewTitle: { fontSize: 15, fontWeight: "500", color: Design.color.ink },
+  previewSubtext: { fontSize: 12, color: Design.color.inkMuted, textAlign: "center", lineHeight: 20 },
 
   canvasContainer: { flex: 1, position: "relative" },
   furnitureOverlay: { position: "absolute", width: 140, height: 140, justifyContent: "center", alignItems: "center", top: 90, left: 100, zIndex: 10 },
   dragHandle: { position: "absolute", top: -10, right: -10, width: 22, height: 22, borderRadius: 11, backgroundColor: "rgba(28,28,26,0.7)", justifyContent: "center", alignItems: "center", zIndex: 11 },
   furnitureImage: { width: 130, height: 130 },
-  furniturePlaceholder: { width: 130, height: 130, backgroundColor: "#EDE5D8", borderRadius: 12, justifyContent: "center", alignItems: "center", borderWidth: 1, borderColor: "#C9A96E" },
-  placeholderLabel: { fontSize: 9, color: "#8B7355", marginTop: 4, textAlign: "center", paddingHorizontal: 6 },
+  furniturePlaceholder: { width: 130, height: 130, backgroundColor: Design.color.surfaceMuted, borderRadius: Design.radius.card, justifyContent: "center", alignItems: "center", borderWidth: 1, borderColor: Design.color.gold },
+  placeholderLabel: { fontSize: 9, color: Design.color.inkSoft, marginTop: 4, textAlign: "center", paddingHorizontal: 6 },
   canvasOverlayHint: { position: "absolute", bottom: 12, left: 12, right: 12, backgroundColor: "rgba(28,28,26,0.75)", paddingVertical: 8, paddingHorizontal: 12, borderRadius: 20, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6 },
-  canvasOverlayHintText: { color: "#FAFAF8", fontSize: 10, letterSpacing: 1 },
-  draggingBadge: { position: "absolute", top: 10, right: 10, backgroundColor: "#C9A96E", borderRadius: 10, paddingHorizontal: 10, paddingVertical: 4 },
-  draggingBadgeText: { fontSize: 9, letterSpacing: 1.5, color: "#1C1C1A", fontWeight: "600" },
+  canvasOverlayHintText: { color: Design.color.surface, fontSize: 10, letterSpacing: 1 },
+  draggingBadge: { position: "absolute", top: 10, right: 10, backgroundColor: Design.color.gold, borderRadius: Design.radius.small, paddingHorizontal: 10, paddingVertical: 4 },
+  draggingBadgeText: { fontSize: 9, letterSpacing: 1.5, color: Design.color.ink, fontWeight: "600" },
 
   catalogScroll: { gap: 12, paddingBottom: 8 },
-  catalogCard: { width: 110, backgroundColor: "#F5F0E8", borderRadius: 12, padding: 8, borderWidth: 0.5, borderColor: "#E8E0D0", alignItems: "center", position: "relative" },
-  catalogCardActive: { borderColor: "#C9A96E", borderWidth: 1.5, backgroundColor: "#EDE5D8" },
-  catalogCardImage: { width: 94, height: 74, backgroundColor: "#EDE5D8", borderRadius: 8, justifyContent: "center", alignItems: "center", overflow: "hidden", marginBottom: 6 },
+  catalogCard: { width: 110, backgroundColor: Design.color.surfaceMuted, borderRadius: Design.radius.card, padding: 8, borderWidth: 0.5, borderColor: Design.color.line, alignItems: "center", position: "relative" },
+  catalogCardActive: { borderColor: Design.color.gold, borderWidth: 1.5, backgroundColor: Design.color.surfaceMuted },
+  catalogCardImage: { width: 94, height: 74, backgroundColor: Design.color.surfaceMuted, borderRadius: 8, justifyContent: "center", alignItems: "center", overflow: "hidden", marginBottom: 6 },
   catalogCardImg: { width: "100%", height: "100%" },
-  selectedCheck: { position: "absolute", top: 6, right: 6, width: 18, height: 18, borderRadius: 9, backgroundColor: "#C9A96E", justifyContent: "center", alignItems: "center" },
+  selectedCheck: { position: "absolute", top: 6, right: 6, width: 18, height: 18, borderRadius: 9, backgroundColor: Design.color.gold, justifyContent: "center", alignItems: "center" },
   catalogCardInfo: { width: "100%", alignItems: "center" },
-  catalogCardName: { fontSize: 11, fontWeight: "500", color: "#1C1C1A", marginBottom: 2, textAlign: "center" },
-  catalogCardPrice: { fontSize: 10, color: "#C9A96E", fontWeight: "500" },
-  emptyCatalogText: { fontSize: 12, color: "#9E8E7E", paddingVertical: 12 },
+  catalogCardName: { fontSize: 11, fontWeight: "500", color: Design.color.ink, marginBottom: 2, textAlign: "center" },
+  catalogCardPrice: { fontSize: 10, color: Design.color.gold, fontWeight: "500" },
+  emptyCatalogText: { fontSize: 12, color: Design.color.inkMuted, paddingVertical: 12 },
 
-  controlsCard: { backgroundColor: "#F5F0E8", borderRadius: 12, padding: 16, borderWidth: 0.5, borderColor: "#E8E0D0" },
+  controlsCard: { backgroundColor: Design.color.surfaceMuted, borderRadius: Design.radius.card, padding: 16, borderWidth: 0.5, borderColor: Design.color.line },
   controlRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingVertical: 8 },
   controlInfo: { flexDirection: "row", alignItems: "center", gap: 8, flex: 1 },
-  controlTitle: { fontSize: 12, fontWeight: "500", color: "#1C1C1A" },
-  controlValue: { fontSize: 11, color: "#8B7355", backgroundColor: "#EDE5D8", paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4, overflow: "hidden" },
+  controlTitle: { fontSize: 12, fontWeight: "500", color: Design.color.ink },
+  controlValue: { fontSize: 11, color: Design.color.inkSoft, backgroundColor: Design.color.surfaceMuted, paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4, overflow: "hidden" },
   controlButtons: { flexDirection: "row", alignItems: "center", gap: 6 },
-  adjustButton: { width: 32, height: 32, borderRadius: 16, backgroundColor: "#EDE5D8", justifyContent: "center", alignItems: "center" },
-  adjustButtonReset: { paddingHorizontal: 12, paddingVertical: 8, borderRadius: 16, backgroundColor: "#EDE5D8", justifyContent: "center", alignItems: "center" },
-  resetButtonText: { fontSize: 10, color: "#8B7355", fontWeight: "500", letterSpacing: 0.5 },
-  quickRotationText: { fontSize: 10, color: "#8B7355", fontWeight: "500" },
-  controlDivider: { height: 0.5, backgroundColor: "#E8E0D0", marginVertical: 4 },
+  adjustButton: { width: 32, height: 32, borderRadius: Design.radius.card, backgroundColor: Design.color.surfaceMuted, justifyContent: "center", alignItems: "center" },
+  adjustButtonReset: { paddingHorizontal: 12, paddingVertical: 8, borderRadius: Design.radius.card, backgroundColor: Design.color.surfaceMuted, justifyContent: "center", alignItems: "center" },
+  resetButtonText: { fontSize: 10, color: Design.color.inkSoft, fontWeight: "500", letterSpacing: 0.5 },
+  quickRotationText: { fontSize: 10, color: Design.color.inkSoft, fontWeight: "500" },
+  controlDivider: { height: 0.5, backgroundColor: Design.color.line, marginVertical: 4 },
   extrasRow: { flexDirection: "row", gap: 12, marginTop: 12 },
-  flipButton: { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, borderWidth: 1, borderColor: "#C9A96E", borderRadius: 10, paddingVertical: 12 },
-  flipButtonActive: { backgroundColor: "#8B7355", borderColor: "#8B7355" },
+  flipButton: { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, borderWidth: 1, borderColor: Design.color.gold, borderRadius: Design.radius.small, paddingVertical: 12 },
+  flipButtonActive: { backgroundColor: Design.color.inkSoft, borderColor: Design.color.inkSoft },
   flipButtonText: { fontSize: 10, letterSpacing: 1, fontWeight: "600" },
-  deleteButton: { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, backgroundColor: "#A32D2D", borderRadius: 10, paddingVertical: 12 },
-  deleteButtonText: { color: "#FAFAF8", fontSize: 10, letterSpacing: 1, fontWeight: "600" },
+  deleteButton: { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, backgroundColor: Design.color.danger, borderRadius: Design.radius.small, paddingVertical: 12 },
+  deleteButtonText: { color: Design.color.surface, fontSize: 10, letterSpacing: 1, fontWeight: "600" },
 
-  stepCard: { backgroundColor: "#F5F0E8", borderRadius: 12, padding: 16, borderWidth: 0.5, borderColor: "#E8E0D0" },
+  stepCard: { backgroundColor: Design.color.surfaceMuted, borderRadius: Design.radius.card, padding: 16, borderWidth: 0.5, borderColor: Design.color.line },
   step: { flexDirection: "row", alignItems: "flex-start", gap: 12 },
-  stepNumber: { width: 28, height: 28, borderRadius: 14, backgroundColor: "#C9A96E", justifyContent: "center", alignItems: "center" },
-  stepNumberText: { fontSize: 12, fontWeight: "500", color: "#FAFAF8" },
+  stepNumber: { width: 28, height: 28, borderRadius: 14, backgroundColor: Design.color.gold, justifyContent: "center", alignItems: "center" },
+  stepNumberText: { fontSize: 12, fontWeight: "500", color: Design.color.surface },
   stepContent: { flex: 1, paddingTop: 4 },
-  stepTitle: { fontSize: 13, fontWeight: "500", color: "#1C1C1A", marginBottom: 2 },
-  stepSubtext: { fontSize: 12, color: "#9E8E7E" },
-  stepDivider: { height: 0.5, backgroundColor: "#E8E0D0", marginVertical: 12 },
+  stepTitle: { fontSize: 13, fontWeight: "500", color: Design.color.ink, marginBottom: 2 },
+  stepSubtext: { fontSize: 12, color: Design.color.inkMuted },
+  stepDivider: { height: 0.5, backgroundColor: Design.color.line, marginVertical: 12 },
 
-  primaryButton: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, backgroundColor: "#1C1C1A", borderRadius: 10, padding: 16, marginBottom: 12 },
-  primaryButtonText: { color: "#FAFAF8", fontSize: 11, letterSpacing: 2 },
-  secondaryButton: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, borderWidth: 1, borderColor: "#C9A96E", borderRadius: 10, padding: 16, marginBottom: 12 },
-  secondaryButtonText: { color: "#8B7355", fontSize: 11, letterSpacing: 2 },
-  clearButton: { borderWidth: 1, borderColor: "#E8E0D0", borderRadius: 10, padding: 16, alignItems: "center" },
-  clearButtonText: { color: "#9E8E7E", fontSize: 11, letterSpacing: 2 },
+  primaryButton: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, backgroundColor: Design.color.ink, borderRadius: Design.radius.small, padding: 16, marginBottom: 12 },
+  primaryButtonText: { color: Design.color.surface, fontSize: 11, letterSpacing: 2 },
+  secondaryButton: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, borderWidth: 1, borderColor: Design.color.gold, borderRadius: Design.radius.small, padding: 16, marginBottom: 12 },
+  secondaryButtonText: { color: Design.color.inkSoft, fontSize: 11, letterSpacing: 2 },
+  clearButton: { borderWidth: 1, borderColor: Design.color.line, borderRadius: Design.radius.small, padding: 16, alignItems: "center" },
+  clearButtonText: { color: Design.color.inkMuted, fontSize: 11, letterSpacing: 2 },
 
   browseSection: { padding: 24, alignItems: "center" },
-  browseDivider: { width: 40, height: 1.5, backgroundColor: "#C9A96E", marginBottom: 16 },
-  browseText: { fontSize: 13, color: "#6B5E4E", marginBottom: 16 },
-  browseButton: { backgroundColor: "#F5F0E8", borderRadius: 10, paddingHorizontal: 24, paddingVertical: 14, borderWidth: 0.5, borderColor: "#E8E0D0" },
-  browseButtonText: { fontSize: 11, letterSpacing: 2, color: "#8B7355" },
+  browseDivider: { width: 40, height: 1.5, backgroundColor: Design.color.gold, marginBottom: 16 },
+  browseText: { fontSize: 13, color: Design.color.inkMuted, marginBottom: 16 },
+  browseButton: { backgroundColor: Design.color.surfaceMuted, borderRadius: Design.radius.small, paddingHorizontal: 24, paddingVertical: 14, borderWidth: 0.5, borderColor: Design.color.line },
+  browseButtonText: { fontSize: 11, letterSpacing: 2, color: Design.color.inkSoft },
 
-  bottomNav: { position: "absolute", bottom: 0, left: 0, right: 0, backgroundColor: "#FAFAF8", borderTopWidth: 0.5, borderTopColor: "#E8E0D0", flexDirection: "row", justifyContent: "space-around", paddingVertical: 12, paddingBottom: 24 },
-  navItem: { alignItems: "center", gap: 3 },
-  navDot: { width: 4, height: 4, borderRadius: 2, backgroundColor: "#C9A96E" },
-  navLabel: { fontSize: 8, color: "#C4B8A8", letterSpacing: 1 },
-  navLabelActive: { fontSize: 8, color: "#1C1C1A", letterSpacing: 1 },
+
 });
