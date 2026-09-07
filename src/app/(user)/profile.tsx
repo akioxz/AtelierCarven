@@ -18,6 +18,7 @@ import { supabase } from "../../lib/supabase";
 import { Design } from "../../constants/design";
 import { getStatusBadge } from "../../constants/statuses";
 import { ContentFrame, CustomerNavigation } from "../../components/app-ui";
+import ConfirmModal from "../../components/confirm-modal";
 
 export default function UserProfile() {
   const router = useRouter();
@@ -370,37 +371,16 @@ export default function UserProfile() {
         </View>
       </Modal>
 
-      {/* Logout Confirmation Modal */}
-      <Modal visible={logoutModalVisible} transparent animationType="fade">
-        <View style={styles.logoutModalOverlay}>
-          <View style={styles.logoutModalBox}>
-            <View style={styles.logoutModalIcon}>
-              <Feather name="log-out" size={24} color={Design.color.inkSoft} />
-            </View>
-            <Text style={styles.logoutModalTitle}>Sign Out</Text>
-            <View style={styles.logoutModalDivider} />
-            <Text style={styles.logoutModalMessage}>
-              Are you sure you want to sign out of your account?
-            </Text>
-            <View style={styles.logoutModalButtons}>
-              <TouchableOpacity
-                style={styles.logoutModalCancelBtn}
-                onPress={() => setLogoutModalVisible(false)}
-              >
-                <Text style={styles.logoutModalCancelText}>CANCEL</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.logoutModalConfirmBtn}
-                onPress={confirmLogout}
-              >
-                <Feather name="log-out" size={13} color={Design.color.surface} />
-                <Text style={styles.logoutModalConfirmText}>SIGN OUT</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
-
+<ConfirmModal
+        visible={logoutModalVisible}
+        title="Sign out?"
+        message="Are you sure you want to sign out of your account?"
+        confirmLabel="SIGN OUT"
+        cancelLabel="CANCEL"
+        icon="log-out"
+        onConfirm={confirmLogout}
+        onCancel={() => setLogoutModalVisible(false)}
+      />
 
     </View>
   );

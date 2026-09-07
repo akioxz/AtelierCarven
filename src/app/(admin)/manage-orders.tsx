@@ -3,7 +3,6 @@ import { useRouter } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
-  Alert,
   FlatList,
   Modal,
   ScrollView,
@@ -17,6 +16,7 @@ import { Design } from "../../constants/design";
 import { supabase } from "../../lib/supabase";
 import { AdminNavigation, ContentFrame } from "../../components/app-ui";
 import { getStatusBadge } from "../../constants/statuses";
+import ConfirmModal from "../../components/confirm-modal";
 
 const STATUS_OPTIONS = ["All", "Pending", "Processing", "Completed", "Cancelled"];
 const MUTABLE_STATUSES = ["Pending", "Processing", "Completed", "Cancelled"];
@@ -44,6 +44,7 @@ export default function ManageOrders() {
   const [loadingItems, setLoadingItems] = useState(false);
   const [modalStatus, setModalStatus] = useState("");
   const [updating, setUpdating] = useState(false);
+  const [confirmUpdateOpen, setConfirmUpdateOpen] = useState(false);
 
   const fetchOrders = useCallback(async () => {
     let query = supabase
@@ -119,16 +120,16 @@ export default function ManageOrders() {
 
     if (error) {
       console.error("Error updating status:", error);
-      Alert.alert("Error", "Failed to update order status. Please try again.");
-    } else {
-      await logAdminAction(
-        `Updated order status to ${modalStatus}`,
-        `Order #${selectedOrder.id.substring(0, 8)} (${selectedOrder.profiles?.username || "Guest"})`
-      );
-      Alert.alert("Success", "Order status updated successfully.");
-      setSelectedOrder(null);
-      fetchOrders();
+      setUpdating(false);
+      return;
     }
+    await logAdminAction(
+      `Updated order status to ${modalStatus}`,
+      `Order #${selectedOrder.id.substring(0, 8)} (${selectedOrder.profiles?.username || "Guest"})`
+    );
+    setSelectedOrder(null);
+    setConfirmUpdateOpen(false);
+    fetchOrders();
     setUpdating(false);
   };
 
@@ -377,7 +378,7 @@ export default function ManageOrders() {
                   </TouchableOpacity>
                   <TouchableOpacity
                     style={[styles.saveBtn, selectedOrder.status === modalStatus && styles.saveBtnDisabled]}
-                    onPress={handleUpdateStatus}
+                    onPress={() => setConfirmUpdateOpen(true)}
                     disabled={updating || selectedOrder.status === modalStatus}
                   >
                     <Text style={styles.saveBtnText}>
@@ -391,6 +392,15 @@ export default function ManageOrders() {
         </View>
       </Modal>
 
+      <ConfirmModal
+        visible={confirmUpdateOpen}
+        title={modalStatus === "Cancelled" ? "Cancel this order?" : "Update order status?"}
+        message={`Update order ${selectedOrder ? `#${selectedOrder.id.substring(0, 8).toUpperCase()}` : ""} to "${modalStatus}"?`}
+        confirmLabel={modalStatus === "Cancelled" ? "CANCEL ORDER" : "UPDATE"}
+        danger={modalStatus === "Cancelled"}
+        onConfirm={handleUpdateStatus}
+        onCancel={() => setConfirmUpdateOpen(false)}
+      />
 
     </View>
   );

@@ -18,6 +18,7 @@ import { Design } from "../../constants/design";
 import { pickAndUploadImage } from "../../lib/imageUpload";
 import { supabase } from "../../lib/supabase";
 import { AdminNavigation, ContentFrame } from "../../components/app-ui";
+import ConfirmModal from "../../components/confirm-modal";
 
 const isWeb = Platform.OS === "web";
 const CATEGORIES = ["Sofa", "Chair", "Table", "Bed"];
@@ -295,34 +296,17 @@ export default function ManageFurniture() {
       </TouchableOpacity>
       </ContentFrame>
 
-      {/* Delete Confirmation Modal */}
-      <Modal visible={deleteModalVisible} animationType="fade" transparent>
-        <View style={styles.modalOverlay}>
-          <View style={styles.deleteModalContent}>
-            <View style={styles.deleteIconWrap}>
-              <Feather name="trash-2" size={28} color={Design.color.danger} />
-            </View>
-            <Text style={styles.deleteModalTitle}>DELETE FURNITURE</Text>
-            <View style={styles.goldDivider} />
-            <Text style={styles.deleteModalMsg}>
-              Are you sure you want to delete{"\n"}
-              <Text style={styles.deleteModalName}>&quot;{itemToDelete?.name}&quot;</Text>?
-            </Text>
-            <Text style={styles.deleteModalSub}>This action cannot be undone.</Text>
-            <View style={styles.modalButtons}>
-              <TouchableOpacity
-                style={styles.cancelBtn}
-                onPress={() => { setDeleteModalVisible(false); setItemToDelete(null); }}
-              >
-                <Text style={styles.cancelBtnText}>CANCEL</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.deleteConfirmBtn} onPress={confirmDelete}>
-                <Text style={styles.deleteConfirmText}>DELETE</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
+      <ConfirmModal
+        visible={deleteModalVisible}
+        title="Delete furniture?"
+        message={<>Are you sure you want to delete <Text style={{ fontFamily: Design.font.bodyBold }}>&quot;{itemToDelete?.name}&quot;</Text>? This action cannot be undone.</>}
+        confirmLabel="DELETE"
+        cancelLabel="CANCEL"
+        danger
+        icon="trash-2"
+        onConfirm={confirmDelete}
+        onCancel={() => { setDeleteModalVisible(false); setItemToDelete(null); }}
+      />
 
       <Modal visible={modalVisible} animationType="slide" transparent>
         <View style={styles.modalOverlay}>
@@ -746,34 +730,6 @@ const styles = StyleSheet.create({
   },
   uploadText: { fontSize: 10, letterSpacing: 2, color: Design.color.inkSoft },
   uploadedImage: { width: "100%", height: 160 },
-  deleteModalContent: {
-    backgroundColor: Design.color.surface,
-    borderRadius: 20,
-    padding: 28,
-    marginHorizontal: 32,
-    alignItems: "center",
-  },
-  deleteIconWrap: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: "#FCEBEB",
-    justifyContent: "center",
-    alignItems: "center",
-    marginBottom: 16,
-  },
-  deleteModalTitle: { fontSize: 12, letterSpacing: 3, color: Design.color.danger, marginBottom: 12 },
-  deleteModalMsg: { fontSize: 14, color: Design.color.ink, textAlign: "center", marginTop: 12, lineHeight: 22 },
-  deleteModalName: { fontWeight: "600", color: Design.color.ink },
-  deleteModalSub: { fontSize: 11, color: Design.color.inkMuted, marginTop: 6, marginBottom: 20 },
-  deleteConfirmBtn: {
-    flex: 1,
-    backgroundColor: Design.color.danger,
-    borderRadius: Design.radius.small,
-    padding: 16,
-    alignItems: "center",
-  },
-  deleteConfirmText: { fontSize: 11, letterSpacing: 2, color: Design.color.surface },
   dimColumns: { flexDirection: "row", flexWrap: "wrap", gap: 12, marginBottom: 8 },
   dimField: { flex: 1, minWidth: 140 },
   dimCaption: { fontSize: 9, letterSpacing: 1.2, color: Design.color.inkSoft, marginBottom: 6 },

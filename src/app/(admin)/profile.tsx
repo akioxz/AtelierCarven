@@ -4,7 +4,6 @@ import { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Image,
-  Modal,
   ScrollView,
   StatusBar,
   StyleSheet,
@@ -16,6 +15,7 @@ import { Design } from "../../constants/design";
 import { pickAndUploadImage } from "../../lib/imageUpload";
 import { supabase } from "../../lib/supabase";
 import { AdminNavigation, ContentFrame } from "../../components/app-ui";
+import ConfirmModal from "../../components/confirm-modal";
 
 export default function AdminProfile() {
   const router = useRouter();
@@ -187,37 +187,16 @@ export default function AdminProfile() {
         </ContentFrame>
       </ScrollView>
 
-      {/* Logout Confirmation Modal */}
-      <Modal visible={logoutModalVisible} transparent animationType="fade">
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalBox}>
-            <View style={styles.modalIconWrap}>
-              <Feather name="log-out" size={24} color={Design.color.inkSoft} />
-            </View>
-            <Text style={styles.modalTitle}>Sign Out</Text>
-            <View style={styles.modalDivider} />
-            <Text style={styles.modalMessage}>
-              Are you sure you want to sign out of your admin account?
-            </Text>
-            <View style={styles.modalButtons}>
-              <TouchableOpacity
-                style={styles.modalCancelBtn}
-                onPress={() => setLogoutModalVisible(false)}
-              >
-                <Text style={styles.modalCancelText}>CANCEL</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.modalConfirmBtn}
-                onPress={confirmLogout}
-              >
-                <Feather name="log-out" size={13} color={Design.color.surface} />
-                <Text style={styles.modalConfirmText}>SIGN OUT</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
-
+<ConfirmModal
+        visible={logoutModalVisible}
+        title="Sign out?"
+        message="Are you sure you want to sign out of your admin account?"
+        confirmLabel="SIGN OUT"
+        cancelLabel="CANCEL"
+        icon="log-out"
+        onConfirm={confirmLogout}
+        onCancel={() => setLogoutModalVisible(false)}
+      />
 
     </View>
   );
