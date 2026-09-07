@@ -49,3 +49,4 @@ supabase/.temp/
 .codex/
 .cursor/
 web-smoke.log
+.sb-pentest-audit.log
