@@ -221,7 +221,7 @@ const styles = StyleSheet.create({
   backText: { fontSize: 22, color: Design.color.ink },
   brandRow: { marginBottom: 16 },
   brandSmall: { fontSize: 12, letterSpacing: 4, color: Design.color.inkSoft },
-  brandLarge: { fontSize: 36, fontWeight: "300", color: Design.color.ink, letterSpacing: 2, marginBottom: 8 },
+  brandLarge: { fontFamily: Design.font.display, fontSize: 36, letterSpacing: -1.0, lineHeight: 36, color: Design.color.ink, marginBottom: 8 },
   goldDivider: { width: 40, height: 1.5, backgroundColor: Design.color.gold },
   form: { flex: 1, padding: 32, paddingTop: 36 },
   title: { fontSize: 26, fontWeight: "500", color: Design.color.ink, marginBottom: 8 },

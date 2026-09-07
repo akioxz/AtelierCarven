@@ -215,11 +215,12 @@ const styles = StyleSheet.create({
     letterSpacing: 4,
     color: Design.color.inkSoft,
   },
-  brandLarge: {
+brandLarge: {
+    fontFamily: Design.font.display,
     fontSize: 36,
-    fontWeight: "300",
+    letterSpacing: -1.0,
+    lineHeight: 36,
     color: Design.color.ink,
-    letterSpacing: 2,
   },
   goldDivider: {
     width: 40,

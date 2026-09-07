@@ -116,7 +116,7 @@ const styles = StyleSheet.create({
   header: { backgroundColor: Design.color.surfaceMuted, padding: 28, paddingTop: 56, paddingBottom: 28 },
   headerWeb: { backgroundColor: Design.color.surface, paddingTop: 32, paddingBottom: 20, borderBottomWidth: 0.5, borderBottomColor: Design.color.line, flexDirection: "row", alignItems: "center" },
   headerSmall: { fontSize: 10, letterSpacing: 4, color: Design.color.inkSoft },
-  headerLarge: { fontSize: 36, fontWeight: "300", color: Design.color.ink, letterSpacing: 2, marginBottom: 16 },
+  headerLarge: { fontFamily: Design.font.display, fontSize: 34, letterSpacing: -0.8, lineHeight: 34, color: Design.color.ink, marginBottom: 16 },
   headerLargeWeb: { fontSize: 28, marginBottom: 0 },
   list: { flex: 1, padding: 24 },
   listWeb: { padding: 32 },

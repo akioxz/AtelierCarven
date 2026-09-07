@@ -463,10 +463,11 @@ const styles = StyleSheet.create({
   },
   headerSmall: { fontSize: 10, letterSpacing: 4, color: Design.color.inkSoft },
   headerLarge: {
-    fontSize: 36,
-    fontWeight: "300",
+    fontFamily: Design.font.display,
+    fontSize: 34,
+    letterSpacing: -0.8,
+    lineHeight: 34,
     color: Design.color.ink,
-    letterSpacing: 2,
     marginBottom: 12,
   },
   goldDivider: {

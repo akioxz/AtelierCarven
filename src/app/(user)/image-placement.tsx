@@ -434,7 +434,7 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Design.color.surface },
   header: { backgroundColor: Design.color.surfaceMuted, padding: 28, paddingTop: 56, paddingBottom: 28 },
   headerSmall: { fontSize: 10, letterSpacing: 4, color: Design.color.inkSoft },
-  headerLarge: { fontSize: 36, fontWeight: "300", color: Design.color.ink, letterSpacing: 2, marginBottom: 16 },
+  headerLarge: { fontFamily: Design.font.display, fontSize: 34, letterSpacing: -0.8, lineHeight: 34, color: Design.color.ink, marginBottom: 16 },
   goldDivider: { width: 40, height: 1.5, backgroundColor: Design.color.gold, marginBottom: 12 },
   headerSubtext: { fontSize: 13, color: Design.color.inkMuted },
   section: { padding: 24, paddingBottom: 0 },
