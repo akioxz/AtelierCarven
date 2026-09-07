@@ -1,9 +1,10 @@
 import { AntDesign, Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ActivityIndicator, Image, Platform, Pressable, ScrollView, StatusBar, StyleSheet, Text, TextInput, useWindowDimensions, View } from "react-native";
 import Animated, { FadeInDown } from "react-native-reanimated";
+import { CategoryTiles } from "../../components/category-tiles";
 import { ContentFrame } from "../../components/app-ui";
 import { Design, layout } from "../../constants/design";
 import { supabase } from "../../lib/supabase";
@@ -31,34 +32,44 @@ export default function Search() {
   const [furniture, setFurniture] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [favorites, setFavorites] = useState<string[]>([]);
-
   const trimmed = query.trim();
 
-  const fetchFavorites = useCallback(async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
-    const { data } = await supabase.from("favorites").select("furniture_id").eq("user_id", user.id);
-    setFavorites((data || []).map((item: any) => item.furniture_id));
+  useEffect(() => {
+    (async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      const { data } = await supabase.from("favorites").select("furniture_id").eq("user_id", user.id);
+      setFavorites((data || []).map((item: any) => item.furniture_id));
+    })();
   }, []);
 
-  const fetchResults = useCallback(async () => {
-    setLoading(true);
-    let queryBuilder = supabase.from("furniture").select("*").eq("is_deleted", false);
-    if (selectedCategory !== "All") queryBuilder = queryBuilder.eq("category", selectedCategory);
-    if (trimmed) queryBuilder = queryBuilder.or(`name.ilike.%${trimmed}%,description.ilike.%${trimmed}%,category.ilike.%${trimmed}%`);
-    switch (sort) {
-      case "price-asc": queryBuilder = queryBuilder.order("price", { ascending: true }); break;
-      case "price-desc": queryBuilder = queryBuilder.order("price", { ascending: false }); break;
-      case "rating": queryBuilder = queryBuilder.order("rating", { ascending: false, nullsFirst: false }).order("review_count", { ascending: false }); break;
-      default: queryBuilder = queryBuilder.order("created_at", { ascending: false });
-    }
-    const { data } = await queryBuilder;
-    setFurniture(data || []);
-    setLoading(false);
-  }, [selectedCategory, sort, trimmed]);
+  // debounce + stale-response guard
+  const latestRequest = useRef(0);
 
-  useEffect(() => { fetchFavorites(); }, [fetchFavorites]);
-  useEffect(() => { fetchResults(); }, [fetchResults]);
+  useEffect(() => {
+    const queryTrigger = setTimeout(() => {
+      const requestId = ++latestRequest.current;
+      const run = async () => {
+        setLoading(true);
+        let queryBuilder = supabase.from("furniture").select("*").eq("is_deleted", false);
+        if (selectedCategory !== "All") queryBuilder = queryBuilder.eq("category", selectedCategory);
+        const term = query.trim();
+        if (term) queryBuilder = queryBuilder.or(`name.ilike.%${term}%,description.ilike.%${term}%,category.ilike.%${term}%`);
+        switch (sort) {
+          case "price-asc": queryBuilder = queryBuilder.order("price", { ascending: true }); break;
+          case "price-desc": queryBuilder = queryBuilder.order("price", { ascending: false }); break;
+          case "rating": queryBuilder = queryBuilder.order("rating", { ascending: false, nullsFirst: false }).order("review_count", { ascending: false }); break;
+          default: queryBuilder = queryBuilder.order("created_at", { ascending: false });
+        }
+        const { data } = await queryBuilder;
+        if (latestRequest.current !== requestId) return;
+        setFurniture(data || []);
+        setLoading(false);
+      };
+      run();
+    }, query.trim() ? 300 : 0);
+    return () => clearTimeout(queryTrigger);
+  }, [selectedCategory, sort, query]);
   useEffect(() => {
     const timer = setTimeout(() => inputRef.current?.focus(), 80);
     return () => clearTimeout(timer);
@@ -99,12 +110,17 @@ export default function Search() {
             </View>
           </View>
 
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filters}>
-            {CATEGORIES.map((category) => {
-              const selected = category === selectedCategory;
-              return <Pressable key={category} onPress={() => setSelectedCategory(category)} style={({ pressed }) => [styles.filter, selected && styles.filterSelected, pressed && styles.pressed]}><Text style={[styles.filterText, selected && styles.filterTextSelected]}>{category}</Text></Pressable>;
-            })}
-          </ScrollView>
+          <CategoryTiles categories={CATEGORIES} selected={selectedCategory} onSelect={setSelectedCategory} />
+
+          {selectedCategory !== "All" ? (
+            <View style={styles.activeRow}>
+              <Pressable onPress={() => setSelectedCategory("All")} style={({ pressed }) => [styles.activeChip, pressed && styles.pressed]}>
+                <Text style={styles.activeChipText}>{selectedCategory}</Text>
+                <Feather name="x" size={12} color={Design.color.surface} />
+              </Pressable>
+              <Pressable onPress={() => setSelectedCategory("All")} hitSlop={8}><Text style={styles.clearAll}>Clear all</Text></Pressable>
+            </View>
+          ) : null}
 
           <View style={styles.sortRow}>
             <Text style={styles.resultCount}>{loading ? "" : `${furniture.length} piece${furniture.length === 1 ? "" : "s"} found`}</Text>
@@ -147,7 +163,7 @@ const styles = StyleSheet.create({
   screen: { backgroundColor: Design.color.canvas, flex: 1 }, scroll: { paddingBottom: 16 }, frame: { paddingHorizontal: 20, paddingTop: 20 },
   topbar: { alignItems: "center", flexDirection: "row", gap: 10, marginBottom: 18 }, iconAction: { alignItems: "center", backgroundColor: Design.color.surface, borderColor: Design.color.line, borderRadius: 22, borderWidth: StyleSheet.hairlineWidth, height: 44, justifyContent: "center", width: 44 },
   search: { alignItems: "center", backgroundColor: Design.color.surface, borderColor: Design.color.line, borderRadius: Design.radius.card, borderWidth: StyleSheet.hairlineWidth, flex: 1, flexDirection: "row", gap: 10, minHeight: 52, paddingHorizontal: 15 }, searchInput: { color: Design.color.ink, flex: 1, fontFamily: Design.font.bodyMedium, fontSize: 13, minHeight: 50 },
-  filters: { gap: 8, paddingBottom: 18 }, filter: { borderColor: Design.color.line, borderRadius: Design.radius.pill, borderWidth: StyleSheet.hairlineWidth, minHeight: 36, paddingHorizontal: 15, justifyContent: "center" }, filterSelected: { backgroundColor: Design.color.ink, borderColor: Design.color.ink }, filterText: { color: Design.color.inkSoft, fontFamily: Design.font.bodyMedium, fontSize: 11 }, filterTextSelected: { color: Design.color.surface },
+  activeRow: { alignItems: "center", flexDirection: "row", gap: 10, marginBottom: 14 }, activeChip: { alignItems: "center", backgroundColor: Design.color.ink, borderRadius: Design.radius.pill, flexDirection: "row", gap: 5, minHeight: 30, paddingHorizontal: 12 }, activeChipText: { color: Design.color.surface, fontFamily: Design.font.bodyMedium, fontSize: 11 }, clearAll: { color: Design.color.inkMuted, fontFamily: Design.font.body, fontSize: 11 },
   sortRow: { alignItems: "center", flexDirection: "row", gap: 12, justifyContent: "space-between", marginBottom: 14 }, resultCount: { color: Design.color.inkMuted, fontFamily: Design.font.body, fontSize: 11 }, sortScroll: { flexDirection: "row", gap: 6 },
   sortChip: { borderColor: Design.color.line, borderRadius: Design.radius.pill, borderWidth: StyleSheet.hairlineWidth, minHeight: 30, paddingHorizontal: 12, justifyContent: "center" }, sortChipSelected: { borderColor: Design.color.gold, backgroundColor: Design.color.goldSoft }, sortText: { color: Design.color.inkSoft, fontFamily: Design.font.bodyMedium, fontSize: 10 }, sortTextSelected: { color: Design.color.ink },
   loading: { marginTop: 48 },
