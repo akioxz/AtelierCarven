@@ -15,6 +15,7 @@ import {
   View,
 } from "react-native";
 import { supabase } from "../../lib/supabase";
+import { CustomerNavigation } from "../../components/app-ui";
 
 export default function ImagePlacement() {
   const router = useRouter();
@@ -130,6 +131,7 @@ export default function ImagePlacement() {
   return (
     <View style={styles.container}>
       <StatusBar barStyle="dark-content" />
+      <CustomerNavigation active="placement" />
 
       {/* ScrollView disabled while dragging to prevent conflict */}
       <ScrollView
@@ -528,7 +530,7 @@ const styles = StyleSheet.create({
   browseButton: { backgroundColor: "#F5F0E8", borderRadius: 10, paddingHorizontal: 24, paddingVertical: 14, borderWidth: 0.5, borderColor: "#E8E0D0" },
   browseButtonText: { fontSize: 11, letterSpacing: 2, color: "#8B7355" },
 
-  bottomNav: { position: "absolute", bottom: 0, left: 0, right: 0, backgroundColor: "#FAFAF8", borderTopWidth: 0.5, borderTopColor: "#E8E0D0", flexDirection: "row", justifyContent: "space-around", paddingVertical: 12, paddingBottom: 24 },
+  bottomNav: { display: "none" },
   navItem: { alignItems: "center", gap: 3 },
   navDot: { width: 4, height: 4, borderRadius: 2, backgroundColor: "#C9A96E" },
   navLabel: { fontSize: 8, color: "#C4B8A8", letterSpacing: 1 },

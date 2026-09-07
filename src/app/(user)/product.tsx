@@ -1,655 +1,83 @@
 import { AntDesign, Feather } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
-import {
-  ActivityIndicator,
-  Image,
-  Modal,
-  ScrollView,
-  StatusBar,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from "react-native";
+import { ActivityIndicator, Image, Modal, Platform, Pressable, ScrollView, StatusBar, StyleSheet, Text, useWindowDimensions, View } from "react-native";
+import { PrimaryButton } from "../../components/app-ui";
+import { Design, layout } from "../../constants/design";
 import { supabase } from "../../lib/supabase";
 
-const getCategoryIcon = (category: string) => {
-  switch (category) {
-    case "Sofa":
-      return "airplay";
-    case "Chair":
-      return "sidebar";
-    case "Table":
-      return "minus-square";
-    case "Bed":
-      return "moon";
-    default:
-      return "box";
-  }
-};
-
-const COLORS = [
-  { name: "Black", hex: "#1C1C1A" },
-  { name: "White", hex: "#FAFAF8" },
-  { name: "Gray", hex: "#9E9E9E" },
-  { name: "Beige", hex: "#C9A96E" },
-];
-
+const COLORS = [{ name: "Black", hex: "#211A16" }, { name: "White", hex: "#FFFCF8" }, { name: "Gray", hex: "#929292" }, { name: "Beige", hex: "#C6A27C" }];
 const MATERIALS = ["Wood", "Metal", "Leather", "Fabric", "Marble"];
 
 export default function Product() {
   const router = useRouter();
   const { id } = useLocalSearchParams();
+  const { width } = useWindowDimensions();
+  const wide = Platform.OS === "web" && width >= layout.desktopBreakpoint;
   const [item, setItem] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [isFavorite, setIsFavorite] = useState(false);
-  const [modalVisible, setModalVisible] = useState(false);
+  const [sheetOpen, setSheetOpen] = useState(false);
   const [selectedColor, setSelectedColor] = useState(COLORS[0].name);
   const [selectedMaterial, setSelectedMaterial] = useState(MATERIALS[0]);
   const [quantity, setQuantity] = useState(1);
-  const [adding, setAdding] = useState(false);
-  const [added, setAdded] = useState(false);
-  const [buyingNow, setBuyingNow] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [intent, setIntent] = useState<"cart" | "buy">("cart");
 
-  const fetchItem = useCallback(async () => {
-    const { data } = await supabase
-      .from("furniture")
-      .select("*")
-      .eq("id", id)
-      .single();
-    setItem(data);
-    setLoading(false);
-  }, [id]);
-
-  const fetchFavorite = useCallback(async () => {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) return;
-    const { data } = await supabase
-      .from("favorites")
-      .select("id")
-      .eq("user_id", user.id)
-      .eq("furniture_id", id)
-      .single();
-    setIsFavorite(!!data);
-  }, [id]);
-
-  useEffect(() => {
-    fetchItem();
-    fetchFavorite();
-  }, [fetchItem, fetchFavorite]);
-
-  const toggleFavorite = async () => {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) return;
-    if (isFavorite) {
-      setIsFavorite(false);
-      await supabase
-        .from("favorites")
-        .delete()
-        .eq("user_id", user.id)
-        .eq("furniture_id", id);
-    } else {
-      setIsFavorite(true);
-      await supabase
-        .from("favorites")
-        .insert({ user_id: user.id, furniture_id: id });
+  const fetchItem = useCallback(async () => { const { data } = await supabase.from("furniture").select("*").eq("id", id).single(); setItem(data); setLoading(false); }, [id]);
+  const fetchFavorite = useCallback(async () => { const { data: { user } } = await supabase.auth.getUser(); if (!user) return; const { data } = await supabase.from("favorites").select("id").eq("user_id", user.id).eq("furniture_id", id).single(); setIsFavorite(Boolean(data)); }, [id]);
+  useEffect(() => { fetchItem(); fetchFavorite(); }, [fetchFavorite, fetchItem]);
+  const toggleFavorite = async () => { const { data: { user } } = await supabase.auth.getUser(); if (!user) return; setIsFavorite((value) => !value); if (isFavorite) await supabase.from("favorites").delete().eq("user_id", user.id).eq("furniture_id", id); else await supabase.from("favorites").insert({ user_id: user.id, furniture_id: id }); };
+  const openSelection = (nextIntent: "cart" | "buy") => { setIntent(nextIntent); setQuantity(1); setSheetOpen(true); };
+  const submit = async () => {
+    setSubmitting(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      const { data: existing } = await supabase.from("cart").select("*").eq("user_id", user.id).eq("furniture_id", id).eq("color", selectedColor).eq("material", selectedMaterial).single();
+      if (existing) await supabase.from("cart").update({ quantity: existing.quantity + quantity }).eq("id", existing.id);
+      else await supabase.from("cart").insert({ user_id: user.id, furniture_id: id, quantity, color: selectedColor, material: selectedMaterial });
+      setSheetOpen(false);
+      if (intent === "buy") router.push("/(user)/checkout");
+    } finally {
+      setSubmitting(false);
     }
   };
 
-  const handleConfirmAdd = async () => {
-    setAdding(true);
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) return;
-    const { data: existing } = await supabase
-      .from("cart")
-      .select("*")
-      .eq("user_id", user.id)
-      .eq("furniture_id", id)
-      .eq("color", selectedColor)
-      .eq("material", selectedMaterial)
-      .single();
-    if (existing) {
-      await supabase
-        .from("cart")
-        .update({ quantity: existing.quantity + quantity })
-        .eq("id", existing.id);
-    } else {
-      await supabase
-        .from("cart")
-        .insert({ user_id: user.id, furniture_id: id, quantity, color: selectedColor, material: selectedMaterial });
-    }
-    setAdding(false);
-    setAdded(true);
-    setModalVisible(false);
-    setTimeout(() => setAdded(false), 2000);
-  };
-
-  const handleBuyNow = async () => {
-    setAdding(true);
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
-    const { data: existing } = await supabase
-      .from("cart")
-      .select("*")
-      .eq("user_id", user.id)
-      .eq("furniture_id", id)
-      .eq("color", selectedColor)
-      .eq("material", selectedMaterial)
-      .single();
-    if (existing) {
-      await supabase
-        .from("cart")
-        .update({ quantity: existing.quantity + quantity })
-        .eq("id", existing.id);
-    } else {
-      await supabase
-        .from("cart")
-        .insert({ user_id: user.id, furniture_id: id, quantity, color: selectedColor, material: selectedMaterial });
-    }
-    setAdding(false);
-    setModalVisible(false);
-    router.push("/(user)/checkout");
-  };
-
-  if (loading)
-    return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator color="#C9A96E" />
-      </View>
-    );
-  if (!item)
-    return (
-      <View style={styles.loadingContainer}>
-        <Text style={styles.errorText}>Item not found.</Text>
-      </View>
-    );
-
+  if (loading) return <View style={styles.loading}><ActivityIndicator color={Design.color.gold} /></View>;
+  if (!item) return <View style={styles.loading}><Text style={styles.notFound}>This piece is no longer available.</Text><Pressable onPress={() => router.back()}><Text style={styles.return}>Return to collection</Text></Pressable></View>;
   return (
-    <View style={styles.container}>
+    <View style={styles.screen}>
       <StatusBar barStyle="dark-content" />
-      <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
-        <Feather name="arrow-left" size={20} color="#1C1C1A" />
-      </TouchableOpacity>
-      <TouchableOpacity style={styles.heartBtn} onPress={toggleFavorite}>
-        {isFavorite
-          ? <AntDesign name="heart" size={18} color="#C9A96E" />
-          : <Feather name="heart" size={18} color="#C4B8A8" />
-        }
-      </TouchableOpacity>
-
-      <ScrollView showsVerticalScrollIndicator={false}>
-        <View style={styles.imageContainer}>
-          {item.image_url ? (
-            <Image
-              source={{ uri: item.image_url }}
-              style={styles.image}
-              resizeMode="cover"
-            />
-          ) : (
-            <Feather
-              name={getCategoryIcon(item.category) as any}
-              size={90}
-              color="#8B7355"
-            />
-          )}
-        </View>
-        <View style={styles.content}>
-          <View style={styles.topRow}>
-            <View style={styles.categoryTag}>
-              <Text style={styles.categoryTagText}>
-                {item.category?.toUpperCase()}
-              </Text>
+      <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+        <View style={[styles.frame, wide && styles.frameWide]}>
+          <View style={styles.utility}><Pressable onPress={() => router.back()} style={({ pressed }) => [styles.utilityButton, pressed && styles.pressed]}><Feather name="arrow-left" size={19} color={Design.color.ink} /></Pressable><Pressable onPress={toggleFavorite} style={({ pressed }) => [styles.utilityButton, pressed && styles.pressed]}>{isFavorite ? <AntDesign name="heart" size={18} color={Design.color.gold} /> : <Feather name="heart" size={18} color={Design.color.ink} />}</Pressable></View>
+          <View style={[styles.content, wide && styles.contentWide]}>
+            <View style={[styles.imagePanel, wide && styles.imagePanelWide]}>{item.image_url ? <Image source={{ uri: item.image_url }} style={styles.image} /> : <Feather name="box" size={88} color={Design.color.inkMuted} />}</View>
+            <View style={styles.details}>
+              <Text style={styles.category}>{item.category}</Text><Text style={styles.name}>{item.name}</Text><View style={styles.rule} />
+              {item.rating != null ? <View style={styles.rating}><View style={styles.stars}>{[1, 2, 3, 4, 5].map((star) => <Feather key={star} name="star" size={13} color={star <= Math.round(item.rating) ? Design.color.gold : Design.color.line} />)}</View><Text style={styles.ratingText}>{Number(item.rating).toFixed(1)}{item.review_count != null ? ` · ${item.review_count} reviews` : ""}</Text></View> : null}
+              <Text style={styles.price}>₱{Number(item.price).toLocaleString()}</Text>
+              <Text style={styles.description}>{item.description || "A carefully selected piece designed to bring lasting comfort and character to your home."}</Text>
+              <View style={styles.detailNote}><Feather name="package" size={16} color={Design.color.gold} /><Text style={styles.detailNoteText}>Choose your preferred finish and material before adding this piece to your cart.</Text></View>
+              {wide ? <View style={styles.desktopActions}><Pressable onPress={() => openSelection("cart")} style={({ pressed }) => [styles.secondaryAction, pressed && styles.pressed]}><Text style={styles.secondaryActionText}>ADD TO CART</Text></Pressable><PrimaryButton label="BUY NOW" onPress={() => openSelection("buy")} style={styles.primaryAction} /></View> : null}
             </View>
           </View>
-          <Text style={styles.name}>{item.name}</Text>
-          <View style={styles.goldDivider} />
-          {item.rating != null && (
-            <View style={styles.starsRow}>
-              {[1, 2, 3, 4, 5].map((i) => (
-                <Feather
-                  key={i}
-                  name="star"
-                  size={12}
-                  color={i <= Math.round(item.rating) ? "#C9A96E" : "#E8E0D0"}
-                />
-              ))}
-              <Text style={styles.ratingText}>
-                {Number(item.rating).toFixed(1)}
-                {item.review_count != null ? ` (${item.review_count} reviews)` : ""}
-              </Text>
-            </View>
-          )}
-          <Text style={styles.price}>
-            ₱{Number(item.price).toLocaleString()}
-          </Text>
-          <Text style={styles.descLabel}>DESCRIPTION</Text>
-          <Text style={styles.description}>
-            {item.description ||
-              "A beautifully crafted piece designed to elevate your living space. Built with premium materials and finished with attention to detail, this furniture embodies the Atelier Carvén philosophy of warm luxury."}
-          </Text>
-          <View style={{ height: 120 }} />
         </View>
       </ScrollView>
-
-      <View style={styles.bottomButtons}>
-        <TouchableOpacity
-          style={styles.addToCartBtn}
-          onPress={() => {
-            setQuantity(1);
-            setModalVisible(true);
-          }}
-        >
-          <Feather
-            name={added ? "check" : "shopping-cart"}
-            size={15}
-            color="#8B7355"
-          />
-          <Text style={styles.addToCartText}>
-            {added ? "ADDED" : "ADD TO CART"}
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.buyNowBtn} onPress={() => { setQuantity(1); setBuyingNow(true); setModalVisible(true); }}>
-          <Feather name="zap" size={15} color="#C9A96E" />
-          <Text style={styles.buyNowText}>BUY NOW</Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* Variation Modal */}
-      <Modal visible={modalVisible} animationType="slide" transparent>
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHandle} />
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>SELECT VARIATION</Text>
-              <TouchableOpacity
-                style={styles.modalClose}
-                onPress={() => { setModalVisible(false); setBuyingNow(false); }}
-              >
-                <Feather name="x" size={18} color="#8B7355" />
-              </TouchableOpacity>
-            </View>
-            <View style={styles.goldDivider} />
-
-            <View style={styles.modalItem}>
-              <View style={styles.modalItemImg}>
-                {item.image_url ? (
-                  <Image
-                    source={{ uri: item.image_url }}
-                    style={styles.modalItemImage}
-                  />
-                ) : (
-                  <Feather
-                    name={getCategoryIcon(item.category) as any}
-                    size={24}
-                    color="#8B7355"
-                  />
-                )}
-              </View>
-              <View>
-                <Text style={styles.modalItemName}>{item.name}</Text>
-                <Text style={styles.modalItemCat}>{item.category}</Text>
-                <Text style={styles.modalItemPrice}>
-                  ₱{Number(item.price).toLocaleString()}
-                </Text>
-              </View>
-            </View>
-
-            <Text style={styles.varLabel}>COLOR VARIATION</Text>
-            <View style={styles.colorRow}>
-              {COLORS.map((color) => (
-                <TouchableOpacity
-                  key={color.name}
-                  style={[
-                    styles.colorCircle,
-                    selectedColor === color.name && styles.colorCircleSelected,
-                  ]}
-                  onPress={() => setSelectedColor(color.name)}
-                >
-                  <View
-                    style={[
-                      styles.colorInner,
-                      {
-                        backgroundColor: color.hex,
-                        borderWidth: color.hex === "#FAFAF8" ? 0.5 : 0,
-                        borderColor: "#E8E0D0",
-                      },
-                    ]}
-                  >
-                    {selectedColor === color.name && (
-                      <Feather
-                        name="check"
-                        size={10}
-                        color={color.hex === "#FAFAF8" ? "#1C1C1A" : "#C9A96E"}
-                      />
-                    )}
-                  </View>
-                </TouchableOpacity>
-              ))}
-            </View>
-
-            <Text style={styles.varLabel}>MATERIAL</Text>
-            <View style={styles.materialRow}>
-              {MATERIALS.map((mat) => (
-                <TouchableOpacity
-                  key={mat}
-                  style={[
-                    styles.matPill,
-                    selectedMaterial === mat && styles.matPillActive,
-                  ]}
-                  onPress={() => setSelectedMaterial(mat)}
-                >
-                  <Text
-                    style={[
-                      styles.matText,
-                      selectedMaterial === mat && styles.matTextActive,
-                    ]}
-                  >
-                    {mat}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-
-            <View style={styles.qtyRow}>
-              <Text style={styles.qtyLabel}>QUANTITY</Text>
-              <View style={styles.qtyControls}>
-                <TouchableOpacity
-                  style={styles.qtyBtn}
-                  onPress={() => setQuantity((q) => Math.max(1, q - 1))}
-                >
-                  <Feather name="minus" size={14} color="#1C1C1A" />
-                </TouchableOpacity>
-                <Text style={styles.qtyNum}>{quantity}</Text>
-                <TouchableOpacity
-                  style={styles.qtyBtn}
-                  onPress={() => setQuantity((q) => q + 1)}
-                >
-                  <Feather name="plus" size={14} color="#1C1C1A" />
-                </TouchableOpacity>
-              </View>
-            </View>
-
-            <TouchableOpacity
-              style={styles.confirmBtn}
-              onPress={buyingNow ? handleBuyNow : handleConfirmAdd}
-              disabled={adding}
-            >
-              <Feather name={buyingNow ? "zap" : "shopping-cart"} size={15} color="#C9A96E" />
-              <Text style={styles.confirmBtnText}>
-                {adding
-                  ? (buyingNow ? "PROCESSING..." : "ADDING...")
-                  : buyingNow
-                    ? `BUY NOW · ₱${(Number(item.price) * quantity).toLocaleString()}`
-                    : `CONFIRM ADD · ₱${(Number(item.price) * quantity).toLocaleString()}`}
-              </Text>
-            </TouchableOpacity>
-          </View>
-        </View>
+      {!wide ? <View style={styles.bottomActions}><Pressable onPress={() => openSelection("cart")} style={({ pressed }) => [styles.secondaryAction, styles.bottomSecondary, pressed && styles.pressed]}><Text style={styles.secondaryActionText}>ADD TO CART</Text></Pressable><Pressable onPress={() => openSelection("buy")} style={({ pressed }) => [styles.buyAction, pressed && styles.pressed]}><Text style={styles.buyActionText}>BUY NOW</Text></Pressable></View> : null}
+      <Modal visible={sheetOpen} animationType="slide" transparent onRequestClose={() => setSheetOpen(false)}>
+        <View style={styles.overlay}><View style={styles.sheet}><View style={styles.sheetHandle} /><View style={styles.sheetHeader}><View><Text style={styles.sheetTitle}>Make it yours</Text><Text style={styles.sheetSub}>{item.name}</Text></View><Pressable onPress={() => setSheetOpen(false)} style={styles.close}><Feather name="x" size={18} color={Design.color.ink} /></Pressable></View>
+          <Text style={styles.optionLabel}>Colour</Text><View style={styles.colorChoices}>{COLORS.map((color) => <Pressable key={color.name} onPress={() => setSelectedColor(color.name)} style={({ pressed }) => [styles.colorChoice, selectedColor === color.name && styles.colorChoiceSelected, pressed && styles.pressed]}><View style={[styles.swatch, { backgroundColor: color.hex }, color.name === "White" && styles.whiteSwatch]} /><Text style={styles.choiceText}>{color.name}</Text></Pressable>)}</View>
+          <Text style={styles.optionLabel}>Material</Text><View style={styles.materialChoices}>{MATERIALS.map((material) => <Pressable key={material} onPress={() => setSelectedMaterial(material)} style={({ pressed }) => [styles.material, selectedMaterial === material && styles.materialSelected, pressed && styles.pressed]}><Text style={[styles.materialText, selectedMaterial === material && styles.materialTextSelected]}>{material}</Text></Pressable>)}</View>
+          <View style={styles.quantityRow}><View><Text style={styles.optionLabel}>Quantity</Text><Text style={styles.quantityHint}>Select the number of pieces.</Text></View><View style={styles.stepper}><Pressable onPress={() => setQuantity((value) => Math.max(1, value - 1))} style={styles.step}><Feather name="minus" size={15} color={Design.color.ink} /></Pressable><Text style={styles.quantity}>{quantity}</Text><Pressable onPress={() => setQuantity((value) => value + 1)} style={styles.step}><Feather name="plus" size={15} color={Design.color.ink} /></Pressable></View></View>
+          <PrimaryButton label={submitting ? "ADDING…" : intent === "buy" ? "CONTINUE TO CHECKOUT" : "ADD TO CART"} disabled={submitting} onPress={submit} />
+        </View></View>
       </Modal>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#FAFAF8" },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "#FAFAF8",
-  },
-  errorText: { fontSize: 13, color: "#9E8E7E" },
-  backBtn: {
-    position: "absolute",
-    top: 52,
-    left: 24,
-    zIndex: 10,
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: "#F5F0E8",
-    borderWidth: 0.5,
-    borderColor: "#E8E0D0",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  heartBtn: {
-    position: "absolute",
-    top: 52,
-    right: 24,
-    zIndex: 10,
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: "#F5F0E8",
-    borderWidth: 0.5,
-    borderColor: "#E8E0D0",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  imageContainer: {
-    height: 320,
-    backgroundColor: "#F5F0E8",
-    justifyContent: "center",
-    alignItems: "center",
-    overflow: "hidden",
-  },
-  image: { width: "100%", height: 320 },
-  content: { padding: 28 },
-  topRow: { flexDirection: "row", marginBottom: 12 },
-  categoryTag: {
-    backgroundColor: "#EDE5D8",
-    borderRadius: 20,
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-  },
-  categoryTagText: { fontSize: 10, letterSpacing: 2, color: "#8B7355" },
-  name: { fontSize: 26, fontWeight: "500", color: "#1C1C1A", marginBottom: 16 },
-  goldDivider: {
-    width: 40,
-    height: 1.5,
-    backgroundColor: "#C9A96E",
-    marginBottom: 16,
-  },
-  starsRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 3,
-    marginBottom: 12,
-  },
-  ratingText: { fontSize: 11, color: "#9E8E7E", marginLeft: 4 },
-  price: { fontSize: 22, color: "#C9A96E", marginBottom: 28 },
-  descLabel: {
-    fontSize: 10,
-    letterSpacing: 2,
-    color: "#8B7355",
-    marginBottom: 10,
-  },
-  description: { fontSize: 14, color: "#6B5E4E", lineHeight: 24 },
-  bottomButtons: {
-    position: "absolute",
-    bottom: 0,
-    left: 0,
-    right: 0,
-    flexDirection: "row",
-    padding: 20,
-    paddingBottom: 36,
-    backgroundColor: "#FAFAF8",
-    borderTopWidth: 0.5,
-    borderTopColor: "#E8E0D0",
-    gap: 12,
-  },
-  addToCartBtn: {
-    flex: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-    borderWidth: 1,
-    borderColor: "#C9A96E",
-    borderRadius: 10,
-    padding: 16,
-  },
-  addToCartText: { fontSize: 11, letterSpacing: 2, color: "#8B7355" },
-  buyNowBtn: {
-    flex: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-    backgroundColor: "#1C1C1A",
-    borderRadius: 10,
-    padding: 16,
-  },
-  buyNowText: { fontSize: 11, letterSpacing: 2, color: "#FAFAF8" },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.4)",
-    justifyContent: "flex-end",
-  },
-  modalContent: {
-    backgroundColor: "#FAFAF8",
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    padding: 24,
-    paddingBottom: 40,
-  },
-  modalHandle: {
-    width: 40,
-    height: 3,
-    backgroundColor: "#E8E0D0",
-    borderRadius: 2,
-    alignSelf: "center",
-    marginBottom: 20,
-  },
-  modalHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 12,
-  },
-  modalTitle: { fontSize: 11, letterSpacing: 3, color: "#8B7355" },
-  modalClose: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: "#EDE5D8",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  modalItem: {
-    flexDirection: "row",
-    gap: 12,
-    alignItems: "center",
-    backgroundColor: "#F5F0E8",
-    borderRadius: 12,
-    padding: 12,
-    marginBottom: 20,
-    borderWidth: 0.5,
-    borderColor: "#E8E0D0",
-  },
-  modalItemImg: {
-    width: 54,
-    height: 54,
-    backgroundColor: "#EDE5D8",
-    borderRadius: 10,
-    justifyContent: "center",
-    alignItems: "center",
-    overflow: "hidden",
-  },
-  modalItemImage: { width: 54, height: 54 },
-  modalItemName: {
-    fontSize: 13,
-    fontWeight: "500",
-    color: "#1C1C1A",
-    marginBottom: 2,
-  },
-  modalItemCat: { fontSize: 11, color: "#9E8E7E", marginBottom: 3 },
-  modalItemPrice: { fontSize: 13, color: "#C9A96E" },
-  varLabel: {
-    fontSize: 9,
-    letterSpacing: 2,
-    color: "#8B7355",
-    marginBottom: 10,
-  },
-  colorRow: { flexDirection: "row", gap: 10, marginBottom: 18 },
-  colorCircle: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    borderWidth: 1.5,
-    borderColor: "transparent",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  colorCircleSelected: { borderColor: "#C9A96E" },
-  colorInner: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  materialRow: {
-    flexDirection: "row",
-    gap: 8,
-    flexWrap: "wrap",
-    marginBottom: 18,
-  },
-  matPill: {
-    backgroundColor: "#F5F0E8",
-    borderRadius: 20,
-    paddingHorizontal: 14,
-    paddingVertical: 6,
-    borderWidth: 0.5,
-    borderColor: "#E8E0D0",
-  },
-  matPillActive: { backgroundColor: "#1C1C1A", borderColor: "#1C1C1A" },
-  matText: { fontSize: 12, color: "#8B7355" },
-  matTextActive: { color: "#FAFAF8" },
-  qtyRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    backgroundColor: "#F5F0E8",
-    borderRadius: 12,
-    padding: 14,
-    marginBottom: 18,
-    borderWidth: 0.5,
-    borderColor: "#E8E0D0",
-  },
-  qtyLabel: { fontSize: 10, letterSpacing: 2, color: "#8B7355" },
-  qtyControls: { flexDirection: "row", alignItems: "center", gap: 16 },
-  qtyBtn: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
-    backgroundColor: "#EDE5D8",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  qtyNum: {
-    fontSize: 16,
-    fontWeight: "500",
-    color: "#1C1C1A",
-    minWidth: 20,
-    textAlign: "center",
-  },
-  confirmBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-    backgroundColor: "#1C1C1A",
-    borderRadius: 12,
-    padding: 18,
-  },
-  confirmBtnText: { fontSize: 11, letterSpacing: 2, color: "#FAFAF8" },
+  screen: { backgroundColor: Design.color.canvas, flex: 1 }, loading: { alignItems: "center", backgroundColor: Design.color.canvas, flex: 1, gap: 16, justifyContent: "center" }, notFound: { color: Design.color.ink, fontFamily: Design.font.bodyMedium, fontSize: 14 }, return: { color: Design.color.gold, fontFamily: Design.font.bodyBold, fontSize: 12 }, scroll: { paddingBottom: 112 }, frame: { padding: 20 }, frameWide: { alignSelf: "center", maxWidth: layout.pageMaxWidth, width: "100%" }, utility: { flexDirection: "row", justifyContent: "space-between", marginBottom: 18 }, utilityButton: { alignItems: "center", backgroundColor: Design.color.surface, borderColor: Design.color.line, borderRadius: 22, borderWidth: StyleSheet.hairlineWidth, height: 44, justifyContent: "center", width: 44 }, content: { gap: 28 }, contentWide: { alignItems: "flex-start", flexDirection: "row", gap: 56 }, imagePanel: { alignItems: "center", aspectRatio: 1, backgroundColor: Design.color.surfaceMuted, borderRadius: Design.radius.sheet, justifyContent: "center", overflow: "hidden", width: "100%" }, imagePanelWide: { width: "52%" }, image: { height: "100%", width: "100%" }, details: { flex: 1, width: "100%" }, category: { color: Design.color.inkMuted, fontFamily: Design.font.bodySemibold, fontSize: 10, letterSpacing: 1, textTransform: "uppercase" }, name: { color: Design.color.ink, fontFamily: Design.font.display, fontSize: 43, letterSpacing: -1.3, lineHeight: 44, marginTop: 8 }, rule: { backgroundColor: Design.color.gold, height: 1, marginTop: 21, width: 42 }, rating: { alignItems: "center", flexDirection: "row", gap: 9, marginTop: 20 }, stars: { flexDirection: "row", gap: 3 }, ratingText: { color: Design.color.inkMuted, fontFamily: Design.font.body, fontSize: 11 }, price: { color: Design.color.gold, fontFamily: Design.font.display, fontSize: 31, marginTop: 18 }, description: { color: Design.color.inkSoft, fontFamily: Design.font.body, fontSize: 13, lineHeight: 23, marginTop: 18 }, detailNote: { alignItems: "flex-start", backgroundColor: Design.color.surface, borderColor: Design.color.line, borderRadius: Design.radius.small, borderWidth: StyleSheet.hairlineWidth, flexDirection: "row", gap: 10, marginTop: 24, padding: 14 }, detailNoteText: { color: Design.color.inkSoft, flex: 1, fontFamily: Design.font.body, fontSize: 11, lineHeight: 18 }, desktopActions: { flexDirection: "row", gap: 10, marginTop: 28 }, primaryAction: { flex: 1 }, secondaryAction: { alignItems: "center", borderColor: Design.color.ink, borderRadius: Design.radius.small, borderWidth: 1, justifyContent: "center", minHeight: 52, paddingHorizontal: 18 }, secondaryActionText: { color: Design.color.ink, fontFamily: Design.font.bodyBold, fontSize: 11, letterSpacing: 1.1 }, bottomActions: { backgroundColor: Design.color.surface, borderTopColor: Design.color.line, borderTopWidth: StyleSheet.hairlineWidth, bottom: 0, flexDirection: "row", gap: 10, left: 0, padding: 14, position: "absolute", right: 0 }, bottomSecondary: { flex: 1 }, buyAction: { alignItems: "center", backgroundColor: Design.color.ink, borderRadius: Design.radius.small, flex: 1, justifyContent: "center", minHeight: 52 }, buyActionText: { color: Design.color.surface, fontFamily: Design.font.bodyBold, fontSize: 11, letterSpacing: 1.1 }, pressed: { opacity: 0.78, transform: [{ scale: 0.98 }] }, overlay: { backgroundColor: "rgba(33,26,22,0.45)", flex: 1, justifyContent: "flex-end" }, sheet: { backgroundColor: Design.color.surface, borderTopLeftRadius: Design.radius.sheet, borderTopRightRadius: Design.radius.sheet, padding: 22, paddingBottom: 34 }, sheetHandle: { alignSelf: "center", backgroundColor: Design.color.line, borderRadius: 3, height: 4, marginBottom: 20, width: 38 }, sheetHeader: { alignItems: "flex-start", flexDirection: "row", justifyContent: "space-between", marginBottom: 24 }, sheetTitle: { color: Design.color.ink, fontFamily: Design.font.display, fontSize: 31, letterSpacing: -0.8 }, sheetSub: { color: Design.color.inkMuted, fontFamily: Design.font.body, fontSize: 11, marginTop: 2 }, close: { alignItems: "center", backgroundColor: Design.color.surfaceMuted, borderRadius: 18, height: 36, justifyContent: "center", width: 36 }, optionLabel: { color: Design.color.ink, fontFamily: Design.font.bodyBold, fontSize: 11, letterSpacing: 0.6, marginBottom: 10, marginTop: 16 }, colorChoices: { flexDirection: "row", flexWrap: "wrap", gap: 8 }, colorChoice: { alignItems: "center", borderColor: Design.color.line, borderRadius: Design.radius.small, borderWidth: StyleSheet.hairlineWidth, flexDirection: "row", gap: 8, minHeight: 42, paddingHorizontal: 10 }, colorChoiceSelected: { borderColor: Design.color.gold, borderWidth: 1 }, swatch: { borderRadius: 9, height: 18, width: 18 }, whiteSwatch: { borderColor: Design.color.line, borderWidth: StyleSheet.hairlineWidth }, choiceText: { color: Design.color.inkSoft, fontFamily: Design.font.bodyMedium, fontSize: 11 }, materialChoices: { flexDirection: "row", flexWrap: "wrap", gap: 8 }, material: { borderColor: Design.color.line, borderRadius: Design.radius.pill, borderWidth: StyleSheet.hairlineWidth, minHeight: 35, paddingHorizontal: 13, justifyContent: "center" }, materialSelected: { backgroundColor: Design.color.ink, borderColor: Design.color.ink }, materialText: { color: Design.color.inkSoft, fontFamily: Design.font.bodyMedium, fontSize: 11 }, materialTextSelected: { color: Design.color.surface }, quantityRow: { alignItems: "center", flexDirection: "row", justifyContent: "space-between", marginBottom: 24, marginTop: 24 }, quantityHint: { color: Design.color.inkMuted, fontFamily: Design.font.body, fontSize: 10, marginTop: 3 }, stepper: { alignItems: "center", backgroundColor: Design.color.surfaceMuted, borderRadius: Design.radius.small, flexDirection: "row", gap: 11, padding: 5 }, step: { alignItems: "center", backgroundColor: Design.color.surface, borderRadius: 15, height: 30, justifyContent: "center", width: 30 }, quantity: { color: Design.color.ink, fontFamily: Design.font.bodyBold, fontSize: 13, minWidth: 16, textAlign: "center" },
 });

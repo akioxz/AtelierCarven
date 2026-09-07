@@ -16,6 +16,7 @@ import {
 } from "react-native";
 import { pickAndUploadImage } from "../../lib/imageUpload";
 import { supabase } from "../../lib/supabase";
+import { AdminNavigation } from "../../components/app-ui";
 
 const isWeb = Platform.OS === "web";
 const CATEGORIES = ["Sofa", "Chair", "Table", "Bed"];
@@ -189,6 +190,7 @@ export default function ManageFurniture() {
   return (
     <View style={styles.container}>
       <StatusBar barStyle="dark-content" />
+      <AdminNavigation active="furniture" />
 
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()}>

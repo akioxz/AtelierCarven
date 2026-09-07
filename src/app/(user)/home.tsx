@@ -1,38 +1,18 @@
 import { AntDesign, Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
-import {
-  ActivityIndicator,
-  Image,
-  Platform,
-  ScrollView,
-  StatusBar,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  useWindowDimensions,
-  View,
-} from "react-native";
+import { ActivityIndicator, Image, Platform, Pressable, ScrollView, StatusBar, StyleSheet, Text, TextInput, useWindowDimensions, View } from "react-native";
+import { ContentFrame, CustomerNavigation } from "../../components/app-ui";
+import { Design, layout } from "../../constants/design";
 import { supabase } from "../../lib/supabase";
 
 const CATEGORIES = ["All", "Sofa", "Chair", "Table", "Bed"];
-
-const getCategoryIcon = (category: string) => {
-  switch (category) {
-    case "Sofa": return "airplay";
-    case "Chair": return "sidebar";
-    case "Table": return "minus-square";
-    case "Bed": return "moon";
-    default: return "box";
-  }
-};
+const iconFor = (category: string) => ({ Sofa: "airplay", Chair: "sidebar", Table: "minus-square", Bed: "moon" }[category] || "box") as React.ComponentProps<typeof Feather>["name"];
 
 export default function Home() {
   const router = useRouter();
   const { width } = useWindowDimensions();
-  const isWeb = Platform.OS === "web" || width > 768;
-
+  const wide = Platform.OS === "web" && width >= layout.desktopBreakpoint;
   const [search, setSearch] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [furniture, setFurniture] = useState<any[]>([]);
@@ -43,269 +23,122 @@ export default function Home() {
 
   const fetchProfile = useCallback(async () => {
     const { data: { user } } = await supabase.auth.getUser();
-    if (user) {
-      const { data } = await supabase.from("profiles").select("username").eq("id", user.id).single();
-      setUsername(data?.username || "Guest");
-    }
+    if (!user) return;
+    const { data } = await supabase.from("profiles").select("username").eq("id", user.id).single();
+    setUsername(data?.username || "Guest");
   }, []);
-
   const fetchFurniture = useCallback(async () => {
     setLoading(true);
     let query = supabase.from("furniture").select("*").eq("is_deleted", false);
     if (selectedCategory !== "All") query = query.eq("category", selectedCategory);
-    if (search) query = query.ilike("name", `%${search}%`);
+    if (search.trim()) query = query.ilike("name", `%${search.trim()}%`);
     const { data } = await query;
     setFurniture(data || []);
     setLoading(false);
-  }, [selectedCategory, search]);
-
+  }, [search, selectedCategory]);
   const fetchCartCount = useCallback(async () => {
     const { data: { user } } = await supabase.auth.getUser();
-    if (user) {
-      const { count } = await supabase.from("cart").select("*", { count: "exact", head: true }).eq("user_id", user.id);
-      setCartCount(count || 0);
-    }
+    if (!user) return;
+    const { count } = await supabase.from("cart").select("*", { count: "exact", head: true }).eq("user_id", user.id);
+    setCartCount(count || 0);
   }, []);
-
   const fetchFavorites = useCallback(async () => {
     const { data: { user } } = await supabase.auth.getUser();
-    if (user) {
-      const { data } = await supabase.from("favorites").select("furniture_id").eq("user_id", user.id);
-      setFavorites((data || []).map((f: any) => f.furniture_id));
-    }
+    if (!user) return;
+    const { data } = await supabase.from("favorites").select("furniture_id").eq("user_id", user.id);
+    setFavorites((data || []).map((item: any) => item.furniture_id));
   }, []);
-
-  useEffect(() => { fetchProfile(); fetchCartCount(); fetchFavorites(); }, [fetchProfile, fetchCartCount, fetchFavorites]);
+  useEffect(() => { fetchProfile(); fetchCartCount(); fetchFavorites(); }, [fetchCartCount, fetchFavorites, fetchProfile]);
   useEffect(() => { fetchFurniture(); }, [fetchFurniture]);
 
   const toggleFavorite = async (furnitureId: string) => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
     if (favorites.includes(furnitureId)) {
-      setFavorites((prev) => prev.filter((id) => id !== furnitureId));
+      setFavorites((previous) => previous.filter((id) => id !== furnitureId));
       await supabase.from("favorites").delete().eq("user_id", user.id).eq("furniture_id", furnitureId);
     } else {
-      setFavorites((prev) => [...prev, furnitureId]);
+      setFavorites((previous) => [...previous, furnitureId]);
       await supabase.from("favorites").insert({ user_id: user.id, furniture_id: furnitureId });
     }
   };
-
-  const handleAddToCart = async (furnitureId: string) => {
+  const addToCart = async (furnitureId: string) => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
     const { data: existing } = await supabase.from("cart").select("*").eq("user_id", user.id).eq("furniture_id", furnitureId).single();
-    if (existing) {
-      await supabase.from("cart").update({ quantity: existing.quantity + 1 }).eq("id", existing.id);
-    } else {
-      await supabase.from("cart").insert({ user_id: user.id, furniture_id: furnitureId, quantity: 1 });
-    }
+    if (existing) await supabase.from("cart").update({ quantity: existing.quantity + 1 }).eq("id", existing.id);
+    else await supabase.from("cart").insert({ user_id: user.id, furniture_id: furnitureId, quantity: 1 });
     fetchCartCount();
   };
 
-  const getGreeting = () => {
-    const hour = new Date().getHours();
-    if (hour < 12) return "Good morning,";
-    if (hour < 18) return "Good afternoon,";
-    return "Good evening,";
-  };
-
   return (
-    <View style={styles.container}>
+    <View style={styles.screen}>
       <StatusBar barStyle="dark-content" />
-      <ScrollView showsVerticalScrollIndicator={false}>
-        <View style={[styles.inner, isWeb && styles.innerWeb]}>
-          <View style={[styles.header, isWeb && styles.headerWeb]}>
-            <View>
-              <Text style={styles.greeting}>{getGreeting()}</Text>
-              <Text style={styles.username}>{username}</Text>
+      <CustomerNavigation active="home" />
+      <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+        <ContentFrame style={styles.frame}>
+          <View style={[styles.hero, wide && styles.heroWide]}>
+            <View style={styles.heroCopy}>
+              <Text style={styles.greeting}>Welcome back{username ? `, ${username}` : ""}.</Text>
+              <Text style={styles.title}>Pieces with presence, chosen for everyday living.</Text>
+              <Text style={styles.subtitle}>Discover the latest furniture in the Atelier Carvén collection.</Text>
             </View>
-            <View style={styles.headerIcons}>
-              <TouchableOpacity style={styles.iconBtn} onPress={() => router.push("/(user)/favorites")}>
-                <AntDesign name="heart" size={18} color="#C4B8A8" />
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.iconBtn} onPress={() => router.push("/(user)/cart")}>
-                <Feather name="shopping-cart" size={18} color="#1C1C1A" />
-                {cartCount > 0 && (
-                  <View style={styles.badge}>
-                    <Text style={styles.badgeText}>{cartCount}</Text>
+            <View style={styles.heroActions}>
+              <Pressable accessibilityLabel="View saved furniture" onPress={() => router.push("/(user)/favorites")} style={({ pressed }) => [styles.iconAction, pressed && styles.pressed]}><Feather name="heart" size={18} color={Design.color.ink} /></Pressable>
+              <Pressable accessibilityLabel="View cart" onPress={() => router.push("/(user)/cart")} style={({ pressed }) => [styles.iconAction, pressed && styles.pressed]}>
+                <Feather name="shopping-bag" size={18} color={Design.color.ink} />{cartCount > 0 ? <View style={styles.count}><Text style={styles.countText}>{cartCount > 9 ? "9+" : cartCount}</Text></View> : null}
+              </Pressable>
+            </View>
+          </View>
+
+          <View style={[styles.search, wide && styles.searchWide]}>
+            <Feather name="search" size={17} color={Design.color.inkMuted} />
+            <TextInput value={search} onChangeText={setSearch} placeholder="Search the collection" placeholderTextColor={Design.color.inkMuted} style={styles.searchInput} returnKeyType="search" />
+            {search ? <Pressable onPress={() => setSearch("")} hitSlop={8}><Feather name="x" size={16} color={Design.color.inkMuted} /></Pressable> : null}
+          </View>
+
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filters}>
+            {CATEGORIES.map((category) => {
+              const selected = category === selectedCategory;
+              return <Pressable key={category} onPress={() => setSelectedCategory(category)} style={({ pressed }) => [styles.filter, selected && styles.filterSelected, pressed && styles.pressed]}><Text style={[styles.filterText, selected && styles.filterTextSelected]}>{category}</Text></Pressable>;
+            })}
+          </ScrollView>
+
+          <View style={styles.collectionHeading}><Text style={styles.collectionTitle}>{selectedCategory === "All" ? "The collection" : `${selectedCategory} collection`}</Text><Text style={styles.collectionCount}>{loading ? "" : `${furniture.length} piece${furniture.length === 1 ? "" : "s"}`}</Text></View>
+          {loading ? <ActivityIndicator color={Design.color.gold} style={styles.loading} /> : furniture.length === 0 ? (
+            <View style={styles.empty}><Feather name="search" size={28} color={Design.color.gold} /><Text style={styles.emptyTitle}>No pieces found</Text><Text style={styles.emptyCopy}>Try a different category or search term.</Text></View>
+          ) : (
+            <View style={[styles.grid, wide && styles.gridWide]}>
+              {furniture.map((item) => (
+                <Pressable key={item.id} onPress={() => router.push({ pathname: "/(user)/product", params: { id: item.id } })} style={({ pressed }) => [styles.card, wide && styles.cardWide, pressed && styles.cardPressed]}>
+                  <View style={styles.imageWrap}>
+                    {item.image_url ? <Image source={{ uri: item.image_url }} style={styles.image} /> : <Feather name={iconFor(item.category)} size={42} color={Design.color.inkMuted} />}
+                    <Pressable accessibilityLabel={favorites.includes(item.id) ? "Remove from saved" : "Save furniture"} onPress={(event) => { event.stopPropagation(); toggleFavorite(item.id); }} style={({ pressed }) => [styles.heart, pressed && styles.pressed]}>
+                      {favorites.includes(item.id) ? <AntDesign name="heart" size={14} color={Design.color.gold} /> : <Feather name="heart" size={15} color={Design.color.ink} />}
+                    </Pressable>
                   </View>
-                )}
-              </TouchableOpacity>
+                  <View style={styles.cardBody}>
+                    <Text style={styles.category}>{item.category}</Text><Text style={styles.productName} numberOfLines={1}>{item.name}</Text>
+                    <View style={styles.cardFooter}><Text style={styles.price}>₱{Number(item.price).toLocaleString()}</Text><Pressable onPress={(event) => { event.stopPropagation(); addToCart(item.id); }} style={({ pressed }) => [styles.add, pressed && styles.pressed]}><Feather name="plus" size={15} color={Design.color.surface} /></Pressable></View>
+                  </View>
+                </Pressable>
+              ))}
             </View>
-          </View>
-
-          <View style={styles.searchContainer}>
-            <Feather name="search" size={15} color="#C4B8A8" style={{ marginRight: 8 }} />
-            <TextInput
-              style={styles.searchInput}
-              placeholder="Search furniture..."
-              placeholderTextColor="#C4B8A8"
-              value={search}
-              onChangeText={setSearch}
-            />
-          </View>
-
-          <View style={styles.divider} />
-
-          <View style={styles.section}>
-            <Text style={styles.sectionLabel}>CATEGORIES</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-              <View style={styles.categories}>
-                {CATEGORIES.map((cat) => (
-                  <TouchableOpacity
-                    key={cat}
-                    style={[styles.categoryPill, selectedCategory === cat && styles.categoryPillActive]}
-                    onPress={() => setSelectedCategory(cat)}
-                  >
-                    {cat !== "All" && (
-                      <Feather name={getCategoryIcon(cat) as any} size={11} color={selectedCategory === cat ? "#FAFAF8" : "#8B7355"} />
-                    )}
-                    <Text style={[styles.categoryText, selectedCategory === cat && styles.categoryTextActive]}>{cat}</Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            </ScrollView>
-          </View>
-
-          <View style={styles.section}>
-            <Text style={styles.sectionLabel}>FEATURED</Text>
-            {loading ? (
-              <ActivityIndicator color="#C9A96E" style={{ marginTop: 20 }} />
-            ) : furniture.length === 0 ? (
-              <View style={styles.empty}>
-                <Feather name="inbox" size={36} color="#E8E0D0" />
-                <Text style={styles.emptyText}>No furniture found.</Text>
-              </View>
-            ) : (
-              <View style={[styles.grid, isWeb && styles.gridWeb]}>
-                {furniture.map((item) => (
-                  <TouchableOpacity
-                    key={item.id}
-                    style={[styles.card, isWeb && styles.cardWeb]}
-                    onPress={() => router.push({ pathname: "/(user)/product", params: { id: item.id } })}
-                  >
-                    <View style={styles.cardImage}>
-                      {item.image_url ? (
-                        <Image source={{ uri: item.image_url }} style={styles.cardImg} />
-                      ) : (
-                        <Feather name={getCategoryIcon(item.category) as any} size={36} color="#8B7355" />
-                      )}
-                      <TouchableOpacity style={styles.heartBtn} onPress={() => toggleFavorite(item.id)}>
-                        {favorites.includes(item.id)
-                          ? <AntDesign name="heart" size={12} color="#C9A96E" />
-                          : <Feather name="heart" size={12} color="#C4B8A8" />
-                        }
-                      </TouchableOpacity>
-                    </View>
-                    <View style={styles.cardContent}>
-                      <Text style={styles.cardCat}>{item.category?.toUpperCase()}</Text>
-                      <Text style={styles.cardName} numberOfLines={1}>{item.name}</Text>
-                      {item.rating != null && (
-                        <View style={styles.starsRow}>
-                          {[1, 2, 3, 4, 5].map((i) => (
-                            <Feather
-                              key={i}
-                              name="star"
-                              size={9}
-                              color={i <= Math.round(item.rating) ? "#C9A96E" : "#E8E0D0"}
-                            />
-                          ))}
-                          <Text style={styles.ratingText}>{Number(item.rating).toFixed(1)}</Text>
-                        </View>
-                      )}
-                      <Text style={styles.cardPrice}>₱{Number(item.price).toLocaleString()}</Text>
-                      <View style={styles.cardBtns}>
-                        <TouchableOpacity style={styles.btnAdd} onPress={() => handleAddToCart(item.id)}>
-                          <Feather name="shopping-cart" size={11} color="#8B7355" />
-                          <Text style={styles.btnAddText}>Add</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity style={styles.btnBuy} onPress={() => router.push({ pathname: "/(user)/product", params: { id: item.id } })}>
-                          <Feather name="zap" size={11} color="#C9A96E" />
-                          <Text style={styles.btnBuyText}>Buy</Text>
-                        </TouchableOpacity>
-                      </View>
-                    </View>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            )}
-          </View>
-          <View style={{ height: 100 }} />
-        </View>
+          )}
+        </ContentFrame>
       </ScrollView>
-
-      <View style={styles.bottomNav}>
-        <TouchableOpacity style={styles.navItem}>
-          <Feather name="home" size={20} color="#1C1C1A" />
-          <View style={styles.navDot} />
-          <Text style={styles.navLabelActive}>HOME</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.navItem} onPress={() => router.push("/(user)/favorites")}>
-          <AntDesign name="heart" size={20} color="#C4B8A8" />
-          <Text style={styles.navLabel}>SAVED</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.navItem} onPress={() => router.push("/(user)/image-placement")}>
-          <Feather name="image" size={20} color="#C4B8A8" />
-          <Text style={styles.navLabel}>PLACE</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.navItem} onPress={() => router.push("/(user)/cart")}>
-          <Feather name="shopping-cart" size={20} color="#C4B8A8" />
-          <Text style={styles.navLabel}>CART</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.navItem} onPress={() => router.push("/(user)/profile")}>
-          <Feather name="user" size={20} color="#C4B8A8" />
-          <Text style={styles.navLabel}>PROFILE</Text>
-        </TouchableOpacity>
-      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#FAFAF8" },
-  inner: { flex: 1 },
-  innerWeb: { maxWidth: 1200, width: "100%", alignSelf: "center" as any },
-  header: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", padding: 24, paddingTop: 56 },
-  headerWeb: { paddingTop: 32 },
-  greeting: { fontSize: 11, color: "#9E8E7E", letterSpacing: 1 },
-  username: { fontSize: 20, fontWeight: "500", color: "#1C1C1A" },
-  headerIcons: { flexDirection: "row", gap: 8 },
-  iconBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: "#F5F0E8", borderWidth: 0.5, borderColor: "#E8E0D0", justifyContent: "center", alignItems: "center", position: "relative" },
-  badge: { position: "absolute", top: -2, right: -2, width: 16, height: 16, borderRadius: 8, backgroundColor: "#C9A96E", justifyContent: "center", alignItems: "center" },
-  badgeText: { fontSize: 9, color: "#FAFAF8", fontWeight: "500" },
-  searchContainer: { flexDirection: "row", alignItems: "center", marginHorizontal: 24, marginBottom: 16, backgroundColor: "#F5F0E8", borderRadius: 10, paddingHorizontal: 12, borderWidth: 0.5, borderColor: "#E8E0D0" },
-  searchInput: { flex: 1, paddingVertical: 11, fontSize: 13, color: "#1C1C1A" },
-  divider: { height: 1, backgroundColor: "#E8E0D0", marginHorizontal: 24, marginBottom: 20 },
-  section: { paddingHorizontal: 24, marginBottom: 20 },
-  sectionLabel: { fontSize: 10, letterSpacing: 2, color: "#8B7355", marginBottom: 12 },
-  categories: { flexDirection: "row", gap: 8 },
-  categoryPill: { flexDirection: "row", alignItems: "center", gap: 5, backgroundColor: "#F5F0E8", borderRadius: 20, paddingHorizontal: 14, paddingVertical: 7, borderWidth: 0.5, borderColor: "#E8E0D0" },
-  categoryPillActive: { backgroundColor: "#1C1C1A", borderColor: "#1C1C1A" },
-  categoryText: { fontSize: 12, color: "#8B7355" },
-  categoryTextActive: { color: "#FAFAF8" },
-  grid: { flexDirection: "row", flexWrap: "wrap", gap: 12 },
-  gridWeb: { display: "grid" as any, gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))", gap: 16 },
-  card: { width: "48%", backgroundColor: "#F5F0E8", borderRadius: 12, overflow: "hidden", borderWidth: 0.5, borderColor: "#E8E0D0" },
-  cardWeb: { width: "100%" as any },
-  cardImage: { height: 160, backgroundColor: "#EDE5D8", justifyContent: "center", alignItems: "center", position: "relative" },
-  cardImg: { width: "100%", height: 160 },
-  heartBtn: { position: "absolute", top: 6, right: 6, width: 26, height: 26, borderRadius: 13, backgroundColor: "#FAFAF8", justifyContent: "center", alignItems: "center", borderWidth: 0.5, borderColor: "#E8E0D0" },
-  cardContent: { padding: 10 },
-  cardCat: { fontSize: 8, letterSpacing: 1, color: "#8B7355", marginBottom: 2 },
-  cardName: { fontSize: 12, fontWeight: "500", color: "#1C1C1A", marginBottom: 4 },
-  starsRow: { flexDirection: "row", alignItems: "center", gap: 2, marginBottom: 4 },
-  ratingText: { fontSize: 9, color: "#9E8E7E", marginLeft: 2 },
-  cardPrice: { fontSize: 13, color: "#C9A96E", marginBottom: 8 },
-  cardBtns: { flexDirection: "row", gap: 6 },
-  btnAdd: { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 4, backgroundColor: "#FAFAF8", borderRadius: 6, paddingVertical: 6, borderWidth: 0.5, borderColor: "#E8E0D0" },
-  btnAddText: { fontSize: 10, color: "#8B7355" },
-  btnBuy: { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 4, backgroundColor: "#1C1C1A", borderRadius: 6, paddingVertical: 6 },
-  btnBuyText: { fontSize: 10, color: "#FAFAF8" },
-  empty: { alignItems: "center", paddingVertical: 40, gap: 10 },
-  emptyText: { fontSize: 13, color: "#9E8E7E" },
-  bottomNav: { position: "absolute", bottom: 0, left: 0, right: 0, backgroundColor: "#FAFAF8", borderTopWidth: 0.5, borderTopColor: "#E8E0D0", flexDirection: "row", justifyContent: "space-around", paddingVertical: 12, paddingBottom: 24 },
-  navItem: { alignItems: "center", gap: 3 },
-  navDot: { width: 4, height: 4, borderRadius: 2, backgroundColor: "#C9A96E" },
-  navLabel: { fontSize: 8, color: "#C4B8A8", letterSpacing: 1 },
-  navLabelActive: { fontSize: 8, color: "#1C1C1A", letterSpacing: 1 },
+  screen: { backgroundColor: Design.color.canvas, flex: 1 }, scroll: { paddingBottom: 112 }, frame: { paddingHorizontal: 20, paddingTop: 28 },
+  hero: { alignItems: "flex-start", flexDirection: "row", gap: 16, justifyContent: "space-between", marginBottom: 28 }, heroWide: { marginTop: 10 }, heroCopy: { flex: 1, maxWidth: 680 },
+  greeting: { color: Design.color.inkSoft, fontFamily: Design.font.bodyMedium, fontSize: 13, marginBottom: 8 }, title: { color: Design.color.ink, fontFamily: Design.font.display, fontSize: 39, letterSpacing: -1.2, lineHeight: 39, maxWidth: 630 }, subtitle: { color: Design.color.inkSoft, fontFamily: Design.font.body, fontSize: 13, lineHeight: 21, marginTop: 11 },
+  heroActions: { flexDirection: "row", gap: 8 }, iconAction: { alignItems: "center", backgroundColor: Design.color.surface, borderColor: Design.color.line, borderRadius: 22, borderWidth: StyleSheet.hairlineWidth, height: 44, justifyContent: "center", position: "relative", width: 44 }, count: { alignItems: "center", backgroundColor: Design.color.gold, borderColor: Design.color.surface, borderRadius: 9, borderWidth: 1.5, height: 18, justifyContent: "center", position: "absolute", right: -5, top: -5, minWidth: 18 }, countText: { color: Design.color.surface, fontFamily: Design.font.bodyBold, fontSize: 8 },
+  search: { alignItems: "center", backgroundColor: Design.color.surface, borderColor: Design.color.line, borderRadius: Design.radius.card, borderWidth: StyleSheet.hairlineWidth, flexDirection: "row", gap: 10, minHeight: 52, paddingHorizontal: 15 }, searchWide: { maxWidth: 560 }, searchInput: { color: Design.color.ink, flex: 1, fontFamily: Design.font.bodyMedium, fontSize: 13, minHeight: 50 },
+  filters: { gap: 8, paddingVertical: 18 }, filter: { borderColor: Design.color.line, borderRadius: Design.radius.pill, borderWidth: StyleSheet.hairlineWidth, minHeight: 36, paddingHorizontal: 15, justifyContent: "center" }, filterSelected: { backgroundColor: Design.color.ink, borderColor: Design.color.ink }, filterText: { color: Design.color.inkSoft, fontFamily: Design.font.bodyMedium, fontSize: 11 }, filterTextSelected: { color: Design.color.surface },
+  collectionHeading: { alignItems: "baseline", flexDirection: "row", justifyContent: "space-between", marginBottom: 14 }, collectionTitle: { color: Design.color.ink, fontFamily: Design.font.display, fontSize: 30, letterSpacing: -0.7 }, collectionCount: { color: Design.color.inkMuted, fontFamily: Design.font.body, fontSize: 11 }, loading: { marginTop: 48 },
+  grid: { flexDirection: "row", flexWrap: "wrap", gap: 14 }, gridWide: { gap: 20 }, card: { backgroundColor: Design.color.surface, borderColor: Design.color.line, borderRadius: Design.radius.card, borderWidth: StyleSheet.hairlineWidth, overflow: "hidden", width: "47.8%" }, cardWide: { width: "31.7%" }, cardPressed: { opacity: 0.84, transform: [{ scale: 0.99 }] }, imageWrap: { alignItems: "center", aspectRatio: 0.96, backgroundColor: Design.color.surfaceMuted, justifyContent: "center", position: "relative" }, image: { height: "100%", width: "100%" }, heart: { alignItems: "center", backgroundColor: "rgba(255,252,248,0.94)", borderRadius: 18, height: 36, justifyContent: "center", position: "absolute", right: 10, top: 10, width: 36 }, cardBody: { padding: 13 }, category: { color: Design.color.inkMuted, fontFamily: Design.font.bodySemibold, fontSize: 9, letterSpacing: 0.7, textTransform: "uppercase" }, productName: { color: Design.color.ink, fontFamily: Design.font.bodySemibold, fontSize: 13, marginTop: 5 }, cardFooter: { alignItems: "center", flexDirection: "row", justifyContent: "space-between", marginTop: 12 }, price: { color: Design.color.gold, fontFamily: Design.font.bodyBold, fontSize: 13 }, add: { alignItems: "center", backgroundColor: Design.color.ink, borderRadius: 16, height: 32, justifyContent: "center", width: 32 },
+  empty: { alignItems: "center", backgroundColor: Design.color.surface, borderColor: Design.color.line, borderRadius: Design.radius.card, borderWidth: StyleSheet.hairlineWidth, marginTop: 8, padding: 36 }, emptyTitle: { color: Design.color.ink, fontFamily: Design.font.display, fontSize: 26, marginTop: 12 }, emptyCopy: { color: Design.color.inkSoft, fontFamily: Design.font.body, fontSize: 12, marginTop: 4 }, pressed: { opacity: 0.76, transform: [{ scale: 0.97 }] },
 });

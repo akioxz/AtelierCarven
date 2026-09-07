@@ -14,6 +14,7 @@ import {
   View,
 } from "react-native";
 import { supabase } from "../../lib/supabase";
+import { AdminNavigation } from "../../components/app-ui";
 
 const STATUS_OPTIONS = ["All", "Pending", "Processing", "Completed", "Cancelled"];
 const MUTABLE_STATUSES = ["Pending", "Processing", "Completed", "Cancelled"];
@@ -212,6 +213,7 @@ export default function ManageOrders() {
   return (
     <View style={styles.container}>
       <StatusBar barStyle="dark-content" />
+      <AdminNavigation active="orders" />
 
       {/* Header */}
       <View style={styles.header}>
@@ -483,7 +485,7 @@ const styles = StyleSheet.create({
   saveBtn: { flex: 1, backgroundColor: "#1C1C1A", borderRadius: 10, padding: 16, alignItems: "center" },
   saveBtnDisabled: { opacity: 0.5 },
   saveBtnText: { fontSize: 11, letterSpacing: 2, color: "#FAFAF8" },
-  bottomNav: { position: "absolute", bottom: 0, left: 0, right: 0, backgroundColor: "#FAFAF8", borderTopWidth: 0.5, borderTopColor: "#E8E0D0", flexDirection: "row", justifyContent: "space-around", paddingVertical: 12, paddingBottom: 24 },
+  bottomNav: { display: "none" },
   navItem: { alignItems: "center", gap: 3 },
   navDot: { width: 4, height: 4, borderRadius: 2, backgroundColor: "#C9A96E" },
   navLabel: { fontSize: 8, color: "#C4B8A8", letterSpacing: 1 },

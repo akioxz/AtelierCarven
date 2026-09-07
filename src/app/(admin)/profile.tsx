@@ -14,6 +14,7 @@ import {
 } from "react-native";
 import { pickAndUploadImage } from "../../lib/imageUpload";
 import { supabase } from "../../lib/supabase";
+import { AdminNavigation } from "../../components/app-ui";
 
 export default function AdminProfile() {
   const router = useRouter();
@@ -80,6 +81,7 @@ export default function AdminProfile() {
   return (
     <View style={styles.container}>
       <StatusBar barStyle="dark-content" />
+      <AdminNavigation active="profile" />
       <ScrollView showsVerticalScrollIndicator={false}>
         {/* Header */}
         <View style={styles.header}>
@@ -362,7 +364,8 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   logoutText: { fontSize: 11, letterSpacing: 2, color: "#9E8E7E" },
-  bottomNav: {
+  bottomNav: { display: "none" },
+  legacyBottomNav: {
     position: "absolute",
     bottom: 0,
     left: 0,

@@ -15,6 +15,7 @@ import {
 } from "react-native";
 import { pickAndUploadImage } from "../../lib/imageUpload";
 import { supabase } from "../../lib/supabase";
+import { CustomerNavigation } from "../../components/app-ui";
 
 const getStatusBadge = (status: string) => {
   switch (status) {
@@ -139,6 +140,7 @@ export default function UserProfile() {
   return (
     <View style={styles.container}>
       <StatusBar barStyle="dark-content" />
+      <CustomerNavigation active="profile" />
       <ScrollView showsVerticalScrollIndicator={false}>
         <View style={styles.header}>
           <TouchableOpacity onPress={() => router.back()}>
@@ -518,7 +520,7 @@ const styles = StyleSheet.create({
   logoutModalConfirmBtn: { flex: 1, flexDirection: "row", gap: 6, backgroundColor: "#1C1C1A", borderRadius: 10, paddingVertical: 14, alignItems: "center", justifyContent: "center" },
   logoutModalConfirmText: { fontSize: 11, letterSpacing: 2, color: "#FAFAF8" },
 
-  bottomNav: { position: "absolute", bottom: 0, left: 0, right: 0, backgroundColor: "#FAFAF8", borderTopWidth: 0.5, borderTopColor: "#E8E0D0", flexDirection: "row", justifyContent: "space-around", paddingVertical: 12, paddingBottom: 24 },
+  bottomNav: { display: "none" },
   navItem: { alignItems: "center", gap: 3 },
   navDot: { width: 4, height: 4, borderRadius: 2, backgroundColor: "#C9A96E" },
   navLabel: { fontSize: 8, color: "#C4B8A8", letterSpacing: 1 },

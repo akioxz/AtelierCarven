@@ -6,6 +6,7 @@ import { useRouter } from "expo-router";
 import { useState, useEffect } from "react";
 import { Feather } from "@expo/vector-icons";
 import { supabase } from "../../lib/supabase";
+import { AdminNavigation } from "../../components/app-ui";
 
 export default function ActivityLogs() {
   const router = useRouter();
@@ -32,6 +33,7 @@ export default function ActivityLogs() {
   return (
     <View style={styles.container}>
       <StatusBar barStyle="dark-content" />
+      <AdminNavigation active="logs" />
 
       {/* Sidebar for web */}
       {isWeb && (
@@ -154,8 +156,8 @@ export default function ActivityLogs() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#FAFAF8", flexDirection: "row" },
-  sidebar: { width: 220, backgroundColor: "#F5F0E8", borderRightWidth: 0.5, borderRightColor: "#E8E0D0", paddingTop: 48, paddingHorizontal: 20, gap: 4 },
+  container: { flex: 1, backgroundColor: "#FAFAF8" },
+  sidebar: { display: "none" },
   sidebarLogo: { marginBottom: 32, paddingBottom: 20, borderBottomWidth: 0.5, borderBottomColor: "#E8E0D0" },
   sidebarLogoSmall: { fontSize: 9, letterSpacing: 4, color: "#8B7355" },
   sidebarLogoBig: { fontSize: 24, fontWeight: "300", color: "#1C1C1A", letterSpacing: 2, marginBottom: 8 },
@@ -184,7 +186,7 @@ const styles = StyleSheet.create({
   logTime: { fontSize: 11, color: "#9E8E7E" },
   empty: { flex: 1, justifyContent: "center", alignItems: "center", gap: 12, marginTop: 80 },
   emptyText: { fontSize: 13, color: "#9E8E7E" },
-  bottomNav: { position: "absolute", bottom: 0, left: 0, right: 0, backgroundColor: "#FAFAF8", borderTopWidth: 0.5, borderTopColor: "#E8E0D0", flexDirection: "row", justifyContent: "space-around", paddingVertical: 12, paddingBottom: 24 },
+  bottomNav: { display: "none" },
   navItem: { alignItems: "center", gap: 3 },
   navDot: { width: 4, height: 4, borderRadius: 2, backgroundColor: "#C9A96E" },
   navLabel: { fontSize: 8, color: "#C4B8A8", letterSpacing: 1 },

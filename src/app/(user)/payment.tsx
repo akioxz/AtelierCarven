@@ -14,6 +14,7 @@ import {
   View,
 } from "react-native";
 import { supabase } from "../../lib/supabase";
+import { CustomerNavigation } from "../../components/app-ui";
 
 const BOTTOM_NAV = [
   { label: "HOME", icon: "home", route: "/(user)/home" },
@@ -188,6 +189,7 @@ export default function Payment() {
   return (
     <View style={styles.container}>
       <StatusBar barStyle="dark-content" />
+      <CustomerNavigation active="cart" />
       <ScrollView showsVerticalScrollIndicator={false} style={styles.scrollContainer} contentContainerStyle={{ paddingBottom: 24 }}>
         <View style={styles.header}>
           <TouchableOpacity onPress={() => router.back()} disabled={processing}>
@@ -518,7 +520,7 @@ const styles = StyleSheet.create({
   confirmBtnDisabled: { opacity: 0.7 },
   confirmBtnText: { color: "#FAFAF8", fontSize: 11, letterSpacing: 2 },
   footerNote: { fontSize: 10, color: "#C4B8A8", textAlign: "center", letterSpacing: 0.5 },
-  bottomNav: { backgroundColor: "#FAFAF8", borderTopWidth: 0.5, borderTopColor: "#E8E0D0", flexDirection: "row", justifyContent: "space-around", paddingVertical: 12, paddingBottom: 24 },
+  bottomNav: { display: "none" },
   navItem: { alignItems: "center", gap: 3 },
   navLabel: { fontSize: 8, color: "#C4B8A8", letterSpacing: 1 },
   alertOverlay: {

@@ -13,6 +13,7 @@ import {
   View,
 } from "react-native";
 import { supabase } from "../../lib/supabase";
+import { CustomerNavigation } from "../../components/app-ui";
 
 export default function Favorites() {
   const router = useRouter();
@@ -131,6 +132,7 @@ export default function Favorites() {
   return (
     <View style={styles.container}>
       <StatusBar barStyle="dark-content" />
+      <CustomerNavigation active="favorites" />
 
       {/* Header */}
       <View style={styles.header}>
@@ -312,7 +314,8 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
   },
   browseBtnText: { color: "#FAFAF8", fontSize: 11, letterSpacing: 2, fontWeight: "500" },
-  bottomNav: {
+  bottomNav: { display: "none" },
+  legacyBottomNav: {
     position: "absolute",
     bottom: 0,
     left: 0,
