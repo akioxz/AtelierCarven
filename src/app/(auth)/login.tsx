@@ -1,3 +1,4 @@
+import { Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import {
@@ -73,7 +74,7 @@ export default function Login() {
           <View style={styles.webCard}>
             <View style={styles.webBrand}>
               <Text style={styles.brandSmall}>Atelier</Text>
-              <Text style={styles.brandLarge}>CarvÃ©n</Text>
+              <Text style={styles.brandLarge}>Carvén</Text>
               <View style={styles.goldDivider} />
             </View>
             <View style={styles.form}>
@@ -101,7 +102,7 @@ export default function Login() {
                 <View style={styles.passwordRow}>
                   <TextInput
                     style={[styles.input, { flex: 1 }]}
-                    placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢"
+                    placeholder="Min. 8 characters"
                     placeholderTextColor={Design.color.inkMuted}
                     value={password}
                     onChangeText={setPassword}
@@ -130,11 +131,11 @@ export default function Login() {
           <>
             <View style={styles.header}>
               <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-                <Text style={styles.backText}>â†</Text>
+                <Feather name="arrow-left" size={18} color={Design.color.ink} />
               </TouchableOpacity>
               <View style={styles.brandRow}>
                 <Text style={styles.brandSmall}>Atelier</Text>
-                <Text style={styles.brandLarge}>CarvÃ©n</Text>
+                <Text style={styles.brandLarge}>Carvén</Text>
               </View>
               <View style={styles.goldDivider} />
             </View>
@@ -163,7 +164,7 @@ export default function Login() {
                 <View style={styles.passwordRow}>
                   <TextInput
                     style={[styles.input, { flex: 1 }]}
-                    placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢"
+                    placeholder="Min. 8 characters"
                     placeholderTextColor={Design.color.inkMuted}
                     value={password}
                     onChangeText={setPassword}
@@ -218,7 +219,6 @@ const styles = StyleSheet.create({
   },
   header: { backgroundColor: Design.color.surfaceMuted, padding: 40, paddingTop: 64, paddingBottom: 36 },
   backBtn: { marginBottom: 24 },
-  backText: { fontSize: 22, color: Design.color.ink },
   brandRow: { marginBottom: 16 },
   brandSmall: { fontSize: 12, letterSpacing: 4, color: Design.color.inkSoft },
   brandLarge: { fontFamily: Design.font.display, fontSize: 36, letterSpacing: -1.0, lineHeight: 36, color: Design.color.ink, marginBottom: 8 },

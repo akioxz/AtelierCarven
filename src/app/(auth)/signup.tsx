@@ -1,3 +1,4 @@
+import { Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import {
@@ -73,11 +74,11 @@ export default function Signup() {
             onPress={() => router.back()}
             style={styles.backBtn}
           >
-            <Text style={styles.backText}>â†</Text>
+            <Feather name="arrow-left" size={18} color={Design.color.ink} />
           </TouchableOpacity>
           <View style={styles.brandRow}>
             <Text style={styles.brandSmall}>Atelier</Text>
-            <Text style={styles.brandLarge}>CarvÃ©n</Text>
+            <Text style={styles.brandLarge}>Carvén</Text>
           </View>
           <View style={styles.goldDivider} />
         </View>
@@ -202,10 +203,6 @@ const styles = StyleSheet.create({
   },
   backBtn: {
     marginBottom: 24,
-  },
-  backText: {
-    fontSize: 22,
-    color: Design.color.ink,
   },
   brandRow: {
     marginBottom: 16,
