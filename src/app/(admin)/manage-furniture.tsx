@@ -56,6 +56,8 @@ export default function ManageFurniture() {
   const [depth, setDepth] = useState("");
   const [weight, setWeight] = useState("");
   const [sizeGuides, setSizeGuides] = useState<Record<string, any>>({});
+  const [galleryImages, setGalleryImages] = useState<any[]>([]);
+  const [uploadingGallery, setUploadingGallery] = useState(false);
 
   const fetchFurniture = useCallback(async () => {
     setLoading(true);
@@ -98,10 +100,11 @@ export default function ManageFurniture() {
     setName(""); setPrice(""); setCategory("Sofa");
     setDescription(""); setImageUrl(""); setErrorMsg("");
     setWidth(""); setHeight(""); setDepth(""); setWeight("");
+    setGalleryImages([]);
     setModalVisible(true);
   };
 
-  const openEdit = (item: any) => {
+  const openEdit = async (item: any) => {
     setEditing(item);
     setName(item.name);
     setPrice(String(item.price));
@@ -115,6 +118,9 @@ export default function ManageFurniture() {
     setWeight(guide?.weight_kg != null ? String(guide.weight_kg) : "");
     setErrorMsg("");
     setModalVisible(true);
+    // Fetch gallery images for this item
+    const { data: gi } = await supabase.from("furniture_images").select("*").eq("furniture_id", item.id).order("display_order");
+    setGalleryImages(gi || []);
   };
 
   const handlePickImage = async () => {
@@ -416,6 +422,39 @@ export default function ManageFurniture() {
                   <TextInput style={styles.input} value={weight} onChangeText={setWeight} placeholder="8" placeholderTextColor={Design.color.inkMuted} keyboardType="decimal-pad" />
                 </View>
               </View>
+
+              {editing ? (
+                <>
+                  <Text style={styles.inputLabel}>GALLERY IMAGES</Text>
+                  <Text style={styles.dimHint}>Additional images shown on the product page. Save the item first before adding gallery images.</Text>
+                  <View style={styles.galleryGrid}>
+                    {galleryImages.map((gi: any) => (
+                      <View key={gi.id} style={styles.galleryThumb}>
+                        <Image source={{ uri: gi.image_url }} style={styles.galleryThumbImage} resizeMode="cover" />
+                        <TouchableOpacity style={styles.galleryDelete} onPress={async () => {
+                          await supabase.from("furniture_images").delete().eq("id", gi.id);
+                          setGalleryImages((prev) => prev.filter((g: any) => g.id !== gi.id));
+                        }}>
+                          <Feather name="x" size={12} color={Design.color.surface} />
+                        </TouchableOpacity>
+                      </View>
+                    ))}
+                    <TouchableOpacity style={styles.galleryAddBtn} disabled={uploadingGallery} onPress={async () => {
+                      setUploadingGallery(true);
+                      const url = await pickAndUploadImage("furniture-images", "gallery");
+                      if (url && editing?.id) {
+                        const nextOrder = galleryImages.length;
+                        const { data } = await supabase.from("furniture_images").insert({ furniture_id: editing.id, image_url: url, display_order: nextOrder }).select("*").single();
+                        if (data) setGalleryImages((prev) => [...prev, data]);
+                      }
+                      setUploadingGallery(false);
+                    }}>
+                      <Feather name={uploadingGallery ? "loader" : "plus"} size={22} color={Design.color.inkSoft} />
+                      <Text style={styles.uploadText}>{uploadingGallery ? "UPLOADING..." : "ADD"}</Text>
+                    </TouchableOpacity>
+                  </View>
+                </>
+              ) : null}
 
               {errorMsg ? (
                 <Text style={styles.errorText}>{errorMsg}</Text>
@@ -734,4 +773,9 @@ const styles = StyleSheet.create({
   dimField: { flex: 1, minWidth: 140 },
   dimCaption: { fontSize: 9, letterSpacing: 1.2, color: Design.color.inkSoft, marginBottom: 6 },
   dimHint: { fontSize: 10, color: Design.color.inkMuted, marginBottom: 12 },
+  galleryGrid: { flexDirection: "row", flexWrap: "wrap", gap: 10, marginBottom: 16 },
+  galleryThumb: { width: 72, height: 72, borderRadius: Design.radius.small, overflow: "hidden", position: "relative" },
+  galleryThumbImage: { width: "100%", height: "100%" },
+  galleryDelete: { position: "absolute", top: 4, right: 4, width: 20, height: 20, borderRadius: 10, backgroundColor: "rgba(33,26,22,0.7)", alignItems: "center", justifyContent: "center" },
+  galleryAddBtn: { width: 72, height: 72, borderRadius: Design.radius.small, borderWidth: 1, borderColor: Design.color.line, borderStyle: "dashed", alignItems: "center", justifyContent: "center", gap: 4 },
 });
