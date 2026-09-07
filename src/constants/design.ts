@@ -25,6 +25,7 @@ export const Design = {
 } as const;
 
 export const layout = {
+  narrowBreakpoint: 500,
   desktopBreakpoint: 900,
   pageMaxWidth: 1180,
 };
