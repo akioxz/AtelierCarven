@@ -16,17 +16,8 @@ import {
 import { pickAndUploadImage } from "../../lib/imageUpload";
 import { supabase } from "../../lib/supabase";
 import { Design } from "../../constants/design";
-import { CustomerNavigation } from "../../components/app-ui";
-
-const getStatusBadge = (status: string) => {
-  switch (status) {
-    case "Pending": return { color: "#C9A96E", bg: "#FDF9F0", label: "PENDING" };
-    case "Processing": return { color: "#8B7355", bg: "#EDE5D8", label: "PROCESSING" };
-    case "Completed": return { color: "#3B6D11", bg: "#EAF3DE", label: "COMPLETED" };
-    case "Cancelled": return { color: "#A32D2D", bg: "#FCEBEB", label: "CANCELLED" };
-    default: return { color: "#8B7355", bg: "#EDE5D8", label: "ORDER" };
-  }
-};
+import { getStatusBadge } from "../../constants/statuses";
+import { ContentFrame, CustomerNavigation } from "../../components/app-ui";
 
 export default function UserProfile() {
   const router = useRouter();
@@ -143,6 +134,7 @@ export default function UserProfile() {
       <StatusBar barStyle="dark-content" />
       <CustomerNavigation active="profile" />
       <ScrollView showsVerticalScrollIndicator={false}>
+        <ContentFrame>
         <View style={styles.header}>
           <TouchableOpacity onPress={() => router.back()}>
             <Feather name="arrow-left" size={22} color={Design.color.ink} />
@@ -300,6 +292,7 @@ export default function UserProfile() {
           </TouchableOpacity>
         </View>
         <View style={{ height: 120 }} />
+        </ContentFrame>
       </ScrollView>
 
       {/* Order Detail Modal */}

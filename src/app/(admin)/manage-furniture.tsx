@@ -17,7 +17,7 @@ import {
 import { Design } from "../../constants/design";
 import { pickAndUploadImage } from "../../lib/imageUpload";
 import { supabase } from "../../lib/supabase";
-import { AdminNavigation } from "../../components/app-ui";
+import { AdminNavigation, ContentFrame } from "../../components/app-ui";
 
 const isWeb = Platform.OS === "web";
 const CATEGORIES = ["Sofa", "Chair", "Table", "Bed"];
@@ -224,6 +224,7 @@ export default function ManageFurniture() {
       <StatusBar barStyle="dark-content" />
       <AdminNavigation active="furniture" />
 
+      <ContentFrame>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()}>
           <Feather name="arrow-left" size={22} color={Design.color.ink} />
@@ -292,6 +293,7 @@ export default function ManageFurniture() {
         <Feather name="plus" size={16} color={Design.color.surface} />
         <Text style={styles.addBtnText}>ADD FURNITURE</Text>
       </TouchableOpacity>
+      </ContentFrame>
 
       {/* Delete Confirmation Modal */}
       <Modal visible={deleteModalVisible} animationType="fade" transparent>

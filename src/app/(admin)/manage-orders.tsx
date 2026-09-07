@@ -15,25 +15,11 @@ import {
 } from "react-native";
 import { Design } from "../../constants/design";
 import { supabase } from "../../lib/supabase";
-import { AdminNavigation } from "../../components/app-ui";
+import { AdminNavigation, ContentFrame } from "../../components/app-ui";
+import { getStatusBadge } from "../../constants/statuses";
 
 const STATUS_OPTIONS = ["All", "Pending", "Processing", "Completed", "Cancelled"];
 const MUTABLE_STATUSES = ["Pending", "Processing", "Completed", "Cancelled"];
-
-const getStatusBadge = (status: string) => {
-  switch (status) {
-    case "Pending":
-      return { color: Design.color.gold, bg: "#FDF9F0", label: "PENDING" };
-    case "Processing":
-      return { color: Design.color.inkSoft, bg: Design.color.surfaceMuted, label: "PROCESSING" };
-    case "Completed":
-      return { color: "#3B6D11", bg: "#EAF3DE", label: "COMPLETED" };
-    case "Cancelled":
-      return { color: "#A32D2D", bg: "#FCEBEB", label: "CANCELLED" };
-    default:
-      return { color: Design.color.inkSoft, bg: Design.color.surfaceMuted, label: "ORDER" };
-  }
-};
 
 const getMethodLabel = (method: string) => {
   switch (method) {
@@ -217,6 +203,7 @@ export default function ManageOrders() {
       <AdminNavigation active="orders" />
 
       {/* Header */}
+      <ContentFrame>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()}>
           <Feather name="arrow-left" size={22} color={Design.color.ink} />
@@ -277,6 +264,7 @@ export default function ManageOrders() {
           onRefresh={handleRefresh}
         />
       )}
+      </ContentFrame>
 
       {/* Order Detail Modal */}
       <Modal visible={selectedOrder !== null} animationType="slide" transparent>

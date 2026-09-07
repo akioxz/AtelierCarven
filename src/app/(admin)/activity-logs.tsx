@@ -1,18 +1,18 @@
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
-  StatusBar, ActivityIndicator, useWindowDimensions,
+  StatusBar, ActivityIndicator, useWindowDimensions, Platform,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { useState, useEffect } from "react";
 import { Feather } from "@expo/vector-icons";
-import { Design } from "../../constants/design";
+import { Design, layout } from "../../constants/design";
 import { supabase } from "../../lib/supabase";
-import { AdminNavigation } from "../../components/app-ui";
+import { AdminNavigation, ContentFrame } from "../../components/app-ui";
 
 export default function ActivityLogs() {
   const router = useRouter();
   const { width } = useWindowDimensions();
-  const isWeb = width > 768;
+  const isWeb = Platform.OS === "web" && width >= layout.desktopBreakpoint;
   const [logs, setLogs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -36,6 +36,7 @@ export default function ActivityLogs() {
       <StatusBar barStyle="dark-content" />
       <AdminNavigation active="logs" />
 
+      <ContentFrame>
       <View style={styles.main}>
         <View style={[styles.header, isWeb && styles.headerWeb]}>
           {!isWeb && (
@@ -105,6 +106,7 @@ export default function ActivityLogs() {
 
 
       </View>
+      </ContentFrame>
     </View>
   );
 }

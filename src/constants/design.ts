@@ -5,12 +5,15 @@ export const Design = {
     surfaceMuted: "#F1E9DE",
     ink: "#211A16",
     inkSoft: "#65594F",
-    inkMuted: "#897B70",
+    inkMuted: "#6B5D52",
     line: "#DED2C4",
     gold: "#A87842",
     goldSoft: "#E9D8C2",
     success: "#2F6D52",
     danger: "#A7473A",
+  },
+  shadow: {
+    card: { shadowColor: "#211A16", shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.08, shadowRadius: 24, elevation: 6 },
   },
   font: {
     display: "CormorantGaramond_600SemiBold",

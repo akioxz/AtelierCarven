@@ -10,13 +10,17 @@ import {
     Text,
     TextInput,
     TouchableOpacity,
+    useWindowDimensions,
     View,
 } from "react-native";
-import { Design } from "../../constants/design";
+import { Design, layout } from "../../constants/design";
 import { supabase } from "../../lib/supabase";
+import { ContentFrame } from "../../components/app-ui";
 
 export default function Signup() {
   const router = useRouter();
+  const { width } = useWindowDimensions();
+  const isWeb = Platform.OS === "web" && width >= layout.desktopBreakpoint;
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -68,6 +72,7 @@ export default function Signup() {
         contentContainerStyle={styles.scroll}
         keyboardShouldPersistTaps="handled"
       >
+        <ContentFrame>
         {/* Header */}
         <View style={styles.header}>
           <TouchableOpacity
@@ -84,7 +89,7 @@ export default function Signup() {
         </View>
 
         {/* Form */}
-        <View style={styles.form}>
+        <View style={[styles.form, isWeb && styles.formWeb]}>
           <Text style={styles.title}>Create account.</Text>
           <Text style={styles.subtitle}>
             Join us and discover luxury furniture.
@@ -105,6 +110,8 @@ export default function Signup() {
               value={username}
               onChangeText={setUsername}
               autoCapitalize="words"
+              autoComplete="name"
+              textContentType="name"
             />
           </View>
 
@@ -118,6 +125,8 @@ export default function Signup() {
               onChangeText={setEmail}
               keyboardType="email-address"
               autoCapitalize="none"
+              autoComplete="email"
+              textContentType="emailAddress"
             />
           </View>
 
@@ -132,6 +141,8 @@ export default function Signup() {
                 onChangeText={setPassword}
                 secureTextEntry={!showPassword}
                 autoCapitalize="none"
+                autoComplete="new-password"
+                textContentType="newPassword"
               />
               <TouchableOpacity
                 onPress={() => setShowPassword(!showPassword)}
@@ -154,6 +165,8 @@ export default function Signup() {
               onChangeText={setConfirmPassword}
               secureTextEntry={!showPassword}
               autoCapitalize="none"
+              autoComplete="new-password"
+              textContentType="newPassword"
             />
           </View>
 
@@ -182,6 +195,7 @@ export default function Signup() {
             </Text>
           </TouchableOpacity>
         </View>
+        </ContentFrame>
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -228,6 +242,11 @@ brandLarge: {
     flex: 1,
     padding: 32,
     paddingTop: 36,
+  },
+  formWeb: {
+    alignSelf: "center",
+    maxWidth: 480,
+    width: "100%",
   },
   title: {
     fontSize: 26,

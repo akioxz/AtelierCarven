@@ -19,7 +19,7 @@ import Animated, {
   withRepeat,
   withTiming,
 } from "react-native-reanimated";
-import { CustomerNavigation } from "../../components/app-ui";
+import { ContentFrame, CustomerNavigation } from "../../components/app-ui";
 import { Design } from "../../constants/design";
 import { supabase } from "../../lib/supabase";
 
@@ -183,6 +183,7 @@ export default function Payment() {
       <StatusBar barStyle="dark-content" />
       <CustomerNavigation active="cart" />
       <ScrollView showsVerticalScrollIndicator={false} style={styles.scrollContainer} contentContainerStyle={{ paddingBottom: 24 }}>
+        <ContentFrame>
         <View style={styles.header}>
           <TouchableOpacity onPress={() => router.back()} disabled={processing}>
             <Feather name="arrow-left" size={22} color={Design.color.ink} />
@@ -409,6 +410,7 @@ export default function Payment() {
           </View>
         </View>
 
+      </ContentFrame>
       </ScrollView>
 
       {/* Confirm Button */}

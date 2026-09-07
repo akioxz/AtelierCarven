@@ -15,7 +15,7 @@ import {
 import { Design } from "../../constants/design";
 import { pickAndUploadImage } from "../../lib/imageUpload";
 import { supabase } from "../../lib/supabase";
-import { AdminNavigation } from "../../components/app-ui";
+import { AdminNavigation, ContentFrame } from "../../components/app-ui";
 
 export default function AdminProfile() {
   const router = useRouter();
@@ -84,6 +84,7 @@ export default function AdminProfile() {
       <StatusBar barStyle="dark-content" />
       <AdminNavigation active="profile" />
       <ScrollView showsVerticalScrollIndicator={false}>
+        <ContentFrame>
         {/* Header */}
         <View style={styles.header}>
           <TouchableOpacity onPress={() => router.back()}>
@@ -183,6 +184,7 @@ export default function AdminProfile() {
         </View>
 
         <View style={{ height: 100 }} />
+        </ContentFrame>
       </ScrollView>
 
       {/* Logout Confirmation Modal */}

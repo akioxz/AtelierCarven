@@ -14,7 +14,7 @@ import {
 } from "react-native";
 import { Design } from "../../constants/design";
 import { supabase } from "../../lib/supabase";
-import { CustomerNavigation } from "../../components/app-ui";
+import { ContentFrame, CustomerNavigation } from "../../components/app-ui";
 
 export default function Favorites() {
   const router = useRouter();
@@ -134,6 +134,7 @@ export default function Favorites() {
     <View style={styles.container}>
       <StatusBar barStyle="dark-content" />
       <CustomerNavigation active="favorites" />
+      <ContentFrame>
 
       {/* Header */}
       <View style={styles.header}>
@@ -183,7 +184,7 @@ export default function Favorites() {
         />
       )}
 
-
+      </ContentFrame>
     </View>
   );
 }

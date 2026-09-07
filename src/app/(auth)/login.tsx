@@ -13,7 +13,7 @@ import {
   useWindowDimensions,
   View,
 } from "react-native";
-import { Design } from "../../constants/design";
+import { Design, layout } from "../../constants/design";
 import { supabase } from "../../lib/supabase";
 
 export default function Login() {
@@ -24,7 +24,7 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const { width } = useWindowDimensions();
-  const isWeb = width > 768;
+  const isWeb = Platform.OS === "web" && width >= layout.desktopBreakpoint;
 
   const handleLogin = async () => {
     if (!email || !password) {
@@ -91,10 +91,12 @@ export default function Login() {
                   style={styles.input}
                   placeholder="your@email.com"
                   placeholderTextColor={Design.color.inkMuted}
-                  value={email}
+value={email}
                   onChangeText={setEmail}
                   keyboardType="email-address"
                   autoCapitalize="none"
+                  autoComplete="email"
+                  textContentType="emailAddress"
                 />
               </View>
               <View style={styles.inputGroup}>
@@ -104,16 +106,21 @@ export default function Login() {
                     style={[styles.input, { flex: 1 }]}
                     placeholder="Min. 8 characters"
                     placeholderTextColor={Design.color.inkMuted}
-                    value={password}
+value={password}
                     onChangeText={setPassword}
                     secureTextEntry={!showPassword}
                     autoCapitalize="none"
+                    autoComplete="password"
+                    textContentType="password"
                   />
                   <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.eyeBtn}>
                     <Text style={styles.eyeText}>{showPassword ? "HIDE" : "SHOW"}</Text>
                   </TouchableOpacity>
-                </View>
+</View>
               </View>
+              <TouchableOpacity onPress={() => router.push("/(auth)/forgot-password")} style={styles.forgotLink} hitSlop={8}>
+                <Text style={styles.forgotLinkText}>Forgot password?</Text>
+              </TouchableOpacity>
               <TouchableOpacity style={styles.primaryButton} onPress={handleLogin} disabled={loading}>
                 <Text style={styles.primaryButtonText}>{loading ? "SIGNING IN..." : "SIGN IN"}</Text>
               </TouchableOpacity>
@@ -153,10 +160,12 @@ export default function Login() {
                   style={styles.input}
                   placeholder="your@email.com"
                   placeholderTextColor={Design.color.inkMuted}
-                  value={email}
+value={email}
                   onChangeText={setEmail}
                   keyboardType="email-address"
                   autoCapitalize="none"
+                  autoComplete="email"
+                  textContentType="emailAddress"
                 />
               </View>
               <View style={styles.inputGroup}>
@@ -166,16 +175,21 @@ export default function Login() {
                     style={[styles.input, { flex: 1 }]}
                     placeholder="Min. 8 characters"
                     placeholderTextColor={Design.color.inkMuted}
-                    value={password}
+value={password}
                     onChangeText={setPassword}
                     secureTextEntry={!showPassword}
                     autoCapitalize="none"
+                    autoComplete="password"
+                    textContentType="password"
                   />
                   <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.eyeBtn}>
                     <Text style={styles.eyeText}>{showPassword ? "HIDE" : "SHOW"}</Text>
                   </TouchableOpacity>
-                </View>
+</View>
               </View>
+              <TouchableOpacity onPress={() => router.push("/(auth)/forgot-password")} style={styles.forgotLink} hitSlop={8}>
+                <Text style={styles.forgotLinkText}>Forgot password?</Text>
+              </TouchableOpacity>
               <TouchableOpacity style={styles.primaryButton} onPress={handleLogin} disabled={loading}>
                 <Text style={styles.primaryButtonText}>{loading ? "SIGNING IN..." : "SIGN IN"}</Text>
               </TouchableOpacity>
@@ -229,6 +243,8 @@ const styles = StyleSheet.create({
   errorBox: { backgroundColor: "#FDF0F0", borderLeftWidth: 3, borderLeftColor: Design.color.danger, padding: 12, marginBottom: 20 },
   errorText: { fontSize: 13, color: Design.color.danger },
   inputGroup: { marginBottom: 20 },
+  forgotLink: { alignItems: "flex-end", marginBottom: 18, marginTop: -10 },
+  forgotLinkText: { color: Design.color.gold, fontSize: 13, fontWeight: "500" },
   label: { fontSize: 10, letterSpacing: 2, color: Design.color.inkSoft, marginBottom: 8 },
   input: { borderBottomWidth: 1, borderBottomColor: Design.color.line, paddingVertical: 12, fontSize: 15, color: Design.color.ink, backgroundColor: "transparent" },
   passwordRow: { flexDirection: "row", alignItems: "center" },
