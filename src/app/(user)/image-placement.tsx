@@ -424,30 +424,7 @@ export default function ImagePlacement() {
         </View>
       </ScrollView>
 
-      {/* Bottom Nav */}
-      <View style={styles.bottomNav}>
-        <TouchableOpacity style={styles.navItem} onPress={() => router.push("/(user)/home")}>
-          <Feather name="home" size={20} color="#C4B8A8" />
-          <Text style={styles.navLabel}>HOME</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.navItem} onPress={() => router.push("/(user)/favorites")}>
-          <Feather name="heart" size={20} color="#C4B8A8" />
-          <Text style={styles.navLabel}>SAVED</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.navItem}>
-          <Feather name="image" size={20} color="#1C1C1A" />
-          <View style={styles.navDot} />
-          <Text style={styles.navLabelActive}>PLACE</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.navItem} onPress={() => router.push("/(user)/cart")}>
-          <Feather name="shopping-cart" size={20} color="#C4B8A8" />
-          <Text style={styles.navLabel}>CART</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.navItem} onPress={() => router.push("/(user)/profile")}>
-          <Feather name="user" size={20} color="#C4B8A8" />
-          <Text style={styles.navLabel}>PROFILE</Text>
-        </TouchableOpacity>
-      </View>
+
     </View>
   );
 }
@@ -530,9 +507,5 @@ const styles = StyleSheet.create({
   browseButton: { backgroundColor: "#F5F0E8", borderRadius: 10, paddingHorizontal: 24, paddingVertical: 14, borderWidth: 0.5, borderColor: "#E8E0D0" },
   browseButtonText: { fontSize: 11, letterSpacing: 2, color: "#8B7355" },
 
-  bottomNav: { display: "none" },
-  navItem: { alignItems: "center", gap: 3 },
-  navDot: { width: 4, height: 4, borderRadius: 2, backgroundColor: "#C9A96E" },
-  navLabel: { fontSize: 8, color: "#C4B8A8", letterSpacing: 1 },
-  navLabelActive: { fontSize: 8, color: "#1C1C1A", letterSpacing: 1 },
+
 });

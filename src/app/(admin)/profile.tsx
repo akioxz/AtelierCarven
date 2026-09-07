@@ -215,35 +215,7 @@ export default function AdminProfile() {
         </View>
       </Modal>
 
-      {/* Bottom Nav */}
-      <View style={styles.bottomNav}>
-        <TouchableOpacity
-          style={styles.navItem}
-          onPress={() => router.push("/(admin)/dashboard")}
-        >
-          <Feather name="home" size={20} color="#C4B8A8" />
-          <Text style={styles.navLabel}>DASHBOARD</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.navItem}
-          onPress={() => router.push("/(admin)/manage-furniture")}
-        >
-          <Feather name="grid" size={20} color="#C4B8A8" />
-          <Text style={styles.navLabel}>FURNITURE</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.navItem}
-          onPress={() => router.push("/(admin)/manage-orders")}
-        >
-          <Feather name="clipboard" size={20} color="#C4B8A8" />
-          <Text style={styles.navLabel}>ORDERS</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.navItem}>
-          <Feather name="user" size={20} color="#1C1C1A" />
-          <View style={styles.navDot} />
-          <Text style={styles.navLabelActive}>PROFILE</Text>
-        </TouchableOpacity>
-      </View>
+
     </View>
   );
 }
@@ -364,24 +336,7 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   logoutText: { fontSize: 11, letterSpacing: 2, color: "#9E8E7E" },
-  bottomNav: { display: "none" },
-  legacyBottomNav: {
-    position: "absolute",
-    bottom: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: "#FAFAF8",
-    borderTopWidth: 0.5,
-    borderTopColor: "#E8E0D0",
-    flexDirection: "row",
-    justifyContent: "space-around",
-    paddingVertical: 12,
-    paddingBottom: 24,
-  },
-  navItem: { alignItems: "center", gap: 3 },
-  navDot: { width: 4, height: 4, borderRadius: 2, backgroundColor: "#C9A96E" },
-  navLabel: { fontSize: 8, color: "#C4B8A8", letterSpacing: 1 },
-  navLabelActive: { fontSize: 8, color: "#1C1C1A", letterSpacing: 1 },
+
   modalOverlay: {
     flex: 1,
     backgroundColor: "rgba(0,0,0,0.45)",

@@ -182,44 +182,7 @@ export default function Favorites() {
         />
       )}
 
-      {/* Bottom Nav */}
-      <View style={styles.bottomNav}>
-        <TouchableOpacity
-          style={styles.navItem}
-          onPress={() => router.push("/(user)/home")}
-        >
-          <Feather name="home" size={20} color={"#C4B8A8"} />
-          <Text style={styles.navLabel}>HOME</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.navItem}
-        >
-          <Feather name="heart" size={20} color={"#1C1C1A"} />
-          <View style={styles.navDot} />
-          <Text style={styles.navLabelActive}>SAVED</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.navItem}
-          onPress={() => router.push("/(user)/image-placement")}
-        >
-          <Feather name="image" size={20} color={"#C4B8A8"} />
-          <Text style={styles.navLabel}>PLACE</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.navItem}
-          onPress={() => router.push("/(user)/cart")}
-        >
-          <Feather name="shopping-cart" size={20} color={"#C4B8A8"} />
-          <Text style={styles.navLabel}>CART</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.navItem}
-          onPress={() => router.push("/(user)/profile")}
-        >
-          <Feather name="user" size={20} color={"#C4B8A8"} />
-          <Text style={styles.navLabel}>PROFILE</Text>
-        </TouchableOpacity>
-      </View>
+
     </View>
   );
 }
@@ -314,22 +277,5 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
   },
   browseBtnText: { color: "#FAFAF8", fontSize: 11, letterSpacing: 2, fontWeight: "500" },
-  bottomNav: { display: "none" },
-  legacyBottomNav: {
-    position: "absolute",
-    bottom: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: "#FAFAF8",
-    borderTopWidth: 0.5,
-    borderTopColor: "#E8E0D0",
-    flexDirection: "row",
-    justifyContent: "space-around",
-    paddingVertical: 12,
-    paddingBottom: 24,
-  },
-  navItem: { alignItems: "center", gap: 3 },
-  navDot: { width: 4, height: 4, borderRadius: 2, backgroundColor: "#C9A96E" },
-  navLabel: { fontSize: 8, color: "#C4B8A8", letterSpacing: 1 },
-  navLabelActive: { fontSize: 8, color: "#1C1C1A", letterSpacing: 1 },
+
 });

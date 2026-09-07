@@ -35,33 +35,6 @@ export default function ActivityLogs() {
       <StatusBar barStyle="dark-content" />
       <AdminNavigation active="logs" />
 
-      {/* Sidebar for web */}
-      {isWeb && (
-        <View style={styles.sidebar}>
-          <View style={styles.sidebarLogo}>
-            <Text style={styles.sidebarLogoSmall}>ATELIER</Text>
-            <Text style={styles.sidebarLogoBig}>Carvén</Text>
-            <View style={styles.goldDivider} />
-          </View>
-          <TouchableOpacity style={styles.sidebarItem} onPress={() => router.push("/(admin)/dashboard")}>
-            <Feather name="home" size={18} color="#8B7355" />
-            <Text style={styles.sidebarLabel}>Dashboard</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.sidebarItem} onPress={() => router.push("/(admin)/manage-furniture")}>
-            <Feather name="grid" size={18} color="#8B7355" />
-            <Text style={styles.sidebarLabel}>Furniture</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.sidebarItemActive}>
-            <Feather name="clipboard" size={18} color="#1C1C1A" />
-            <Text style={styles.sidebarLabelActive}>Activity Logs</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.sidebarItem} onPress={() => router.push("/(admin)/profile")}>
-            <Feather name="user" size={18} color="#8B7355" />
-            <Text style={styles.sidebarLabel}>Profile</Text>
-          </TouchableOpacity>
-        </View>
-      )}
-
       <View style={styles.main}>
         <View style={[styles.header, isWeb && styles.headerWeb]}>
           {!isWeb && (
@@ -129,27 +102,7 @@ export default function ActivityLogs() {
           </ScrollView>
         )}
 
-        {!isWeb && (
-          <View style={styles.bottomNav}>
-            <TouchableOpacity style={styles.navItem} onPress={() => router.push("/(admin)/dashboard")}>
-              <Feather name="home" size={20} color="#C4B8A8" />
-              <Text style={styles.navLabel}>DASHBOARD</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.navItem} onPress={() => router.push("/(admin)/manage-furniture")}>
-              <Feather name="grid" size={20} color="#C4B8A8" />
-              <Text style={styles.navLabel}>FURNITURE</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.navItem}>
-              <Feather name="clipboard" size={20} color="#1C1C1A" />
-              <View style={styles.navDot} />
-              <Text style={styles.navLabelActive}>LOGS</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.navItem} onPress={() => router.push("/(admin)/profile")}>
-              <Feather name="user" size={20} color="#C4B8A8" />
-              <Text style={styles.navLabel}>PROFILE</Text>
-            </TouchableOpacity>
-          </View>
-        )}
+
       </View>
     </View>
   );
@@ -157,15 +110,7 @@ export default function ActivityLogs() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#FAFAF8" },
-  sidebar: { display: "none" },
-  sidebarLogo: { marginBottom: 32, paddingBottom: 20, borderBottomWidth: 0.5, borderBottomColor: "#E8E0D0" },
-  sidebarLogoSmall: { fontSize: 9, letterSpacing: 4, color: "#8B7355" },
-  sidebarLogoBig: { fontSize: 24, fontWeight: "300", color: "#1C1C1A", letterSpacing: 2, marginBottom: 8 },
   goldDivider: { width: 40, height: 1.5, backgroundColor: "#C9A96E" },
-  sidebarItem: { flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 12, paddingHorizontal: 12, borderRadius: 10 },
-  sidebarItemActive: { flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 12, paddingHorizontal: 12, borderRadius: 10, backgroundColor: "#EDE5D8" },
-  sidebarLabel: { fontSize: 13, color: "#8B7355" },
-  sidebarLabelActive: { fontSize: 13, color: "#1C1C1A", fontWeight: "500" },
   main: { flex: 1 },
   header: { backgroundColor: "#F5F0E8", padding: 28, paddingTop: 56, paddingBottom: 28 },
   headerWeb: { backgroundColor: "#FAFAF8", paddingTop: 32, paddingBottom: 20, borderBottomWidth: 0.5, borderBottomColor: "#E8E0D0", flexDirection: "row", alignItems: "center" },
@@ -186,9 +131,5 @@ const styles = StyleSheet.create({
   logTime: { fontSize: 11, color: "#9E8E7E" },
   empty: { flex: 1, justifyContent: "center", alignItems: "center", gap: 12, marginTop: 80 },
   emptyText: { fontSize: 13, color: "#9E8E7E" },
-  bottomNav: { display: "none" },
-  navItem: { alignItems: "center", gap: 3 },
-  navDot: { width: 4, height: 4, borderRadius: 2, backgroundColor: "#C9A96E" },
-  navLabel: { fontSize: 8, color: "#C4B8A8", letterSpacing: 1 },
-  navLabelActive: { fontSize: 8, color: "#1C1C1A", letterSpacing: 1 },
+
 });

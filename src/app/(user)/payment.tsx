@@ -16,14 +16,6 @@ import {
 import { supabase } from "../../lib/supabase";
 import { CustomerNavigation } from "../../components/app-ui";
 
-const BOTTOM_NAV = [
-  { label: "HOME", icon: "home", route: "/(user)/home" },
-  { label: "SAVED", icon: "heart", route: "/(user)/favorites" },
-  { label: "PLACE", icon: "image", route: "/(user)/image-placement" },
-  { label: "CART", icon: "shopping-cart", route: "/(user)/cart" },
-  { label: "PROFILE", icon: "user", route: "/(user)/profile" },
-] as const;
-
 export default function Payment() {
   const router = useRouter();
   const { method, total, fullName, address, city, mobile, notes } = useLocalSearchParams<{
@@ -442,15 +434,6 @@ export default function Payment() {
         </Text>
       </View>
 
-      <View style={styles.bottomNav}>
-        {BOTTOM_NAV.map((item) => (
-          <TouchableOpacity key={item.label} style={styles.navItem} onPress={() => !processing && router.push(item.route as any)}>
-            <Feather name={item.icon as any} size={20} color="#C4B8A8" />
-            <Text style={styles.navLabel}>{item.label}</Text>
-          </TouchableOpacity>
-        ))}
-      </View>
-
       {/* Custom Alert Modal */}
       <Modal visible={alertVisible} animationType="fade" transparent>
         <View style={styles.alertOverlay}>
@@ -520,9 +503,7 @@ const styles = StyleSheet.create({
   confirmBtnDisabled: { opacity: 0.7 },
   confirmBtnText: { color: "#FAFAF8", fontSize: 11, letterSpacing: 2 },
   footerNote: { fontSize: 10, color: "#C4B8A8", textAlign: "center", letterSpacing: 0.5 },
-  bottomNav: { display: "none" },
-  navItem: { alignItems: "center", gap: 3 },
-  navLabel: { fontSize: 8, color: "#C4B8A8", letterSpacing: 1 },
+
   alertOverlay: {
     flex: 1,
     backgroundColor: "rgba(0,0,0,0.4)",

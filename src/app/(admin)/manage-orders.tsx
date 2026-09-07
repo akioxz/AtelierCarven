@@ -402,26 +402,7 @@ export default function ManageOrders() {
         </View>
       </Modal>
 
-      {/* Bottom Nav */}
-      <View style={styles.bottomNav}>
-        <TouchableOpacity style={styles.navItem} onPress={() => router.push("/(admin)/dashboard")}>
-          <Feather name="home" size={20} color="#C4B8A8" />
-          <Text style={styles.navLabel}>DASHBOARD</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.navItem} onPress={() => router.push("/(admin)/manage-furniture")}>
-          <Feather name="grid" size={20} color="#C4B8A8" />
-          <Text style={styles.navLabel}>FURNITURE</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.navItem}>
-          <Feather name="clipboard" size={20} color="#1C1C1A" />
-          <View style={styles.navDot} />
-          <Text style={styles.navLabelActive}>ORDERS</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.navItem} onPress={() => router.push("/(admin)/profile")}>
-          <Feather name="user" size={20} color="#C4B8A8" />
-          <Text style={styles.navLabel}>PROFILE</Text>
-        </TouchableOpacity>
-      </View>
+
     </View>
   );
 }
@@ -485,9 +466,5 @@ const styles = StyleSheet.create({
   saveBtn: { flex: 1, backgroundColor: "#1C1C1A", borderRadius: 10, padding: 16, alignItems: "center" },
   saveBtnDisabled: { opacity: 0.5 },
   saveBtnText: { fontSize: 11, letterSpacing: 2, color: "#FAFAF8" },
-  bottomNav: { display: "none" },
-  navItem: { alignItems: "center", gap: 3 },
-  navDot: { width: 4, height: 4, borderRadius: 2, backgroundColor: "#C9A96E" },
-  navLabel: { fontSize: 8, color: "#C4B8A8", letterSpacing: 1 },
-  navLabelActive: { fontSize: 8, color: "#1C1C1A", letterSpacing: 1 },
+
 });

@@ -9,6 +9,7 @@ import {
     TouchableOpacity,
     View,
 } from "react-native";
+import { Design } from "../../constants/design";
 
 export default function OrderSuccess() {
   const router = useRouter();
@@ -98,7 +99,7 @@ export default function OrderSuccess() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#F5F0E8",
+    backgroundColor: Design.color.canvas,
     justifyContent: "center",
     alignItems: "center",
     padding: 32,
@@ -111,7 +112,7 @@ const styles = StyleSheet.create({
     height: 400,
     borderRadius: 200,
     borderWidth: 1,
-    borderColor: "#C9A96E",
+    borderColor: Design.color.gold,
     opacity: 0.15,
   },
   circleInner: {
@@ -122,7 +123,7 @@ const styles = StyleSheet.create({
     height: 200,
     borderRadius: 100,
     borderWidth: 1,
-    borderColor: "#C9A96E",
+    borderColor: Design.color.gold,
     opacity: 0.1,
   },
   iconWrapper: { marginBottom: 32 },
@@ -130,29 +131,30 @@ const styles = StyleSheet.create({
     width: 96,
     height: 96,
     borderRadius: 48,
-    backgroundColor: "#1C1C1A",
+    backgroundColor: Design.color.ink,
     justifyContent: "center",
     alignItems: "center",
     borderWidth: 4,
-    borderColor: "#C9A96E",
+    borderColor: Design.color.gold,
   },
   textBlock: { alignItems: "center", marginBottom: 40 },
   title: {
     fontSize: 32,
-    fontWeight: "300",
-    color: "#1C1C1A",
+    fontFamily: Design.font.displayMedium,
+    color: Design.color.ink,
     letterSpacing: 2,
     marginBottom: 16,
   },
   goldDivider: {
     width: 40,
     height: 1.5,
-    backgroundColor: "#C9A96E",
+    backgroundColor: Design.color.gold,
     marginBottom: 16,
   },
   subtitle: {
     fontSize: 14,
-    color: "#6B5E4E",
+    fontFamily: Design.font.body,
+    color: Design.color.inkSoft,
     textAlign: "center",
     lineHeight: 24,
     marginBottom: 24,
@@ -163,16 +165,16 @@ const styles = StyleSheet.create({
     gap: 8,
     marginBottom: 10,
   },
-  infoText: { fontSize: 12, color: "#8B7355" },
+  infoText: { fontSize: 12, fontFamily: Design.font.body, color: Design.color.inkMuted },
   buttons: { width: "100%" },
   homeBtn: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     gap: 10,
-    backgroundColor: "#1C1C1A",
-    borderRadius: 12,
+    backgroundColor: Design.color.ink,
+    borderRadius: Design.radius.small,
     padding: 18,
   },
-  homeBtnText: { color: "#FAFAF8", fontSize: 11, letterSpacing: 2 },
+  homeBtnText: { color: Design.color.surface, fontSize: 11, fontFamily: Design.font.bodyBold, letterSpacing: 2 },
 });
