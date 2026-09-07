@@ -50,6 +50,11 @@ export default function ManageFurniture() {
   const [errorMsg, setErrorMsg] = useState("");
   const [deleteModalVisible, setDeleteModalVisible] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<any>(null);
+  const [width, setWidth] = useState("");
+  const [height, setHeight] = useState("");
+  const [depth, setDepth] = useState("");
+  const [weight, setWeight] = useState("");
+  const [sizeGuides, setSizeGuides] = useState<Record<string, any>>({});
 
   const fetchFurniture = useCallback(async () => {
     setLoading(true);
@@ -62,9 +67,17 @@ export default function ManageFurniture() {
     setLoading(false);
   }, []);
 
+  const fetchSizeGuides = useCallback(async () => {
+    const { data } = await supabase.from("size_guides").select("*");
+    const map: Record<string, any> = {};
+    (data || []).forEach((guide: any) => { map[guide.furniture_id] = guide; });
+    setSizeGuides(map);
+  }, []);
+
   useEffect(() => {
     fetchFurniture();
-  }, [fetchFurniture]);
+    fetchSizeGuides();
+  }, [fetchFurniture, fetchSizeGuides]);
 
   const filteredFurniture = activeFilter === "All"
     ? furniture
@@ -83,6 +96,7 @@ export default function ManageFurniture() {
     setEditing(null);
     setName(""); setPrice(""); setCategory("Sofa");
     setDescription(""); setImageUrl(""); setErrorMsg("");
+    setWidth(""); setHeight(""); setDepth(""); setWeight("");
     setModalVisible(true);
   };
 
@@ -93,6 +107,11 @@ export default function ManageFurniture() {
     setCategory(item.category);
     setDescription(item.description || "");
     setImageUrl(item.image_url || "");
+    const guide = sizeGuides[item.id];
+    setWidth(guide?.width_cm != null ? String(guide.width_cm) : "");
+    setHeight(guide?.height_cm != null ? String(guide.height_cm) : "");
+    setDepth(guide?.depth_cm != null ? String(guide.depth_cm) : "");
+    setWeight(guide?.weight_kg != null ? String(guide.weight_kg) : "");
     setErrorMsg("");
     setModalVisible(true);
   };
@@ -112,6 +131,7 @@ export default function ManageFurniture() {
       return;
     }
     setSaving(true);
+    let furnitureId: string | null = editing?.id ?? null;
     if (editing) {
       const { error } = await supabase.from("furniture").update({
         name, price: parsedPrice, category, description,
@@ -120,23 +140,34 @@ export default function ManageFurniture() {
       if (error) { setErrorMsg("Failed to update: " + error.message); setSaving(false); return; }
       await logAction("Edited furniture", name);
     } else {
-      const { error } = await supabase.from("furniture").insert({
+      const { data, error } = await supabase.from("furniture").insert({
         name, price: parsedPrice, category, description,
         image_url: imageUrl, is_deleted: false,
-      });
+      }).select("id").single();
       if (error) { setErrorMsg("Failed to add: " + error.message); setSaving(false); return; }
+      furnitureId = data?.id ?? null;
       await logAction("Added furniture", name);
     }
+
+    const dimensions = {
+      width_cm: width.trim() ? parseFloat(width) : null,
+      height_cm: height.trim() ? parseFloat(height) : null,
+      depth_cm: depth.trim() ? parseFloat(depth) : null,
+      weight_kg: weight.trim() ? parseFloat(weight) : null,
+    };
+    const hasAnyDimension = Object.values(dimensions).some((value) => value != null);
+    if (furnitureId) {
+      if (hasAnyDimension) {
+        await supabase.from("size_guides").upsert({ furniture_id: furnitureId, ...dimensions, updated_at: new Date().toISOString() });
+      } else {
+        await supabase.from("size_guides").delete().eq("furniture_id", furnitureId);
+      }
+    }
+
     setSaving(false);
     setModalVisible(false);
-    setLoading(true);
-    const { data } = await supabase
-      .from("furniture")
-      .select("*")
-      .eq("is_deleted", false)
-      .order("created_at", { ascending: false });
-    setFurniture(data || []);
-    setLoading(false);
+    fetchFurniture();
+    fetchSizeGuides();
   };
 
   const handleDelete = (item: any) => {
@@ -378,6 +409,27 @@ export default function ManageFurniture() {
                 multiline
                 numberOfLines={3}
               />
+
+              <Text style={styles.inputLabel}>SIZE GUIDE (OPTIONAL)</Text>
+              <Text style={styles.dimHint}>Shown on the product page. Leave all blank to hide it.</Text>
+              <View style={styles.dimColumns}>
+                <View style={styles.dimField}>
+                  <Text style={styles.dimCaption}>WIDTH (cm)</Text>
+                  <TextInput style={styles.input} value={width} onChangeText={setWidth} placeholder="120" placeholderTextColor={Design.color.inkMuted} keyboardType="decimal-pad" />
+                </View>
+                <View style={styles.dimField}>
+                  <Text style={styles.dimCaption}>HEIGHT (cm)</Text>
+                  <TextInput style={styles.input} value={height} onChangeText={setHeight} placeholder="75" placeholderTextColor={Design.color.inkMuted} keyboardType="decimal-pad" />
+                </View>
+                <View style={styles.dimField}>
+                  <Text style={styles.dimCaption}>DEPTH (cm)</Text>
+                  <TextInput style={styles.input} value={depth} onChangeText={setDepth} placeholder="60" placeholderTextColor={Design.color.inkMuted} keyboardType="decimal-pad" />
+                </View>
+                <View style={styles.dimField}>
+                  <Text style={styles.dimCaption}>WEIGHT (kg)</Text>
+                  <TextInput style={styles.input} value={weight} onChangeText={setWeight} placeholder="8" placeholderTextColor={Design.color.inkMuted} keyboardType="decimal-pad" />
+                </View>
+              </View>
 
               {errorMsg ? (
                 <Text style={styles.errorText}>{errorMsg}</Text>
@@ -719,4 +771,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   deleteConfirmText: { fontSize: 11, letterSpacing: 2, color: Design.color.surface },
+  dimColumns: { flexDirection: "row", flexWrap: "wrap", gap: 12, marginBottom: 8 },
+  dimField: { flex: 1, minWidth: 140 },
+  dimCaption: { fontSize: 9, letterSpacing: 1.2, color: Design.color.inkSoft, marginBottom: 6 },
+  dimHint: { fontSize: 10, color: Design.color.inkMuted, marginBottom: 12 },
 });

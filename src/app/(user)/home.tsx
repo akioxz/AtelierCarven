@@ -1,7 +1,7 @@
 import { AntDesign, Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
-import { ActivityIndicator, Image, Platform, Pressable, ScrollView, StatusBar, StyleSheet, Text, TextInput, useWindowDimensions, View } from "react-native";
+import { ActivityIndicator, Image, Platform, Pressable, ScrollView, StatusBar, StyleSheet, Text, useWindowDimensions, View } from "react-native";
 import { ContentFrame, CustomerNavigation } from "../../components/app-ui";
 import { Design, layout } from "../../constants/design";
 import { supabase } from "../../lib/supabase";
@@ -13,7 +13,6 @@ export default function Home() {
   const router = useRouter();
   const { width } = useWindowDimensions();
   const wide = Platform.OS === "web" && width >= layout.desktopBreakpoint;
-  const [search, setSearch] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [furniture, setFurniture] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -31,11 +30,10 @@ export default function Home() {
     setLoading(true);
     let query = supabase.from("furniture").select("*").eq("is_deleted", false);
     if (selectedCategory !== "All") query = query.eq("category", selectedCategory);
-    if (search.trim()) query = query.ilike("name", `%${search.trim()}%`);
     const { data } = await query;
     setFurniture(data || []);
     setLoading(false);
-  }, [search, selectedCategory]);
+  }, [selectedCategory]);
   const fetchCartCount = useCallback(async () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
@@ -91,11 +89,11 @@ export default function Home() {
             </View>
           </View>
 
-          <View style={[styles.search, wide && styles.searchWide]}>
+          <Pressable accessibilityLabel="Search the collection" onPress={() => router.push("/(user)/search" as never)} style={({ pressed }) => [styles.search, wide && styles.searchWide, pressed && styles.pressed]}>
             <Feather name="search" size={17} color={Design.color.inkMuted} />
-            <TextInput value={search} onChangeText={setSearch} placeholder="Search the collection" placeholderTextColor={Design.color.inkMuted} style={styles.searchInput} returnKeyType="search" />
-            {search ? <Pressable onPress={() => setSearch("")} hitSlop={8}><Feather name="x" size={16} color={Design.color.inkMuted} /></Pressable> : null}
-          </View>
+            <Text style={styles.searchPlaceholder}>Search the collection</Text>
+            <Feather name="arrow-up-right" size={16} color={Design.color.inkMuted} />
+          </Pressable>
 
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filters}>
             {CATEGORIES.map((category) => {
@@ -136,7 +134,7 @@ const styles = StyleSheet.create({
   hero: { alignItems: "flex-start", flexDirection: "row", gap: 16, justifyContent: "space-between", marginBottom: 28 }, heroWide: { marginTop: 10 }, heroCopy: { flex: 1, maxWidth: 680 },
   greeting: { color: Design.color.inkSoft, fontFamily: Design.font.bodyMedium, fontSize: 13, marginBottom: 8 }, title: { color: Design.color.ink, fontFamily: Design.font.display, fontSize: 39, letterSpacing: -1.2, lineHeight: 39, maxWidth: 630 }, subtitle: { color: Design.color.inkSoft, fontFamily: Design.font.body, fontSize: 13, lineHeight: 21, marginTop: 11 },
   heroActions: { flexDirection: "row", gap: 8 }, iconAction: { alignItems: "center", backgroundColor: Design.color.surface, borderColor: Design.color.line, borderRadius: 22, borderWidth: StyleSheet.hairlineWidth, height: 44, justifyContent: "center", position: "relative", width: 44 }, count: { alignItems: "center", backgroundColor: Design.color.gold, borderColor: Design.color.surface, borderRadius: 9, borderWidth: 1.5, height: 18, justifyContent: "center", position: "absolute", right: -5, top: -5, minWidth: 18 }, countText: { color: Design.color.surface, fontFamily: Design.font.bodyBold, fontSize: 8 },
-  search: { alignItems: "center", backgroundColor: Design.color.surface, borderColor: Design.color.line, borderRadius: Design.radius.card, borderWidth: StyleSheet.hairlineWidth, flexDirection: "row", gap: 10, minHeight: 52, paddingHorizontal: 15 }, searchWide: { maxWidth: 560 }, searchInput: { color: Design.color.ink, flex: 1, fontFamily: Design.font.bodyMedium, fontSize: 13, minHeight: 50 },
+  search: { alignItems: "center", backgroundColor: Design.color.surface, borderColor: Design.color.line, borderRadius: Design.radius.card, borderWidth: StyleSheet.hairlineWidth, flexDirection: "row", gap: 10, minHeight: 52, paddingHorizontal: 15 }, searchWide: { maxWidth: 560 }, searchPlaceholder: { color: Design.color.inkMuted, flex: 1, fontFamily: Design.font.bodyMedium, fontSize: 13 },
   filters: { gap: 8, paddingVertical: 18 }, filter: { borderColor: Design.color.line, borderRadius: Design.radius.pill, borderWidth: StyleSheet.hairlineWidth, minHeight: 36, paddingHorizontal: 15, justifyContent: "center" }, filterSelected: { backgroundColor: Design.color.ink, borderColor: Design.color.ink }, filterText: { color: Design.color.inkSoft, fontFamily: Design.font.bodyMedium, fontSize: 11 }, filterTextSelected: { color: Design.color.surface },
   collectionHeading: { alignItems: "baseline", flexDirection: "row", justifyContent: "space-between", marginBottom: 14 }, collectionTitle: { color: Design.color.ink, fontFamily: Design.font.display, fontSize: 30, letterSpacing: -0.7 }, collectionCount: { color: Design.color.inkMuted, fontFamily: Design.font.body, fontSize: 11 }, loading: { marginTop: 48 },
   grid: { flexDirection: "row", flexWrap: "wrap", gap: 14 }, gridWide: { gap: 20 }, card: { backgroundColor: Design.color.surface, borderColor: Design.color.line, borderRadius: Design.radius.card, borderWidth: StyleSheet.hairlineWidth, overflow: "hidden", width: "47.8%" }, cardWide: { width: "31.7%" }, cardPressed: { opacity: 0.84, transform: [{ scale: 0.99 }] }, imageWrap: { alignItems: "center", aspectRatio: 0.96, backgroundColor: Design.color.surfaceMuted, justifyContent: "center", position: "relative" }, image: { height: "100%", width: "100%" }, heart: { alignItems: "center", backgroundColor: "rgba(255,252,248,0.94)", borderRadius: 18, height: 36, justifyContent: "center", position: "absolute", right: 10, top: 10, width: 36 }, cardBody: { padding: 13 }, category: { color: Design.color.inkMuted, fontFamily: Design.font.bodySemibold, fontSize: 9, letterSpacing: 0.7, textTransform: "uppercase" }, productName: { color: Design.color.ink, fontFamily: Design.font.bodySemibold, fontSize: 13, marginTop: 5 }, cardFooter: { alignItems: "center", flexDirection: "row", justifyContent: "space-between", marginTop: 12 }, price: { color: Design.color.gold, fontFamily: Design.font.bodyBold, fontSize: 13 }, add: { alignItems: "center", backgroundColor: Design.color.ink, borderRadius: 16, height: 32, justifyContent: "center", width: 32 },
