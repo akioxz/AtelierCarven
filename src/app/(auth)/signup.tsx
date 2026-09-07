@@ -11,6 +11,7 @@ import {
     TouchableOpacity,
     View,
 } from "react-native";
+import { Design } from "../../constants/design";
 import { supabase } from "../../lib/supabase";
 
 export default function Signup() {
@@ -72,11 +73,11 @@ export default function Signup() {
             onPress={() => router.back()}
             style={styles.backBtn}
           >
-            <Text style={styles.backText}>←</Text>
+            <Text style={styles.backText}>â†</Text>
           </TouchableOpacity>
           <View style={styles.brandRow}>
             <Text style={styles.brandSmall}>Atelier</Text>
-            <Text style={styles.brandLarge}>Carvén</Text>
+            <Text style={styles.brandLarge}>CarvÃ©n</Text>
           </View>
           <View style={styles.goldDivider} />
         </View>
@@ -99,7 +100,7 @@ export default function Signup() {
             <TextInput
               style={styles.input}
               placeholder="Your name"
-              placeholderTextColor="#C4B8A8"
+              placeholderTextColor={Design.color.inkMuted}
               value={username}
               onChangeText={setUsername}
               autoCapitalize="words"
@@ -111,7 +112,7 @@ export default function Signup() {
             <TextInput
               style={styles.input}
               placeholder="your@email.com"
-              placeholderTextColor="#C4B8A8"
+              placeholderTextColor={Design.color.inkMuted}
               value={email}
               onChangeText={setEmail}
               keyboardType="email-address"
@@ -125,7 +126,7 @@ export default function Signup() {
               <TextInput
                 style={[styles.input, { flex: 1 }]}
                 placeholder="Min. 8 characters"
-                placeholderTextColor="#C4B8A8"
+                placeholderTextColor={Design.color.inkMuted}
                 value={password}
                 onChangeText={setPassword}
                 secureTextEntry={!showPassword}
@@ -147,7 +148,7 @@ export default function Signup() {
             <TextInput
               style={styles.input}
               placeholder="Re-enter password"
-              placeholderTextColor="#C4B8A8"
+              placeholderTextColor={Design.color.inkMuted}
               value={confirmPassword}
               onChangeText={setConfirmPassword}
               secureTextEntry={!showPassword}
@@ -188,13 +189,13 @@ export default function Signup() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#FAFAF8",
+    backgroundColor: Design.color.surface,
   },
   scroll: {
     flexGrow: 1,
   },
   header: {
-    backgroundColor: "#F5F0E8",
+    backgroundColor: Design.color.surfaceMuted,
     padding: 40,
     paddingTop: 64,
     paddingBottom: 36,
@@ -204,7 +205,7 @@ const styles = StyleSheet.create({
   },
   backText: {
     fontSize: 22,
-    color: "#1C1C1A",
+    color: Design.color.ink,
   },
   brandRow: {
     marginBottom: 16,
@@ -212,18 +213,18 @@ const styles = StyleSheet.create({
   brandSmall: {
     fontSize: 12,
     letterSpacing: 4,
-    color: "#8B7355",
+    color: Design.color.inkSoft,
   },
   brandLarge: {
     fontSize: 36,
     fontWeight: "300",
-    color: "#1C1C1A",
+    color: Design.color.ink,
     letterSpacing: 2,
   },
   goldDivider: {
     width: 40,
     height: 1.5,
-    backgroundColor: "#C9A96E",
+    backgroundColor: Design.color.gold,
   },
   form: {
     flex: 1,
@@ -233,24 +234,24 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 26,
     fontWeight: "500",
-    color: "#1C1C1A",
+    color: Design.color.ink,
     marginBottom: 8,
   },
   subtitle: {
     fontSize: 13,
-    color: "#9E8E7E",
+    color: Design.color.inkMuted,
     marginBottom: 32,
   },
   errorBox: {
     backgroundColor: "#FDF0F0",
     borderLeftWidth: 3,
-    borderLeftColor: "#E07070",
+    borderLeftColor: Design.color.danger,
     padding: 12,
     marginBottom: 20,
   },
   errorText: {
     fontSize: 13,
-    color: "#C05050",
+    color: Design.color.danger,
   },
   inputGroup: {
     marginBottom: 20,
@@ -258,15 +259,15 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 10,
     letterSpacing: 2,
-    color: "#8B7355",
+    color: Design.color.inkSoft,
     marginBottom: 8,
   },
   input: {
     borderBottomWidth: 1,
-    borderBottomColor: "#E8E0D0",
+    borderBottomColor: Design.color.line,
     paddingVertical: 12,
     fontSize: 15,
-    color: "#1C1C1A",
+    color: Design.color.ink,
     backgroundColor: "transparent",
   },
   passwordRow: {
@@ -280,18 +281,18 @@ const styles = StyleSheet.create({
   eyeText: {
     fontSize: 10,
     letterSpacing: 1,
-    color: "#C9A96E",
+    color: Design.color.gold,
   },
   primaryButton: {
-    backgroundColor: "#1C1C1A",
-    borderRadius: 10,
+    backgroundColor: Design.color.ink,
+    borderRadius: Design.radius.small,
     padding: 18,
     alignItems: "center",
     marginTop: 12,
     marginBottom: 24,
   },
   primaryButtonText: {
-    color: "#FAFAF8",
+    color: Design.color.surface,
     fontSize: 11,
     letterSpacing: 2,
   },
@@ -304,22 +305,23 @@ const styles = StyleSheet.create({
   line: {
     flex: 1,
     height: 1,
-    backgroundColor: "#E8E0D0",
+    backgroundColor: Design.color.line,
   },
   dividerText: {
     fontSize: 12,
-    color: "#9E8E7E",
+    color: Design.color.inkMuted,
   },
   secondaryButton: {
     borderWidth: 1,
-    borderColor: "#C9A96E",
-    borderRadius: 10,
+    borderColor: Design.color.gold,
+    borderRadius: Design.radius.small,
     padding: 17,
     alignItems: "center",
   },
   secondaryButtonText: {
-    color: "#8B7355",
+    color: Design.color.inkSoft,
     fontSize: 13,
     letterSpacing: 1,
   },
 });
+

@@ -5,6 +5,7 @@ import {
 import { useRouter } from "expo-router";
 import { useState, useEffect } from "react";
 import { Feather } from "@expo/vector-icons";
+import { Design } from "../../constants/design";
 import { supabase } from "../../lib/supabase";
 import { AdminNavigation } from "../../components/app-ui";
 
@@ -27,7 +28,7 @@ export default function ActivityLogs() {
     if (action.includes("Added")) return { color: "#3B6D11", bg: "#EAF3DE", icon: "plus-circle", label: "ADDED" };
     if (action.includes("Edited")) return { color: "#854F0B", bg: "#FAEEDA", icon: "edit-2", label: "EDITED" };
     if (action.includes("Deleted")) return { color: "#A32D2D", bg: "#FCEBEB", icon: "trash-2", label: "DELETED" };
-    return { color: "#8B7355", bg: "#EDE5D8", icon: "activity", label: "ACTION" };
+    return { color: Design.color.inkSoft, bg: "#EDE5D8", icon: "activity", label: "ACTION" };
   };
 
   return (
@@ -39,7 +40,7 @@ export default function ActivityLogs() {
         <View style={[styles.header, isWeb && styles.headerWeb]}>
           {!isWeb && (
             <TouchableOpacity onPress={() => router.back()}>
-              <Feather name="arrow-left" size={22} color="#1C1C1A" />
+              <Feather name="arrow-left" size={22} color={Design.color.ink} />
             </TouchableOpacity>
           )}
           <View style={isWeb ? {} : { marginTop: 20 }}>
@@ -50,10 +51,10 @@ export default function ActivityLogs() {
         </View>
 
         {loading ? (
-          <ActivityIndicator color="#C9A96E" style={{ marginTop: 40 }} />
+          <ActivityIndicator color={Design.color.gold} style={{ marginTop: 40 }} />
         ) : logs.length === 0 ? (
           <View style={styles.empty}>
-            <Feather name="clipboard" size={40} color="#E8E0D0" />
+            <Feather name="clipboard" size={40} color={Design.color.line} />
             <Text style={styles.emptyText}>No activity logs yet.</Text>
           </View>
         ) : (
@@ -94,7 +95,7 @@ export default function ActivityLogs() {
                     <Text style={styles.logTarget}>{log.target_item}</Text>
                     <Text style={styles.logTime}>{new Date(log.created_at).toLocaleString()}</Text>
                   </View>
-                  <Feather name="chevron-right" size={14} color="#C9A96E" />
+                  <Feather name="chevron-right" size={14} color={Design.color.gold} />
                 </View>
               );
             })}
@@ -109,27 +110,27 @@ export default function ActivityLogs() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#FAFAF8" },
-  goldDivider: { width: 40, height: 1.5, backgroundColor: "#C9A96E" },
+  container: { flex: 1, backgroundColor: Design.color.surface },
+  goldDivider: { width: 40, height: 1.5, backgroundColor: Design.color.gold },
   main: { flex: 1 },
-  header: { backgroundColor: "#F5F0E8", padding: 28, paddingTop: 56, paddingBottom: 28 },
-  headerWeb: { backgroundColor: "#FAFAF8", paddingTop: 32, paddingBottom: 20, borderBottomWidth: 0.5, borderBottomColor: "#E8E0D0", flexDirection: "row", alignItems: "center" },
-  headerSmall: { fontSize: 10, letterSpacing: 4, color: "#8B7355" },
-  headerLarge: { fontSize: 36, fontWeight: "300", color: "#1C1C1A", letterSpacing: 2, marginBottom: 16 },
+  header: { backgroundColor: Design.color.surfaceMuted, padding: 28, paddingTop: 56, paddingBottom: 28 },
+  headerWeb: { backgroundColor: Design.color.surface, paddingTop: 32, paddingBottom: 20, borderBottomWidth: 0.5, borderBottomColor: Design.color.line, flexDirection: "row", alignItems: "center" },
+  headerSmall: { fontSize: 10, letterSpacing: 4, color: Design.color.inkSoft },
+  headerLarge: { fontSize: 36, fontWeight: "300", color: Design.color.ink, letterSpacing: 2, marginBottom: 16 },
   headerLargeWeb: { fontSize: 28, marginBottom: 0 },
   list: { flex: 1, padding: 24 },
   listWeb: { padding: 32 },
-  tableHeader: { flexDirection: "row", paddingVertical: 12, paddingHorizontal: 16, backgroundColor: "#F5F0E8", borderRadius: 10, marginBottom: 8 },
-  tableHeaderCell: { flex: 1, fontSize: 10, letterSpacing: 2, color: "#8B7355" },
-  tableRow: { flexDirection: "row", alignItems: "center", paddingVertical: 14, paddingHorizontal: 16, backgroundColor: "#FAFAF8", borderRadius: 10, marginBottom: 6, borderWidth: 0.5, borderColor: "#E8E0D0" },
+  tableHeader: { flexDirection: "row", paddingVertical: 12, paddingHorizontal: 16, backgroundColor: Design.color.surfaceMuted, borderRadius: Design.radius.small, marginBottom: 8 },
+  tableHeaderCell: { flex: 1, fontSize: 10, letterSpacing: 2, color: Design.color.inkSoft },
+  tableRow: { flexDirection: "row", alignItems: "center", paddingVertical: 14, paddingHorizontal: 16, backgroundColor: Design.color.surface, borderRadius: Design.radius.small, marginBottom: 6, borderWidth: 0.5, borderColor: Design.color.line },
   tableCell: { flex: 1 },
   logBadge: { flexDirection: "row", alignItems: "center", gap: 5, borderRadius: 6, paddingHorizontal: 8, paddingVertical: 5, alignSelf: "flex-start" },
   logBadgeText: { fontSize: 9, letterSpacing: 1 },
-  logItem: { flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 14, paddingBottom: 14, borderBottomWidth: 0.5, borderBottomColor: "#E8E0D0" },
+  logItem: { flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 14, paddingBottom: 14, borderBottomWidth: 0.5, borderBottomColor: Design.color.line },
   logContent: { flex: 1 },
-  logTarget: { fontSize: 13, fontWeight: "500", color: "#1C1C1A", marginBottom: 2 },
-  logTime: { fontSize: 11, color: "#9E8E7E" },
+  logTarget: { fontSize: 13, fontWeight: "500", color: Design.color.ink, marginBottom: 2 },
+  logTime: { fontSize: 11, color: Design.color.inkMuted },
   empty: { flex: 1, justifyContent: "center", alignItems: "center", gap: 12, marginTop: 80 },
-  emptyText: { fontSize: 13, color: "#9E8E7E" },
+  emptyText: { fontSize: 13, color: Design.color.inkMuted },
 
 });

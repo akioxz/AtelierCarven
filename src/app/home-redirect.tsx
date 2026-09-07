@@ -1,6 +1,7 @@
 import { useRouter } from "expo-router";
 import { useEffect } from "react";
 import { ActivityIndicator, StyleSheet, View } from "react-native";
+import { Design } from "../constants/design";
 import { supabase } from "../lib/supabase";
 
 export default function HomeRedirect() {
@@ -50,7 +51,7 @@ export default function HomeRedirect() {
 
   return (
     <View style={styles.container}>
-      <ActivityIndicator size="large" color="#C9A96E" />
+      <ActivityIndicator size="large" color={Design.color.gold} />
     </View>
   );
 }
@@ -58,7 +59,7 @@ export default function HomeRedirect() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#F5F0E8",
+    backgroundColor: Design.color.surfaceMuted,
     justifyContent: "center",
     alignItems: "center",
   },

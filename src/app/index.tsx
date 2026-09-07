@@ -1,6 +1,7 @@
 import { useRouter } from "expo-router";
 import { useEffect, useRef } from "react";
 import { Animated, Easing, StyleSheet, Text, View } from "react-native";
+import { Design } from "../constants/design";
 import { supabase } from "../lib/supabase";
 
 export default function Index() {
@@ -109,7 +110,7 @@ export default function Index() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#F5F0E8",
+    backgroundColor: Design.color.surfaceMuted,
     justifyContent: "center",
     alignItems: "center",
   },
@@ -121,7 +122,7 @@ const styles = StyleSheet.create({
     height: 300,
     borderRadius: 150,
     borderWidth: 1,
-    borderColor: "#C9A96E",
+    borderColor: Design.color.gold,
     opacity: 0.2,
   },
   circleInner: {
@@ -132,7 +133,7 @@ const styles = StyleSheet.create({
     height: 180,
     borderRadius: 90,
     borderWidth: 1,
-    borderColor: "#C9A96E",
+    borderColor: Design.color.gold,
     opacity: 0.15,
   },
   logoContainer: {
@@ -142,31 +143,31 @@ const styles = StyleSheet.create({
   estText: {
     fontSize: 10,
     letterSpacing: 4,
-    color: "#8B7355",
+    color: Design.color.inkSoft,
     marginBottom: 8,
   },
   atelierText: {
     fontSize: 16,
     letterSpacing: 6,
-    color: "#8B7355",
+    color: Design.color.inkSoft,
     fontWeight: "300",
   },
   carvenText: {
     fontSize: 52,
     fontWeight: "300",
-    color: "#1C1C1A",
+    color: Design.color.ink,
     letterSpacing: 4,
     marginBottom: 8,
   },
   goldLine: {
     height: 1.5,
-    backgroundColor: "#C9A96E",
+    backgroundColor: Design.color.gold,
     alignSelf: "center",
     marginBottom: 16,
   },
   tagline: {
     fontSize: 12,
-    color: "#6B5E4E",
+    color: Design.color.inkMuted,
     letterSpacing: 1,
     textAlign: "center",
     maxWidth: 220,
@@ -179,6 +180,6 @@ const styles = StyleSheet.create({
   bottomText: {
     fontSize: 9,
     letterSpacing: 3,
-    color: "#C9A96E",
+    color: Design.color.gold,
   },
 });

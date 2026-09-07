@@ -12,6 +12,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { Design } from "../../constants/design";
 import { supabase } from "../../lib/supabase";
 import { CustomerNavigation } from "../../components/app-ui";
 
@@ -106,14 +107,14 @@ export default function Favorites() {
             <Image source={{ uri: product.image_url }} style={styles.cardImage} resizeMode="cover" />
           ) : (
             <View style={styles.placeholderImage}>
-              <Feather name={getCategoryIcon(product.category) as any} size={36} color="#8B7355" />
+              <Feather name={getCategoryIcon(product.category) as any} size={36} color={Design.color.inkSoft} />
             </View>
           )}
           <TouchableOpacity
             style={styles.favBadge}
             onPress={() => removeFavorite(product.id)}
           >
-            <AntDesign name="heart" size={14} color="#C9A96E" />
+            <AntDesign name="heart" size={14} color={Design.color.gold} />
           </TouchableOpacity>
         </View>
         <View style={styles.cardContent}>
@@ -137,7 +138,7 @@ export default function Favorites() {
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()}>
-          <Feather name="arrow-left" size={22} color="#1C1C1A" />
+          <Feather name="arrow-left" size={22} color={Design.color.ink} />
         </TouchableOpacity>
         <View style={{ marginTop: 20 }}>
           <Text style={styles.headerSmall}>YOUR</Text>
@@ -149,11 +150,11 @@ export default function Favorites() {
       {/* Main Content */}
       {loading ? (
         <View style={styles.loadingContainer}>
-          <ActivityIndicator color="#C9A96E" size="large" />
+          <ActivityIndicator color={Design.color.gold} size="large" />
         </View>
       ) : favorites.length === 0 ? (
         <View style={styles.emptyContainer}>
-          <Feather name="heart" size={48} color="#E8E0D0" style={{ marginBottom: 16 }} />
+          <Feather name="heart" size={48} color={Design.color.line} style={{ marginBottom: 16 }} />
           <Text style={styles.emptyTitle}>No Favorites Yet</Text>
           <Text style={styles.emptySubtext}>
             Tap the heart icon on any piece of furniture to save it to your wishlist.
@@ -175,8 +176,8 @@ export default function Favorites() {
             <RefreshControl
               refreshing={refreshing}
               onRefresh={handleRefresh}
-              tintColor="#C9A96E"
-              colors={["#C9A96E"]}
+              tintColor={Design.color.gold}
+              colors={[Design.color.gold]}
             />
           }
         />
@@ -188,36 +189,36 @@ export default function Favorites() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#FAFAF8" },
+  container: { flex: 1, backgroundColor: Design.color.surface },
   header: {
-    backgroundColor: "#F5F0E8",
+    backgroundColor: Design.color.surfaceMuted,
     padding: 28,
     paddingTop: 56,
     paddingBottom: 28,
   },
-  headerSmall: { fontSize: 10, letterSpacing: 4, color: "#8B7355" },
+  headerSmall: { fontSize: 10, letterSpacing: 4, color: Design.color.inkSoft },
   headerLarge: {
     fontSize: 36,
     fontWeight: "300",
-    color: "#1C1C1A",
+    color: Design.color.ink,
     letterSpacing: 2,
     marginBottom: 16,
   },
-  goldDivider: { width: 40, height: 1.5, backgroundColor: "#C9A96E" },
+  goldDivider: { width: 40, height: 1.5, backgroundColor: Design.color.gold },
   loadingContainer: { flex: 1, justifyContent: "center", alignItems: "center" },
   list: { padding: 16, paddingBottom: 100 },
   row: { justifyContent: "space-between", marginBottom: 16 },
   card: {
     width: "48%",
-    backgroundColor: "#F5F0E8",
-    borderRadius: 12,
+    backgroundColor: Design.color.surfaceMuted,
+    borderRadius: Design.radius.card,
     overflow: "hidden",
     borderWidth: 0.5,
-    borderColor: "#E8E0D0",
+    borderColor: Design.color.line,
   },
   imageWrapper: {
     height: 120,
-    backgroundColor: "#EDE5D8",
+    backgroundColor: Design.color.surfaceMuted,
     position: "relative",
     justifyContent: "center",
     alignItems: "center",
@@ -231,11 +232,11 @@ const styles = StyleSheet.create({
     width: 28,
     height: 28,
     borderRadius: 14,
-    backgroundColor: "#FAFAF8",
+    backgroundColor: Design.color.surface,
     justifyContent: "center",
     alignItems: "center",
     borderWidth: 0.5,
-    borderColor: "#E8E0D0",
+    borderColor: Design.color.line,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
@@ -246,11 +247,11 @@ const styles = StyleSheet.create({
   cardName: {
     fontSize: 13,
     fontWeight: "500",
-    color: "#1C1C1A",
+    color: Design.color.ink,
     marginBottom: 2,
   },
-  cardCategory: { fontSize: 10, color: "#9E8E7E", marginBottom: 6 },
-  cardPrice: { fontSize: 13, color: "#C9A96E", fontWeight: "500" },
+  cardCategory: { fontSize: 10, color: Design.color.inkMuted, marginBottom: 6 },
+  cardPrice: { fontSize: 13, color: Design.color.gold, fontWeight: "500" },
   emptyContainer: {
     flex: 1,
     justifyContent: "center",
@@ -260,22 +261,22 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontSize: 20,
     fontWeight: "500",
-    color: "#1C1C1A",
+    color: Design.color.ink,
     marginBottom: 8,
   },
   emptySubtext: {
     fontSize: 13,
-    color: "#9E8E7E",
+    color: Design.color.inkMuted,
     textAlign: "center",
     lineHeight: 20,
     marginBottom: 24,
   },
   browseBtn: {
-    backgroundColor: "#1C1C1A",
-    borderRadius: 10,
+    backgroundColor: Design.color.ink,
+    borderRadius: Design.radius.small,
     paddingHorizontal: 24,
     paddingVertical: 14,
   },
-  browseBtnText: { color: "#FAFAF8", fontSize: 11, letterSpacing: 2, fontWeight: "500" },
+  browseBtnText: { color: Design.color.surface, fontSize: 11, letterSpacing: 2, fontWeight: "500" },
 
 });

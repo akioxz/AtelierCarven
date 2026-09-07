@@ -14,6 +14,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { Design } from "../../constants/design";
 import { pickAndUploadImage } from "../../lib/imageUpload";
 import { supabase } from "../../lib/supabase";
 import { AdminNavigation } from "../../components/app-ui";
@@ -163,7 +164,7 @@ export default function ManageFurniture() {
           />
         ) : (
           <View style={styles.imagePlaceholder}>
-            <Feather name={getCategoryIcon(item.category) as any} size={36} color="#C9A96E" />
+            <Feather name={getCategoryIcon(item.category) as any} size={36} color={Design.color.gold} />
           </View>
         )}
         <View style={styles.badge}>
@@ -175,11 +176,11 @@ export default function ManageFurniture() {
         <Text style={styles.cardPrice}>₱{Number(item.price).toLocaleString()}</Text>
         <View style={styles.cardActions}>
           <TouchableOpacity style={styles.editBtn} onPress={() => openEdit(item)}>
-            <Feather name="edit-2" size={12} color="#8B7355" />
+            <Feather name="edit-2" size={12} color={Design.color.inkSoft} />
             <Text style={styles.editBtnText}>EDIT</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.deleteBtn} onPress={() => handleDelete(item)}>
-            <Feather name="trash-2" size={12} color="#A32D2D" />
+            <Feather name="trash-2" size={12} color={Design.color.danger} />
             <Text style={styles.deleteBtnText}>DEL</Text>
           </TouchableOpacity>
         </View>
@@ -194,7 +195,7 @@ export default function ManageFurniture() {
 
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()}>
-          <Feather name="arrow-left" size={22} color="#1C1C1A" />
+          <Feather name="arrow-left" size={22} color={Design.color.ink} />
         </TouchableOpacity>
         <View style={{ marginTop: 20 }}>
           <Text style={styles.headerSmall}>MANAGE</Text>
@@ -237,7 +238,7 @@ export default function ManageFurniture() {
       </ScrollView>
 
       {loading ? (
-        <ActivityIndicator color="#C9A96E" style={{ marginTop: 40 }} />
+        <ActivityIndicator color={Design.color.gold} style={{ marginTop: 40 }} />
       ) : (
         <ScrollView
           style={styles.scroll}
@@ -246,7 +247,7 @@ export default function ManageFurniture() {
         >
           {filteredFurniture.length === 0 ? (
             <View style={styles.empty}>
-              <Feather name="inbox" size={40} color="#E8E0D0" />
+              <Feather name="inbox" size={40} color={Design.color.line} />
               <Text style={styles.emptyText}>No {activeFilter === "All" ? "furniture" : activeFilter} yet.</Text>
             </View>
           ) : (
@@ -257,7 +258,7 @@ export default function ManageFurniture() {
       )}
 
       <TouchableOpacity style={styles.addBtn} onPress={openAdd}>
-        <Feather name="plus" size={16} color="#FAFAF8" />
+        <Feather name="plus" size={16} color={Design.color.surface} />
         <Text style={styles.addBtnText}>ADD FURNITURE</Text>
       </TouchableOpacity>
 
@@ -266,7 +267,7 @@ export default function ManageFurniture() {
         <View style={styles.modalOverlay}>
           <View style={styles.deleteModalContent}>
             <View style={styles.deleteIconWrap}>
-              <Feather name="trash-2" size={28} color="#A32D2D" />
+              <Feather name="trash-2" size={28} color={Design.color.danger} />
             </View>
             <Text style={styles.deleteModalTitle}>DELETE FURNITURE</Text>
             <View style={styles.goldDivider} />
@@ -299,7 +300,7 @@ export default function ManageFurniture() {
                   {editing ? "EDIT FURNITURE" : "ADD FURNITURE"}
                 </Text>
                 <TouchableOpacity onPress={() => setModalVisible(false)}>
-                  <Feather name="x" size={20} color="#8B7355" />
+                  <Feather name="x" size={20} color={Design.color.inkSoft} />
                 </TouchableOpacity>
               </View>
               <View style={styles.goldDivider} />
@@ -314,7 +315,7 @@ export default function ManageFurniture() {
                   <Image source={{ uri: imageUrl }} style={styles.uploadedImage} resizeMode="cover" />
                 ) : (
                   <View style={styles.uploadPlaceholder}>
-                    <Feather name="camera" size={28} color="#8B7355" />
+                    <Feather name="camera" size={28} color={Design.color.inkSoft} />
                     <Text style={styles.uploadText}>
                       {uploading ? "UPLOADING..." : "TAP TO UPLOAD IMAGE"}
                     </Text>
@@ -328,7 +329,7 @@ export default function ManageFurniture() {
                 value={imageUrl}
                 onChangeText={setImageUrl}
                 placeholder="https://images.unsplash.com/..."
-                placeholderTextColor="#C4B8A8"
+                placeholderTextColor={Design.color.inkMuted}
                 autoCapitalize="none"
                 autoCorrect={false}
               />
@@ -339,7 +340,7 @@ export default function ManageFurniture() {
                 value={name}
                 onChangeText={setName}
                 placeholder="Furniture name"
-                placeholderTextColor="#C4B8A8"
+                placeholderTextColor={Design.color.inkMuted}
               />
 
               <Text style={styles.inputLabel}>PRICE (numbers only, e.g. 55000)</Text>
@@ -348,7 +349,7 @@ export default function ManageFurniture() {
                 value={price}
                 onChangeText={setPrice}
                 placeholder="55000"
-                placeholderTextColor="#C4B8A8"
+                placeholderTextColor={Design.color.inkMuted}
                 keyboardType="numeric"
               />
 
@@ -373,7 +374,7 @@ export default function ManageFurniture() {
                 value={description}
                 onChangeText={setDescription}
                 placeholder="Short description..."
-                placeholderTextColor="#C4B8A8"
+                placeholderTextColor={Design.color.inkMuted}
                 multiline
                 numberOfLines={3}
               />
@@ -400,38 +401,38 @@ export default function ManageFurniture() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#FAFAF8" },
+  container: { flex: 1, backgroundColor: Design.color.surface },
 
   header: {
-    backgroundColor: "#F5F0E8",
+    backgroundColor: Design.color.surfaceMuted,
     padding: 28,
     paddingTop: 56,
     paddingBottom: 20,
   },
-  headerSmall: { fontSize: 10, letterSpacing: 4, color: "#8B7355" },
+  headerSmall: { fontSize: 10, letterSpacing: 4, color: Design.color.inkSoft },
   headerLarge: {
     fontSize: 36,
     fontWeight: "300",
-    color: "#1C1C1A",
+    color: Design.color.ink,
     letterSpacing: 2,
     marginBottom: 12,
   },
   goldDivider: {
     width: 40,
     height: 1.5,
-    backgroundColor: "#C9A96E",
+    backgroundColor: Design.color.gold,
     marginBottom: 8,
   },
   itemCount: {
     fontSize: 11,
-    color: "#9E8E7E",
+    color: Design.color.inkMuted,
     letterSpacing: 1,
   },
 
   filterScroll: {
-    backgroundColor: "#F5F0E8",
+    backgroundColor: Design.color.surfaceMuted,
     borderBottomWidth: 0.5,
-    borderBottomColor: "#E8E0D0",
+    borderBottomColor: Design.color.line,
     maxHeight: 52,
   },
   filterRow: {
@@ -448,23 +449,23 @@ const styles = StyleSheet.create({
     paddingVertical: 5,
     borderRadius: 20,
     borderWidth: 0.5,
-    borderColor: "#E8E0D0",
-    backgroundColor: "#FAFAF8",
+    borderColor: Design.color.line,
+    backgroundColor: Design.color.surface,
   },
   filterPillActive: {
-    backgroundColor: "#1C1C1A",
-    borderColor: "#1C1C1A",
+    backgroundColor: Design.color.ink,
+    borderColor: Design.color.ink,
   },
   filterText: {
     fontSize: 12,
-    color: "#8B7355",
+    color: Design.color.inkSoft,
   },
   filterTextActive: {
-    color: "#FAFAF8",
+    color: Design.color.surface,
   },
   filterCount: {
-    backgroundColor: "#EDE5D8",
-    borderRadius: 10,
+    backgroundColor: Design.color.surfaceMuted,
+    borderRadius: Design.radius.small,
     paddingHorizontal: 5,
     paddingVertical: 1,
     minWidth: 18,
@@ -475,11 +476,11 @@ const styles = StyleSheet.create({
   },
   filterCountText: {
     fontSize: 10,
-    color: "#8B7355",
+    color: Design.color.inkSoft,
     fontWeight: "500",
   },
   filterCountTextActive: {
-    color: "#FAFAF8",
+    color: Design.color.surface,
   },
 
   scroll: { flex: 1 },
@@ -497,11 +498,11 @@ const styles = StyleSheet.create({
 
   card: {
     width: "47.5%",
-    backgroundColor: "#FFFFFF",
-    borderRadius: 16,
+    backgroundColor: Design.color.surface,
+    borderRadius: Design.radius.card,
     overflow: "hidden",
     borderWidth: 0.5,
-    borderColor: "#E8E0D0",
+    borderColor: Design.color.line,
   },
   cardWeb: {
     width: "100%" as any,
@@ -519,7 +520,7 @@ const styles = StyleSheet.create({
   imagePlaceholder: {
     width: "100%",
     height: 160,
-    backgroundColor: "#F5F0E8",
+    backgroundColor: Design.color.surfaceMuted,
     justifyContent: "center",
     alignItems: "center",
   },
@@ -535,20 +536,20 @@ const styles = StyleSheet.create({
   badgeText: {
     fontSize: 9,
     letterSpacing: 1.5,
-    color: "#FAFAF8",
+    color: Design.color.surface,
   },
 
   cardBody: { padding: 12 },
   cardName: {
     fontSize: 14,
     fontWeight: "500",
-    color: "#1C1C1A",
+    color: Design.color.ink,
     marginBottom: 4,
     lineHeight: 20,
   },
   cardPrice: {
     fontSize: 15,
-    color: "#C9A96E",
+    color: Design.color.gold,
     marginBottom: 12,
   },
   cardActions: { flexDirection: "row", gap: 8 },
@@ -558,11 +559,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     gap: 5,
-    backgroundColor: "#F5F0E8",
+    backgroundColor: Design.color.surfaceMuted,
     borderRadius: 8,
     paddingVertical: 8,
   },
-  editBtnText: { fontSize: 10, letterSpacing: 1, color: "#8B7355", fontWeight: "500" },
+  editBtnText: { fontSize: 10, letterSpacing: 1, color: Design.color.inkSoft, fontWeight: "500" },
   deleteBtn: {
     flex: 1,
     flexDirection: "row",
@@ -573,25 +574,25 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     paddingVertical: 8,
   },
-  deleteBtnText: { fontSize: 10, letterSpacing: 1, color: "#A32D2D", fontWeight: "500" },
+  deleteBtnText: { fontSize: 10, letterSpacing: 1, color: Design.color.danger, fontWeight: "500" },
 
   empty: { alignItems: "center", paddingVertical: 60, gap: 12, width: "100%" },
-  emptyText: { fontSize: 13, color: "#9E8E7E" },
+  emptyText: { fontSize: 13, color: Design.color.inkMuted },
 
   addBtn: {
     position: "absolute",
     bottom: 24,
     left: 24,
     right: 24,
-    backgroundColor: "#1C1C1A",
-    borderRadius: 10,
+    backgroundColor: Design.color.ink,
+    borderRadius: Design.radius.small,
     padding: 18,
     alignItems: "center",
     flexDirection: "row",
     justifyContent: "center",
     gap: 8,
   },
-  addBtnText: { color: "#FAFAF8", fontSize: 11, letterSpacing: 2 },
+  addBtnText: { color: Design.color.surface, fontSize: 11, letterSpacing: 2 },
 
   modalOverlay: {
     flex: 1,
@@ -599,9 +600,9 @@ const styles = StyleSheet.create({
     justifyContent: "flex-end",
   },
   modalContent: {
-    backgroundColor: "#FAFAF8",
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
+    backgroundColor: Design.color.surface,
+    borderTopLeftRadius: Design.radius.sheet,
+    borderTopRightRadius: Design.radius.sheet,
     padding: 28,
     paddingBottom: 0,
     maxHeight: "90%",
@@ -612,24 +613,24 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 12,
   },
-  modalTitle: { fontSize: 11, letterSpacing: 3, color: "#8B7355" },
+  modalTitle: { fontSize: 11, letterSpacing: 3, color: Design.color.inkSoft },
   inputLabel: {
     fontSize: 10,
     letterSpacing: 2,
-    color: "#8B7355",
+    color: Design.color.inkSoft,
     marginBottom: 8,
     marginTop: 16,
   },
   input: {
     borderBottomWidth: 1,
-    borderBottomColor: "#E8E0D0",
+    borderBottomColor: Design.color.line,
     paddingVertical: 10,
     fontSize: 14,
-    color: "#1C1C1A",
+    color: Design.color.ink,
   },
   textArea: {
     borderWidth: 1,
-    borderColor: "#E8E0D0",
+    borderColor: Design.color.line,
     borderRadius: 8,
     padding: 10,
     marginTop: 4,
@@ -638,18 +639,18 @@ const styles = StyleSheet.create({
   },
   categoryRow: { flexDirection: "row", gap: 8, flexWrap: "wrap" },
   categoryPill: {
-    backgroundColor: "#F5F0E8",
+    backgroundColor: Design.color.surfaceMuted,
     borderRadius: 20,
     paddingHorizontal: 14,
     paddingVertical: 6,
     borderWidth: 0.5,
-    borderColor: "#E8E0D0",
+    borderColor: Design.color.line,
   },
-  categoryPillActive: { backgroundColor: "#1C1C1A", borderColor: "#1C1C1A" },
-  categoryText: { fontSize: 12, color: "#8B7355" },
-  categoryTextActive: { color: "#FAFAF8" },
+  categoryPillActive: { backgroundColor: Design.color.ink, borderColor: Design.color.ink },
+  categoryText: { fontSize: 12, color: Design.color.inkSoft },
+  categoryTextActive: { color: Design.color.surface },
   errorText: {
-    color: "#A32D2D",
+    color: Design.color.danger,
     fontSize: 12,
     marginTop: 12,
     textAlign: "center",
@@ -658,27 +659,27 @@ const styles = StyleSheet.create({
   cancelBtn: {
     flex: 1,
     borderWidth: 1,
-    borderColor: "#E8E0D0",
-    borderRadius: 10,
+    borderColor: Design.color.line,
+    borderRadius: Design.radius.small,
     padding: 16,
     alignItems: "center",
   },
-  cancelBtnText: { fontSize: 11, letterSpacing: 2, color: "#9E8E7E" },
+  cancelBtnText: { fontSize: 11, letterSpacing: 2, color: Design.color.inkMuted },
   saveBtn: {
     flex: 1,
-    backgroundColor: "#1C1C1A",
-    borderRadius: 10,
+    backgroundColor: Design.color.ink,
+    borderRadius: Design.radius.small,
     padding: 16,
     alignItems: "center",
   },
-  saveBtnText: { fontSize: 11, letterSpacing: 2, color: "#FAFAF8" },
+  saveBtnText: { fontSize: 11, letterSpacing: 2, color: Design.color.surface },
   imageUploadBtn: {
     width: "100%",
     height: 160,
-    backgroundColor: "#F5F0E8",
-    borderRadius: 12,
+    backgroundColor: Design.color.surfaceMuted,
+    borderRadius: Design.radius.card,
     borderWidth: 0.5,
-    borderColor: "#E8E0D0",
+    borderColor: Design.color.line,
     overflow: "hidden",
     marginBottom: 8,
   },
@@ -688,10 +689,10 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 10,
   },
-  uploadText: { fontSize: 10, letterSpacing: 2, color: "#8B7355" },
+  uploadText: { fontSize: 10, letterSpacing: 2, color: Design.color.inkSoft },
   uploadedImage: { width: "100%", height: 160 },
   deleteModalContent: {
-    backgroundColor: "#FAFAF8",
+    backgroundColor: Design.color.surface,
     borderRadius: 20,
     padding: 28,
     marginHorizontal: 32,
@@ -706,16 +707,16 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 16,
   },
-  deleteModalTitle: { fontSize: 12, letterSpacing: 3, color: "#A32D2D", marginBottom: 12 },
-  deleteModalMsg: { fontSize: 14, color: "#1C1C1A", textAlign: "center", marginTop: 12, lineHeight: 22 },
-  deleteModalName: { fontWeight: "600", color: "#1C1C1A" },
-  deleteModalSub: { fontSize: 11, color: "#9E8E7E", marginTop: 6, marginBottom: 20 },
+  deleteModalTitle: { fontSize: 12, letterSpacing: 3, color: Design.color.danger, marginBottom: 12 },
+  deleteModalMsg: { fontSize: 14, color: Design.color.ink, textAlign: "center", marginTop: 12, lineHeight: 22 },
+  deleteModalName: { fontWeight: "600", color: Design.color.ink },
+  deleteModalSub: { fontSize: 11, color: Design.color.inkMuted, marginTop: 6, marginBottom: 20 },
   deleteConfirmBtn: {
     flex: 1,
-    backgroundColor: "#A32D2D",
-    borderRadius: 10,
+    backgroundColor: Design.color.danger,
+    borderRadius: Design.radius.small,
     padding: 16,
     alignItems: "center",
   },
-  deleteConfirmText: { fontSize: 11, letterSpacing: 2, color: "#FAFAF8" },
+  deleteConfirmText: { fontSize: 11, letterSpacing: 2, color: Design.color.surface },
 });

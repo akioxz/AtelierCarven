@@ -13,8 +13,9 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { supabase } from "../../lib/supabase";
 import { CustomerNavigation } from "../../components/app-ui";
+import { Design } from "../../constants/design";
+import { supabase } from "../../lib/supabase";
 
 export default function Payment() {
   const router = useRouter();
@@ -185,7 +186,7 @@ export default function Payment() {
       <ScrollView showsVerticalScrollIndicator={false} style={styles.scrollContainer} contentContainerStyle={{ paddingBottom: 24 }}>
         <View style={styles.header}>
           <TouchableOpacity onPress={() => router.back()} disabled={processing}>
-            <Feather name="arrow-left" size={22} color="#1C1C1A" />
+            <Feather name="arrow-left" size={22} color={Design.color.ink} />
           </TouchableOpacity>
           <View style={{ marginTop: 20 }}>
             <Text style={styles.headerSmall}>FINAL STEP</Text>
@@ -288,8 +289,8 @@ export default function Payment() {
             <Text style={styles.sectionLabel}>CASH ON DELIVERY</Text>
             <View style={styles.card}>
               <View style={[styles.codRow, { alignItems: "center", gap: 16, paddingVertical: 12 }]}>
-                <View style={{ width: 48, height: 48, borderRadius: 24, backgroundColor: "#EDE5D8", justifyContent: "center", alignItems: "center" }}>
-                  <Feather name="package" size={22} color="#8B7355" />
+                <View style={{ width: 48, height: 48, borderRadius: 24, backgroundColor: Design.color.surfaceMuted, justifyContent: "center", alignItems: "center" }}>
+                  <Feather name="package" size={22} color={Design.color.inkSoft} />
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={[styles.gcashTitle, { marginBottom: 4 }]}>Confirm Your COD Order</Text>
@@ -308,7 +309,7 @@ export default function Payment() {
             <Text style={styles.sectionLabel}>CREDIT / DEBIT CARD (DEMO)</Text>
 
             <View style={styles.demoNotice}>
-              <Feather name="info" size={14} color="#8B7355" />
+              <Feather name="info" size={14} color={Design.color.inkSoft} />
               <Text style={styles.demoNoticeText}>
                 This is a simulated payment flow. Do not enter real card details.
               </Text>
@@ -349,7 +350,7 @@ export default function Payment() {
                   value={cardName}
                   onChangeText={setCardName}
                   placeholder="e.g. John Doe"
-                  placeholderTextColor="#C4B8A8"
+                  placeholderTextColor={Design.color.inkMuted}
                   autoCapitalize="characters"
                 />
               </View>
@@ -361,7 +362,7 @@ export default function Payment() {
                   value={cardNumber}
                   onChangeText={handleCardNumberChange}
                   placeholder="0000 0000 0000 0000"
-                  placeholderTextColor="#C4B8A8"
+                  placeholderTextColor={Design.color.inkMuted}
                   keyboardType="numeric"
                 />
               </View>
@@ -375,7 +376,7 @@ export default function Payment() {
                       value={cardExpiry}
                       onChangeText={handleExpiryChange}
                       placeholder="MM/YY"
-                      placeholderTextColor="#C4B8A8"
+                      placeholderTextColor={Design.color.inkMuted}
                       keyboardType="numeric"
                     />
                   </View>
@@ -388,7 +389,7 @@ export default function Payment() {
                       value={cardCVV}
                       onChangeText={handleCVVChange}
                       placeholder="000"
-                      placeholderTextColor="#C4B8A8"
+                      placeholderTextColor={Design.color.inkMuted}
                       keyboardType="numeric"
                       secureTextEntry
                     />
@@ -402,7 +403,7 @@ export default function Payment() {
         {/* Security Note */}
         <View style={styles.section}>
           <View style={styles.securityRow}>
-            <Feather name="shield" size={13} color="#8B7355" />
+            <Feather name="shield" size={13} color={Design.color.inkSoft} />
             <Text style={styles.securityText}>
               Your order details are securely stored. We never share your personal information.
             </Text>
@@ -420,10 +421,10 @@ export default function Payment() {
         >
           {processing ? (
             <Animated.View style={{ transform: [{ rotate: spin }] }}>
-              <Feather name="loader" size={18} color="#C9A96E" />
+              <Feather name="loader" size={18} color={Design.color.gold} />
             </Animated.View>
           ) : (
-            <Feather name="check-circle" size={18} color="#C9A96E" />
+            <Feather name="check-circle" size={18} color={Design.color.gold} />
           )}
           <Text style={styles.confirmBtnText}>
             {processing ? "PROCESSING..." : "CONFIRM ORDER"}
@@ -439,7 +440,7 @@ export default function Payment() {
         <View style={styles.alertOverlay}>
           <View style={styles.alertContent}>
             <View style={styles.alertIconWrap}>
-              <Feather name="alert-circle" size={28} color="#C9A96E" />
+              <Feather name="alert-circle" size={28} color={Design.color.gold} />
             </View>
             <Text style={styles.alertTitle}>{alertTitle.toUpperCase()}</Text>
             <View style={styles.alertDivider} />
@@ -455,54 +456,54 @@ export default function Payment() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#FAFAF8" },
-  header: { backgroundColor: "#F5F0E8", padding: 28, paddingTop: 56, paddingBottom: 28 },
-  headerSmall: { fontSize: 10, letterSpacing: 4, color: "#8B7355" },
-  headerLarge: { fontSize: 36, fontWeight: "300", color: "#1C1C1A", letterSpacing: 2, marginBottom: 16 },
-  goldDivider: { width: 40, height: 1.5, backgroundColor: "#C9A96E" },
+  container: { flex: 1, backgroundColor: Design.color.surface },
+  header: { backgroundColor: Design.color.surfaceMuted, padding: 28, paddingTop: 56, paddingBottom: 28 },
+  headerSmall: { fontSize: 10, letterSpacing: 4, color: Design.color.inkSoft },
+  headerLarge: { fontSize: 36, fontWeight: "300", color: Design.color.ink, letterSpacing: 2, marginBottom: 16 },
+  goldDivider: { width: 40, height: 1.5, backgroundColor: Design.color.gold },
   section: { paddingHorizontal: 24, paddingTop: 24 },
-  sectionLabel: { fontSize: 10, letterSpacing: 2, color: "#8B7355", marginBottom: 12 },
-  card: { backgroundColor: "#F5F0E8", borderRadius: 12, padding: 16, borderWidth: 0.5, borderColor: "#E8E0D0" },
+  sectionLabel: { fontSize: 10, letterSpacing: 2, color: Design.color.inkSoft, marginBottom: 12 },
+  card: { backgroundColor: Design.color.surfaceMuted, borderRadius: Design.radius.card, padding: 16, borderWidth: 0.5, borderColor: Design.color.line },
   gcashHeader: { flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 16 },
-  gcashIconBox: { width: 44, height: 44, borderRadius: 12, backgroundColor: "#EAF2FF", justifyContent: "center", alignItems: "center" },
-  gcashTitle: { fontSize: 15, fontWeight: "500", color: "#1C1C1A", marginBottom: 2 },
-  gcashSub: { fontSize: 12, color: "#9E8E7E" },
-  gcashDivider: { height: 0.5, backgroundColor: "#E8E0D0", marginBottom: 16 },
-  gcashDetail: { backgroundColor: "#EDE5D8", borderRadius: 10, padding: 16, alignItems: "center", marginBottom: 20 },
-  mayaIconBox: { width: 44, height: 44, borderRadius: 12, backgroundColor: "#E6F7F0", justifyContent: "center", alignItems: "center" },
-  creditCardContainer: { backgroundColor: "#1C1C1A", borderRadius: 16, padding: 24, borderWidth: 1, borderColor: "#C9A96E", shadowColor: "#000", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 5, marginBottom: 24 },
-  creditCardTitle: { fontSize: 9, letterSpacing: 3, color: "#C9A96E", fontWeight: "600", marginBottom: 16 },
+  gcashIconBox: { width: 44, height: 44, borderRadius: Design.radius.card, backgroundColor: "#EAF2FF", justifyContent: "center", alignItems: "center" },
+  gcashTitle: { fontSize: 15, fontWeight: "500", color: Design.color.ink, marginBottom: 2 },
+  gcashSub: { fontSize: 12, color: Design.color.inkMuted },
+  gcashDivider: { height: 0.5, backgroundColor: Design.color.line, marginBottom: 16 },
+  gcashDetail: { backgroundColor: Design.color.surfaceMuted, borderRadius: Design.radius.small, padding: 16, alignItems: "center", marginBottom: 20 },
+  mayaIconBox: { width: 44, height: 44, borderRadius: Design.radius.card, backgroundColor: "#E6F7F0", justifyContent: "center", alignItems: "center" },
+  creditCardContainer: { backgroundColor: Design.color.ink, borderRadius: 16, padding: 24, borderWidth: 1, borderColor: Design.color.gold, shadowColor: "#000", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 5, marginBottom: 24 },
+  creditCardTitle: { fontSize: 9, letterSpacing: 3, color: Design.color.gold, fontWeight: "600", marginBottom: 16 },
   creditCardChip: { width: 40, height: 30, borderRadius: 6, backgroundColor: "#E6C587", opacity: 0.8, marginBottom: 20 },
-  creditCardNumber: { fontSize: 20, letterSpacing: 2, color: "#FAFAF8", fontFamily: "Courier", marginBottom: 24 },
+  creditCardNumber: { fontSize: 20, letterSpacing: 2, color: Design.color.surface, fontFamily: "Courier", marginBottom: 24 },
   creditCardBottom: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-end" },
-  creditCardLabel: { fontSize: 8, letterSpacing: 1, color: "#8B7355", marginBottom: 4 },
-  creditCardValue: { fontSize: 12, color: "#FAFAF8", fontWeight: "500", letterSpacing: 1 },
-  creditCardBrand: { fontSize: 16, fontStyle: "italic", fontWeight: "bold", color: "#C9A96E" },
+  creditCardLabel: { fontSize: 8, letterSpacing: 1, color: Design.color.inkSoft, marginBottom: 4 },
+  creditCardValue: { fontSize: 12, color: Design.color.surface, fontWeight: "500", letterSpacing: 1 },
+  creditCardBrand: { fontSize: 16, fontStyle: "italic", fontWeight: "bold", color: Design.color.gold },
   inputGroup: { marginBottom: 16 },
-  inputLabel: { fontSize: 10, letterSpacing: 2, color: "#8B7355", marginBottom: 6 },
-  input: { borderBottomWidth: 1, borderBottomColor: "#E8E0D0", paddingVertical: 10, fontSize: 14, color: "#1C1C1A" },
+  inputLabel: { fontSize: 10, letterSpacing: 2, color: Design.color.inkSoft, marginBottom: 6 },
+  input: { borderBottomWidth: 1, borderBottomColor: Design.color.line, paddingVertical: 10, fontSize: 14, color: Design.color.ink },
   cardFieldsRow: { flexDirection: "row", gap: 16 },
   cardFieldHalf: { flex: 1 },
-  gcashLabel: { fontSize: 9, letterSpacing: 2, color: "#8B7355", marginBottom: 6 },
-  gcashNumber: { fontSize: 22, fontWeight: "500", color: "#1C1C1A", letterSpacing: 2, marginBottom: 4 },
-  gcashName: { fontSize: 12, color: "#6B5E4E" },
-  demoNotice: { flexDirection: "row", gap: 10, alignItems: "center", backgroundColor: "#FDF9F0", borderRadius: 10, borderWidth: 0.5, borderColor: "#E8E0D0", padding: 12, marginBottom: 16 },
-  demoNoticeText: { flex: 1, fontSize: 12, color: "#6B5E4E", lineHeight: 18 },
+  gcashLabel: { fontSize: 9, letterSpacing: 2, color: Design.color.inkSoft, marginBottom: 6 },
+  gcashNumber: { fontSize: 22, fontWeight: "500", color: Design.color.ink, letterSpacing: 2, marginBottom: 4 },
+  gcashName: { fontSize: 12, color: Design.color.inkMuted },
+  demoNotice: { flexDirection: "row", gap: 10, alignItems: "center", backgroundColor: "#FDF9F0", borderRadius: Design.radius.small, borderWidth: 0.5, borderColor: Design.color.line, padding: 12, marginBottom: 16 },
+  demoNoticeText: { flex: 1, fontSize: 12, color: Design.color.inkMuted, lineHeight: 18 },
   stepList: { gap: 12 },
   stepRow: { flexDirection: "row", alignItems: "flex-start", gap: 10 },
-  stepBadge: { width: 22, height: 22, borderRadius: 11, backgroundColor: "#C9A96E", justifyContent: "center", alignItems: "center", marginTop: 1 },
-  stepBadgeText: { fontSize: 11, fontWeight: "500", color: "#FAFAF8" },
-  stepText: { flex: 1, fontSize: 13, color: "#1C1C1A", lineHeight: 22 },
+  stepBadge: { width: 22, height: 22, borderRadius: 11, backgroundColor: Design.color.gold, justifyContent: "center", alignItems: "center", marginTop: 1 },
+  stepBadgeText: { fontSize: 11, fontWeight: "500", color: Design.color.surface },
+  stepText: { flex: 1, fontSize: 13, color: Design.color.ink, lineHeight: 22 },
   codRow: { flexDirection: "row", gap: 10, alignItems: "flex-start" },
-  codText: { flex: 1, fontSize: 13, color: "#6B5E4E", lineHeight: 22 },
+  codText: { flex: 1, fontSize: 13, color: Design.color.inkMuted, lineHeight: 22 },
   securityRow: { flexDirection: "row", alignItems: "flex-start", gap: 8 },
-  securityText: { flex: 1, fontSize: 12, color: "#9E8E7E", lineHeight: 20 },
+  securityText: { flex: 1, fontSize: 12, color: Design.color.inkMuted, lineHeight: 20 },
   scrollContainer: { flex: 1 },
-  footer: { backgroundColor: "#FAFAF8", borderTopWidth: 0.5, borderTopColor: "#E8E0D0", padding: 20 },
-  confirmBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 10, backgroundColor: "#1C1C1A", borderRadius: 12, padding: 18, marginBottom: 10 },
+  footer: { backgroundColor: Design.color.surface, borderTopWidth: 0.5, borderTopColor: Design.color.line, padding: 20 },
+  confirmBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 10, backgroundColor: Design.color.ink, borderRadius: Design.radius.card, padding: 18, marginBottom: 10 },
   confirmBtnDisabled: { opacity: 0.7 },
-  confirmBtnText: { color: "#FAFAF8", fontSize: 11, letterSpacing: 2 },
-  footerNote: { fontSize: 10, color: "#C4B8A8", textAlign: "center", letterSpacing: 0.5 },
+  confirmBtnText: { color: Design.color.surface, fontSize: 11, letterSpacing: 2 },
+  footerNote: { fontSize: 10, color: Design.color.inkMuted, textAlign: "center", letterSpacing: 0.5 },
 
   alertOverlay: {
     flex: 1,
@@ -511,8 +512,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   alertContent: {
-    backgroundColor: "#FAFAF8",
-    borderRadius: 20,
+    backgroundColor: Design.color.surface,
+    borderRadius: Design.radius.card,
     padding: 28,
     marginHorizontal: 32,
     alignItems: "center",
@@ -522,7 +523,7 @@ const styles = StyleSheet.create({
     width: 60,
     height: 60,
     borderRadius: 30,
-    backgroundColor: "#F5F0E8",
+    backgroundColor: Design.color.surfaceMuted,
     justifyContent: "center",
     alignItems: "center",
     marginBottom: 16,
@@ -530,29 +531,29 @@ const styles = StyleSheet.create({
   alertTitle: {
     fontSize: 12,
     letterSpacing: 3,
-    color: "#8B7355",
+    color: Design.color.inkSoft,
     marginBottom: 12,
     textAlign: "center",
   },
   alertDivider: {
     width: 40,
     height: 1.5,
-    backgroundColor: "#C9A96E",
+    backgroundColor: Design.color.gold,
     marginBottom: 12,
   },
   alertMessage: {
     fontSize: 14,
-    color: "#1C1C1A",
+    color: Design.color.ink,
     textAlign: "center",
     lineHeight: 22,
     marginBottom: 24,
   },
   alertBtn: {
-    backgroundColor: "#1C1C1A",
-    borderRadius: 10,
+    backgroundColor: Design.color.ink,
+    borderRadius: Design.radius.small,
     paddingVertical: 14,
     paddingHorizontal: 40,
     alignItems: "center",
   },
-  alertBtnText: { fontSize: 11, letterSpacing: 2, color: "#FAFAF8" },
+  alertBtnText: { fontSize: 11, letterSpacing: 2, color: Design.color.surface },
 });

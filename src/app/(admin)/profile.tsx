@@ -12,6 +12,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { Design } from "../../constants/design";
 import { pickAndUploadImage } from "../../lib/imageUpload";
 import { supabase } from "../../lib/supabase";
 import { AdminNavigation } from "../../components/app-ui";
@@ -74,7 +75,7 @@ export default function AdminProfile() {
   if (loading)
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator color="#C9A96E" />
+        <ActivityIndicator color={Design.color.gold} />
       </View>
     );
 
@@ -86,7 +87,7 @@ export default function AdminProfile() {
         {/* Header */}
         <View style={styles.header}>
           <TouchableOpacity onPress={() => router.back()}>
-            <Feather name="arrow-left" size={22} color="#1C1C1A" />
+            <Feather name="arrow-left" size={22} color={Design.color.ink} />
           </TouchableOpacity>
           <View style={{ marginTop: 20 }}>
             <Text style={styles.headerSmall}>ADMIN</Text>
@@ -118,7 +119,7 @@ export default function AdminProfile() {
               <Feather
                 name={uploadingAvatar ? "loader" : "camera"}
                 size={11}
-                color="#FAFAF8"
+                color={Design.color.surface}
               />
             </View>
           </TouchableOpacity>
@@ -134,19 +135,19 @@ export default function AdminProfile() {
             {/* Username — read only */}
             <View style={styles.infoRow}>
               <View style={styles.infoLabelRow}>
-                <Feather name="user" size={13} color="#8B7355" />
+                <Feather name="user" size={13} color={Design.color.inkSoft} />
                 <Text style={styles.infoLabel}>USERNAME</Text>
               </View>
               <View style={styles.readOnlyBadge}>
                 <Text style={styles.infoValue}>{profile?.username || "—"}</Text>
-                <Feather name="lock" size={10} color="#C4B8A8" />
+                <Feather name="lock" size={10} color={Design.color.inkMuted} />
               </View>
             </View>
             <View style={styles.infoDivider} />
             {/* Email — read only */}
             <View style={styles.infoRow}>
               <View style={styles.infoLabelRow}>
-                <Feather name="mail" size={13} color="#8B7355" />
+                <Feather name="mail" size={13} color={Design.color.inkSoft} />
                 <Text style={styles.infoLabel}>EMAIL</Text>
               </View>
               <Text style={styles.infoValue}>{profile?.email || "—"}</Text>
@@ -155,7 +156,7 @@ export default function AdminProfile() {
             {/* Role */}
             <View style={styles.infoRow}>
               <View style={styles.infoLabelRow}>
-                <Feather name="shield" size={13} color="#8B7355" />
+                <Feather name="shield" size={13} color={Design.color.inkSoft} />
                 <Text style={styles.infoLabel}>ROLE</Text>
               </View>
               <View style={styles.roleBadge}>
@@ -166,7 +167,7 @@ export default function AdminProfile() {
 
           {/* Note about username */}
           <View style={styles.noteRow}>
-            <Feather name="info" size={11} color="#C4B8A8" />
+            <Feather name="info" size={11} color={Design.color.inkMuted} />
             <Text style={styles.noteText}>
               Admin username cannot be changed.
             </Text>
@@ -176,7 +177,7 @@ export default function AdminProfile() {
         {/* Logout */}
         <View style={styles.logoutSection}>
           <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout}>
-            <Feather name="log-out" size={14} color="#9E8E7E" />
+            <Feather name="log-out" size={14} color={Design.color.inkMuted} />
             <Text style={styles.logoutText}>SIGN OUT</Text>
           </TouchableOpacity>
         </View>
@@ -189,7 +190,7 @@ export default function AdminProfile() {
         <View style={styles.modalOverlay}>
           <View style={styles.modalBox}>
             <View style={styles.modalIconWrap}>
-              <Feather name="log-out" size={24} color="#8B7355" />
+              <Feather name="log-out" size={24} color={Design.color.inkSoft} />
             </View>
             <Text style={styles.modalTitle}>Sign Out</Text>
             <View style={styles.modalDivider} />
@@ -207,7 +208,7 @@ export default function AdminProfile() {
                 style={styles.modalConfirmBtn}
                 onPress={confirmLogout}
               >
-                <Feather name="log-out" size={13} color="#FAFAF8" />
+                <Feather name="log-out" size={13} color={Design.color.surface} />
                 <Text style={styles.modalConfirmText}>SIGN OUT</Text>
               </TouchableOpacity>
             </View>
@@ -221,80 +222,80 @@ export default function AdminProfile() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#FAFAF8" },
+  container: { flex: 1, backgroundColor: Design.color.surface },
   loadingContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#FAFAF8",
+    backgroundColor: Design.color.surface,
   },
   header: {
-    backgroundColor: "#F5F0E8",
+    backgroundColor: Design.color.surfaceMuted,
     padding: 28,
     paddingTop: 56,
     paddingBottom: 28,
   },
-  headerSmall: { fontSize: 10, letterSpacing: 4, color: "#8B7355" },
+  headerSmall: { fontSize: 10, letterSpacing: 4, color: Design.color.inkSoft },
   headerLarge: {
     fontSize: 36,
     fontWeight: "300",
-    color: "#1C1C1A",
+    color: Design.color.ink,
     letterSpacing: 2,
     marginBottom: 16,
   },
-  goldDivider: { width: 40, height: 1.5, backgroundColor: "#C9A96E" },
+  goldDivider: { width: 40, height: 1.5, backgroundColor: Design.color.gold },
   avatarSection: { alignItems: "center", paddingVertical: 28 },
   avatarContainer: { position: "relative", marginBottom: 12 },
   avatarImage: {
     width: 80,
     height: 80,
-    borderRadius: 40,
+    borderRadius: Design.radius.pill,
     borderWidth: 1,
-    borderColor: "#C9A96E",
+    borderColor: Design.color.gold,
   },
   avatar: {
     width: 80,
     height: 80,
-    borderRadius: 40,
-    backgroundColor: "#EDE5D8",
+    borderRadius: Design.radius.pill,
+    backgroundColor: Design.color.surfaceMuted,
     justifyContent: "center",
     alignItems: "center",
     borderWidth: 1,
-    borderColor: "#C9A96E",
+    borderColor: Design.color.gold,
   },
-  avatarText: { fontSize: 32, fontWeight: "500", color: "#8B7355" },
+  avatarText: { fontSize: 32, fontWeight: "500", color: Design.color.inkSoft },
   avatarEditBadge: {
     position: "absolute",
     bottom: 0,
     right: 0,
     width: 24,
     height: 24,
-    borderRadius: 12,
-    backgroundColor: "#1C1C1A",
+    borderRadius: Design.radius.card,
+    backgroundColor: Design.color.ink,
     justifyContent: "center",
     alignItems: "center",
   },
   avatarName: {
     fontSize: 18,
     fontWeight: "500",
-    color: "#1C1C1A",
+    color: Design.color.ink,
     marginBottom: 4,
   },
-  avatarEmail: { fontSize: 12, color: "#9E8E7E", marginBottom: 4 },
-  avatarHint: { fontSize: 10, color: "#C9A96E", letterSpacing: 1 },
+  avatarEmail: { fontSize: 12, color: Design.color.inkMuted, marginBottom: 4 },
+  avatarHint: { fontSize: 10, color: Design.color.gold, letterSpacing: 1 },
   infoSection: { paddingHorizontal: 24, marginBottom: 20 },
   sectionLabel: {
     fontSize: 10,
     letterSpacing: 2,
-    color: "#8B7355",
+    color: Design.color.inkSoft,
     marginBottom: 12,
   },
   infoCard: {
-    backgroundColor: "#F5F0E8",
-    borderRadius: 12,
+    backgroundColor: Design.color.surfaceMuted,
+    borderRadius: Design.radius.card,
     padding: 16,
     borderWidth: 0.5,
-    borderColor: "#E8E0D0",
+    borderColor: Design.color.line,
   },
   infoRow: {
     flexDirection: "row",
@@ -303,19 +304,19 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
   },
   infoLabelRow: { flexDirection: "row", alignItems: "center", gap: 6 },
-  infoLabel: { fontSize: 10, letterSpacing: 1, color: "#8B7355" },
-  infoValue: { fontSize: 13, color: "#1C1C1A" },
+  infoLabel: { fontSize: 10, letterSpacing: 1, color: Design.color.inkSoft },
+  infoValue: { fontSize: 13, color: Design.color.ink },
   readOnlyBadge: { flexDirection: "row", alignItems: "center", gap: 6 },
-  infoDivider: { height: 0.5, backgroundColor: "#E8E0D0" },
+  infoDivider: { height: 0.5, backgroundColor: Design.color.line },
   roleBadge: {
-    backgroundColor: "#EDE5D8",
+    backgroundColor: Design.color.surfaceMuted,
     borderRadius: 20,
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderWidth: 0.5,
-    borderColor: "#C9A96E",
+    borderColor: Design.color.gold,
   },
-  roleBadgeText: { fontSize: 9, letterSpacing: 1.5, color: "#8B7355" },
+  roleBadgeText: { fontSize: 9, letterSpacing: 1.5, color: Design.color.inkSoft },
   noteRow: {
     flexDirection: "row",
     alignItems: "center",
@@ -323,7 +324,7 @@ const styles = StyleSheet.create({
     marginTop: 10,
     paddingHorizontal: 4,
   },
-  noteText: { fontSize: 11, color: "#C4B8A8" },
+  noteText: { fontSize: 11, color: Design.color.inkMuted },
   logoutSection: { paddingHorizontal: 24 },
   logoutBtn: {
     flexDirection: "row",
@@ -331,11 +332,11 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     gap: 8,
     borderWidth: 1,
-    borderColor: "#E8E0D0",
-    borderRadius: 10,
+    borderColor: Design.color.line,
+    borderRadius: Design.radius.small,
     padding: 16,
   },
-  logoutText: { fontSize: 11, letterSpacing: 2, color: "#9E8E7E" },
+  logoutText: { fontSize: 11, letterSpacing: 2, color: Design.color.inkMuted },
 
   modalOverlay: {
     flex: 1,
@@ -345,41 +346,41 @@ const styles = StyleSheet.create({
     padding: 32,
   },
   modalBox: {
-    backgroundColor: "#FAFAF8",
+    backgroundColor: Design.color.surface,
     borderRadius: 20,
     padding: 28,
     width: "100%",
     alignItems: "center",
     borderWidth: 0.5,
-    borderColor: "#E8E0D0",
+    borderColor: Design.color.line,
   },
   modalIconWrap: {
     width: 56,
     height: 56,
-    borderRadius: 28,
-    backgroundColor: "#EDE5D8",
+    borderRadius: Design.radius.pill,
+    backgroundColor: Design.color.surfaceMuted,
     justifyContent: "center",
     alignItems: "center",
     marginBottom: 16,
     borderWidth: 0.5,
-    borderColor: "#C9A96E",
+    borderColor: Design.color.gold,
   },
   modalTitle: {
     fontSize: 16,
     fontWeight: "500",
-    color: "#1C1C1A",
+    color: Design.color.ink,
     marginBottom: 12,
     letterSpacing: 1,
   },
   modalDivider: {
     width: 32,
     height: 1.5,
-    backgroundColor: "#C9A96E",
+    backgroundColor: Design.color.gold,
     marginBottom: 12,
   },
   modalMessage: {
     fontSize: 13,
-    color: "#6B5E4E",
+    color: Design.color.inkMuted,
     textAlign: "center",
     lineHeight: 20,
     marginBottom: 24,
@@ -388,21 +389,21 @@ const styles = StyleSheet.create({
   modalCancelBtn: {
     flex: 1,
     borderWidth: 1,
-    borderColor: "#E8E0D0",
-    borderRadius: 10,
+    borderColor: Design.color.line,
+    borderRadius: Design.radius.small,
     paddingVertical: 14,
     alignItems: "center",
   },
-  modalCancelText: { fontSize: 11, letterSpacing: 2, color: "#9E8E7E" },
+  modalCancelText: { fontSize: 11, letterSpacing: 2, color: Design.color.inkMuted },
   modalConfirmBtn: {
     flex: 1,
     flexDirection: "row",
     gap: 6,
-    backgroundColor: "#1C1C1A",
-    borderRadius: 10,
+    backgroundColor: Design.color.ink,
+    borderRadius: Design.radius.small,
     paddingVertical: 14,
     alignItems: "center",
     justifyContent: "center",
   },
-  modalConfirmText: { fontSize: 11, letterSpacing: 2, color: "#FAFAF8" },
+  modalConfirmText: { fontSize: 11, letterSpacing: 2, color: Design.color.surface },
 });

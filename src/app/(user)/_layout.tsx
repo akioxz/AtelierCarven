@@ -1,6 +1,7 @@
 import { Stack, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import { ActivityIndicator, View } from "react-native";
+import { Design } from "../../constants/design";
 import { supabase } from "../../lib/supabase";
 
 export default function UserLayout() {
@@ -41,8 +42,8 @@ export default function UserLayout() {
 
   if (checking) {
     return (
-      <View style={{ flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "#FAFAF8" }}>
-        <ActivityIndicator color="#C9A96E" />
+      <View style={{ flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: Design.color.surface }}>
+        <ActivityIndicator color={Design.color.gold} />
       </View>
     );
   }
