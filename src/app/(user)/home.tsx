@@ -1,4 +1,5 @@
 import { AntDesign, Feather } from "@expo/vector-icons";
+import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
 import { ActivityIndicator, Image, Platform, Pressable, ScrollView, StatusBar, StyleSheet, Text, useWindowDimensions, View } from "react-native";
@@ -52,6 +53,7 @@ export default function Home() {
   const toggleFavorite = async (furnitureId: string) => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
+    Haptics.selectionAsync();
     if (favorites.includes(furnitureId)) {
       setFavorites((previous) => previous.filter((id) => id !== furnitureId));
       await supabase.from("favorites").delete().eq("user_id", user.id).eq("furniture_id", furnitureId);
@@ -63,6 +65,7 @@ export default function Home() {
   const addToCart = async (furnitureId: string) => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
+    Haptics.selectionAsync();
     const { data: existing } = await supabase.from("cart").select("*").eq("user_id", user.id).eq("furniture_id", furnitureId).single();
     if (existing) await supabase.from("cart").update({ quantity: existing.quantity + 1 }).eq("id", existing.id);
     else await supabase.from("cart").insert({ user_id: user.id, furniture_id: furnitureId, quantity: 1 });

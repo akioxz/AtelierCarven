@@ -4,9 +4,7 @@ import { useRouter } from "expo-router";
 import { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
-  Animated,
   Image,
-  PanResponder,
   ScrollView,
   StatusBar,
   StyleSheet,
@@ -14,6 +12,9 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { Gesture, GestureDetector } from "react-native-gesture-handler";
+import Animated, { useAnimatedStyle, useSharedValue } from "react-native-reanimated";
+import { scheduleOnRN } from "react-native-worklets";
 import { Design } from "../../constants/design";
 import { supabase } from "../../lib/supabase";
 import { CustomerNavigation } from "../../components/app-ui";
@@ -30,33 +31,39 @@ export default function ImagePlacement() {
   const [rotationValue, setRotationValue] = useState(0);
   const [isFlipped, setIsFlipped] = useState(false);
 
-  const pan = useRef(new Animated.ValueXY()).current;
+  const panX = useSharedValue(0);
+  const panY = useSharedValue(0);
+  const panStartX = useSharedValue(0);
+  const panStartY = useSharedValue(0);
   const scrollRef = useRef<ScrollView>(null);
 
-  const panResponder = useRef(
-    PanResponder.create({
-      onStartShouldSetPanResponder: () => true,
-      onStartShouldSetPanResponderCapture: () => true,
-      onMoveShouldSetPanResponder: () => true,
-      onMoveShouldSetPanResponderCapture: () => true,
-      onPanResponderGrant: () => {
-        setIsDragging(true);
-        pan.extractOffset();
-      },
-      onPanResponderMove: Animated.event(
-        [null, { dx: pan.x, dy: pan.y }],
-        { useNativeDriver: false }
-      ),
-      onPanResponderRelease: () => {
-        setIsDragging(false);
-        pan.flattenOffset();
-      },
-      onPanResponderTerminate: () => {
-        setIsDragging(false);
-        pan.flattenOffset();
-      },
+  const panGesture = Gesture.Pan()
+    .minDistance(2)
+    .onStart(() => {
+      panStartX.set(panX.get());
+      panStartY.set(panY.get());
+      scheduleOnRN(() => setIsDragging(true));
     })
-  ).current;
+    .onUpdate((event) => {
+      panX.set(panStartX.get() + event.translationX);
+      panY.set(panStartY.get() + event.translationY);
+    })
+    .onEnd(() => {
+      scheduleOnRN(() => setIsDragging(false));
+    })
+    .onFinalize(() => {
+      scheduleOnRN(() => setIsDragging(false));
+    });
+
+  const overlayStyle = useAnimatedStyle(() => ({
+    transform: [
+      { translateX: panX.get() },
+      { translateY: panY.get() },
+      { scale: scaleValue },
+      { rotate: `${rotationValue}deg` },
+      { scaleX: isFlipped ? -1 : 1 },
+    ],
+  }));
 
   useEffect(() => {
     const fetchFurniture = async () => {
@@ -102,7 +109,10 @@ export default function ImagePlacement() {
 
   const handleSelectFurniture = (item: any) => {
     setSelectedFurniture(item);
-    pan.setValue({ x: 0, y: 0 });
+    panX.set(0);
+    panY.set(0);
+    panStartX.set(0);
+    panStartY.set(0);
     setScaleValue(1.0);
     setRotationValue(0);
     setIsFlipped(false);
@@ -166,40 +176,31 @@ export default function ImagePlacement() {
                   resizeMode="cover"
                 />
                 {selectedFurniture && (
-                  <Animated.View
-                    style={[
-                      styles.furnitureOverlay,
-                      {
-                        transform: [
-                          ...pan.getTranslateTransform(),
-                          { scale: scaleValue },
-                          { rotate: `${rotationValue}deg` },
-                          { scaleX: isFlipped ? -1 : 1 },
-                        ],
-                      },
-                    ]}
-                    {...panResponder.panHandlers}
-                  >
-                    <View style={styles.dragHandle}>
-                      <Feather name="move" size={10} color={Design.color.surface} />
-                    </View>
-                    {selectedFurniture.image_url ? (
-                      <Image
-                        source={{ uri: selectedFurniture.image_url }}
-                        style={styles.furnitureImage}
-                        resizeMode="contain"
-                      />
-                    ) : (
-                      <View style={styles.furniturePlaceholder}>
-                        <Feather
-                          name={getCategoryIcon(selectedFurniture.category) as any}
-                          size={48}
-                          color={Design.color.inkSoft}
-                        />
-                        <Text style={styles.placeholderLabel}>{selectedFurniture.name}</Text>
+                  <GestureDetector gesture={panGesture}>
+                    <Animated.View
+                      style={[styles.furnitureOverlay, overlayStyle]}
+                    >
+                      <View style={styles.dragHandle}>
+                        <Feather name="move" size={10} color={Design.color.surface} />
                       </View>
-                    )}
-                  </Animated.View>
+                      {selectedFurniture.image_url ? (
+                        <Image
+                          source={{ uri: selectedFurniture.image_url }}
+                          style={styles.furnitureImage}
+                          resizeMode="contain"
+                        />
+                      ) : (
+                        <View style={styles.furniturePlaceholder}>
+                          <Feather
+                            name={getCategoryIcon(selectedFurniture.category) as any}
+                            size={48}
+                            color={Design.color.inkSoft}
+                          />
+                          <Text style={styles.placeholderLabel}>{selectedFurniture.name}</Text>
+                        </View>
+                      )}
+                    </Animated.View>
+                  </GestureDetector>
                 )}
                 {!selectedFurniture && (
                   <View style={styles.canvasOverlayHint}>

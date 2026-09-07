@@ -1,10 +1,14 @@
 import { AntDesign, Feather } from "@expo/vector-icons";
+import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ActivityIndicator, Image, Platform, Pressable, ScrollView, StatusBar, StyleSheet, Text, TextInput, useWindowDimensions, View } from "react-native";
+import Animated, { FadeInDown } from "react-native-reanimated";
 import { ContentFrame } from "../../components/app-ui";
 import { Design, layout } from "../../constants/design";
 import { supabase } from "../../lib/supabase";
+
+const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
 const CATEGORIES = ["All", "Sofa", "Chair", "Table", "Bed"];
 const SORTS = [
@@ -63,6 +67,7 @@ export default function Search() {
   const toggleFavorite = async (furnitureId: string) => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
+    Haptics.selectionAsync();
     if (favorites.includes(furnitureId)) {
       setFavorites((previous) => previous.filter((id) => id !== furnitureId));
       await supabase.from("favorites").delete().eq("user_id", user.id).eq("furniture_id", furnitureId);
@@ -74,6 +79,7 @@ export default function Search() {
   const addToCart = async (furnitureId: string) => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
+    Haptics.selectionAsync();
     const { data: existing } = await supabase.from("cart").select("*").eq("user_id", user.id).eq("furniture_id", furnitureId).single();
     if (existing) await supabase.from("cart").update({ quantity: existing.quantity + 1 }).eq("id", existing.id);
     else await supabase.from("cart").insert({ user_id: user.id, furniture_id: furnitureId, quantity: 1 });
@@ -114,8 +120,8 @@ export default function Search() {
             <View style={styles.empty}><Feather name="search" size={28} color={Design.color.gold} /><Text style={styles.emptyTitle}>No pieces found</Text><Text style={styles.emptyCopy}>Try a different search term or category.</Text></View>
           ) : (
             <View style={[styles.grid, wide && styles.gridWide]}>
-              {furniture.map((item) => (
-                <Pressable key={item.id} onPress={() => router.push({ pathname: "/(user)/product", params: { id: item.id } })} style={({ pressed }) => [styles.card, wide && styles.cardWide, pressed && styles.cardPressed]}>
+              {furniture.map((item, index) => (
+                <AnimatedPressable key={item.id} entering={FadeInDown.delay((index % 6) * 55).duration(320)} onPress={() => router.push({ pathname: "/(user)/product", params: { id: item.id } })} style={({ pressed }) => [styles.card, wide && styles.cardWide, pressed && styles.cardPressed]}>
                   <View style={styles.imageWrap}>
                     {item.image_url ? <Image source={{ uri: item.image_url }} style={styles.image} /> : <Feather name={iconFor(item.category)} size={42} color={Design.color.inkMuted} />}
                     <Pressable accessibilityLabel={favorites.includes(item.id) ? "Remove from saved" : "Save furniture"} onPress={(event) => { event.stopPropagation(); toggleFavorite(item.id); }} style={({ pressed }) => [styles.heart, pressed && styles.pressed]}>
@@ -127,7 +133,7 @@ export default function Search() {
                     {item.rating != null ? <View style={styles.cardRating}><Feather name="star" size={11} color={Design.color.gold} /><Text style={styles.cardRatingText}>{Number(item.rating).toFixed(1)}</Text></View> : null}
                     <View style={styles.cardFooter}><Text style={styles.price}>₱{Number(item.price).toLocaleString()}</Text><Pressable onPress={(event) => { event.stopPropagation(); addToCart(item.id); }} style={({ pressed }) => [styles.add, pressed && styles.pressed]}><Feather name="plus" size={15} color={Design.color.surface} /></Pressable></View>
                   </View>
-                </Pressable>
+                </AnimatedPressable>
               ))}
             </View>
           )}

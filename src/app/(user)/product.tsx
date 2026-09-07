@@ -1,7 +1,9 @@
 import { AntDesign, Feather } from "@expo/vector-icons";
+import * as Haptics from "expo-haptics";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
 import { ActivityIndicator, Image, Modal, Platform, Pressable, ScrollView, StatusBar, StyleSheet, Text, TextInput, useWindowDimensions, View } from "react-native";
+import Animated, { FadeInDown } from "react-native-reanimated";
 import { PrimaryButton } from "../../components/app-ui";
 import { Design, layout } from "../../constants/design";
 import { supabase } from "../../lib/supabase";
@@ -36,13 +38,14 @@ export default function Product() {
   const fetchSizeGuide = useCallback(async () => { const { data } = await supabase.from("size_guides").select("*").eq("furniture_id", id).maybeSingle(); setSizeGuide(data || null); }, [id]);
   const fetchFavorite = useCallback(async () => { const { data: { user } } = await supabase.auth.getUser(); if (!user) return; const { data } = await supabase.from("favorites").select("id").eq("user_id", user.id).eq("furniture_id", id).single(); setIsFavorite(Boolean(data)); }, [id]);
   useEffect(() => { fetchItem(); fetchFavorite(); fetchReviews(); fetchSizeGuide(); }, [fetchFavorite, fetchItem, fetchReviews, fetchSizeGuide]);
-  const toggleFavorite = async () => { const { data: { user } } = await supabase.auth.getUser(); if (!user) return; setIsFavorite((value) => !value); if (isFavorite) await supabase.from("favorites").delete().eq("user_id", user.id).eq("furniture_id", id); else await supabase.from("favorites").insert({ user_id: user.id, furniture_id: id }); };
+  const toggleFavorite = async () => { const { data: { user } } = await supabase.auth.getUser(); if (!user) return; Haptics.selectionAsync(); setIsFavorite((value) => !value); if (isFavorite) await supabase.from("favorites").delete().eq("user_id", user.id).eq("furniture_id", id); else await supabase.from("favorites").insert({ user_id: user.id, furniture_id: id }); };
   const openSelection = (nextIntent: "cart" | "buy") => { setIntent(nextIntent); setQuantity(1); setSheetOpen(true); };
   const submit = async () => {
     setSubmitting(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
+      Haptics.selectionAsync();
       const { data: existing } = await supabase.from("cart").select("*").eq("user_id", user.id).eq("furniture_id", id).eq("color", selectedColor).eq("material", selectedMaterial).single();
       if (existing) await supabase.from("cart").update({ quantity: existing.quantity + quantity }).eq("id", existing.id);
       else await supabase.from("cart").insert({ user_id: user.id, furniture_id: id, quantity, color: selectedColor, material: selectedMaterial });
@@ -77,7 +80,7 @@ export default function Product() {
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
         <View style={[styles.frame, wide && styles.frameWide]}>
           <View style={styles.utility}><Pressable onPress={() => router.back()} style={({ pressed }) => [styles.utilityButton, pressed && styles.pressed]}><Feather name="arrow-left" size={19} color={Design.color.ink} /></Pressable><Pressable onPress={toggleFavorite} style={({ pressed }) => [styles.utilityButton, pressed && styles.pressed]}>{isFavorite ? <AntDesign name="heart" size={18} color={Design.color.gold} /> : <Feather name="heart" size={18} color={Design.color.ink} />}</Pressable></View>
-          <View style={[styles.content, wide && styles.contentWide]}>
+          <Animated.View entering={FadeInDown.duration(340)} style={[styles.content, wide && styles.contentWide]}>
             <View style={[styles.imagePanel, wide && styles.imagePanelWide]}>{item.image_url ? <Image source={{ uri: item.image_url }} style={styles.image} /> : <Feather name="box" size={88} color={Design.color.inkMuted} />}</View>
             <View style={styles.details}>
               <Text style={styles.category}>{item.category}</Text><Text style={styles.name}>{item.name}</Text><View style={styles.rule} />
@@ -96,11 +99,11 @@ export default function Product() {
                   </View>
                 ))}
               </View>
-              {wide ? <View style={styles.desktopActions}><Pressable onPress={() => openSelection("cart")} style={({ pressed }) => [styles.secondaryAction, pressed && styles.pressed]}><Text style={styles.secondaryActionText}>ADD TO CART</Text></Pressable><PrimaryButton label="BUY NOW" onPress={() => openSelection("buy")} style={styles.primaryAction} /></View> : null}
+{wide ? <View style={styles.desktopActions}><Pressable onPress={() => openSelection("cart")} style={({ pressed }) => [styles.secondaryAction, pressed && styles.pressed]}><Text style={styles.secondaryActionText}>ADD TO CART</Text></Pressable><PrimaryButton label="BUY NOW" onPress={() => openSelection("buy")} style={styles.primaryAction} /></View> : null}
             </View>
-          </View>
+          </Animated.View>
         </View>
-      </ScrollView>
+        </ScrollView>
       {!wide ? <View style={styles.bottomActions}><Pressable onPress={() => openSelection("cart")} style={({ pressed }) => [styles.secondaryAction, styles.bottomSecondary, pressed && styles.pressed]}><Text style={styles.secondaryActionText}>ADD TO CART</Text></Pressable><Pressable onPress={() => openSelection("buy")} style={({ pressed }) => [styles.buyAction, pressed && styles.pressed]}><Text style={styles.buyActionText}>BUY NOW</Text></Pressable></View> : null}
       <Modal visible={sheetOpen} animationType="slide" transparent onRequestClose={() => setSheetOpen(false)}>
         <View style={styles.overlay}><View style={styles.sheet}><View style={styles.sheetHandle} /><View style={styles.sheetHeader}><View><Text style={styles.sheetTitle}>Make it yours</Text><Text style={styles.sheetSub}>{item.name}</Text></View><Pressable onPress={() => setSheetOpen(false)} style={styles.close}><Feather name="x" size={18} color={Design.color.ink} /></Pressable></View>

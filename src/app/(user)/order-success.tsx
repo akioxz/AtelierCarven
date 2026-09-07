@@ -1,45 +1,52 @@
 import { Feather } from "@expo/vector-icons";
+import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
-import { useEffect, useRef } from "react";
+import { useEffect } from "react";
 import {
-    Animated,
-    Easing,
     StyleSheet,
     Text,
     TouchableOpacity,
     View,
 } from "react-native";
+import Animated, {
+  Easing,
+  ReduceMotion,
+  useAnimatedStyle,
+  useReducedMotion,
+  useSharedValue,
+  withDelay,
+  withSpring,
+  withTiming,
+} from "react-native-reanimated";
 import { Design } from "../../constants/design";
+
+const EASE_OUT = Easing.bezier(0.23, 1, 0.32, 1);
 
 export default function OrderSuccess() {
   const router = useRouter();
-  const scaleAnim = useRef(new Animated.Value(0)).current;
-  const fadeAnim = useRef(new Animated.Value(0)).current;
-  const slideAnim = useRef(new Animated.Value(40)).current;
+  const reduced = useReducedMotion();
+  const scale = useSharedValue(reduced ? 1 : 0.8);
+  const fade = useSharedValue(0);
+  const slide = useSharedValue(reduced ? 0 : 40);
 
   useEffect(() => {
-    Animated.sequence([
-      Animated.spring(scaleAnim, {
-        toValue: 1,
-        friction: 4,
-        tension: 40,
-        useNativeDriver: true,
-      }),
-      Animated.parallel([
-        Animated.timing(fadeAnim, {
-          toValue: 1,
-          duration: 400,
-          useNativeDriver: true,
-        }),
-        Animated.timing(slideAnim, {
-          toValue: 0,
-          duration: 400,
-          easing: Easing.out(Easing.ease),
-          useNativeDriver: true,
-        }),
-      ]),
-    ]).start();
-  }, [scaleAnim, fadeAnim, slideAnim]);
+    scale.set(withSpring(1, { duration: 420, dampingRatio: 0.65, reduceMotion: ReduceMotion.System }));
+    fade.set(withDelay(120, withTiming(1, { duration: 380, easing: EASE_OUT, reduceMotion: ReduceMotion.System })));
+    slide.set(withDelay(120, withTiming(0, { duration: 380, easing: EASE_OUT, reduceMotion: ReduceMotion.System })));
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+  }, [scale, fade, slide]);
+
+  const iconStyle = useAnimatedStyle(() => ({
+    opacity: scale.get(),
+    transform: [{ scale: scale.get() }],
+  }));
+  const textStyle = useAnimatedStyle(() => ({
+    opacity: fade.get(),
+    transform: [{ translateY: slide.get() }],
+  }));
+  const buttonsStyle = useAnimatedStyle(() => ({
+    opacity: fade.get(),
+  }));
 
   return (
     <View style={styles.container}>
@@ -47,21 +54,14 @@ export default function OrderSuccess() {
       <View style={styles.circleInner} />
 
       {/* Animated checkmark */}
-      <Animated.View
-        style={[styles.iconWrapper, { transform: [{ scale: scaleAnim }] }]}
-      >
+      <Animated.View style={[styles.iconWrapper, iconStyle]}>
         <View style={styles.iconCircle}>
-          <Feather name="check" size={40} color="#FAFAF8" />
+          <Feather name="check" size={40} color={Design.color.surface} />
         </View>
       </Animated.View>
 
       {/* Text */}
-      <Animated.View
-        style={[
-          styles.textBlock,
-          { opacity: fadeAnim, transform: [{ translateY: slideAnim }] },
-        ]}
-      >
+      <Animated.View style={[styles.textBlock, textStyle]}>
         <Text style={styles.title}>Order Placed!</Text>
         <View style={styles.goldDivider} />
         <Text style={styles.subtitle}>
@@ -69,13 +69,13 @@ export default function OrderSuccess() {
         </Text>
 
         <View style={styles.infoRow}>
-          <Feather name="truck" size={14} color="#8B7355" />
+          <Feather name="truck" size={14} color={Design.color.inkSoft} />
           <Text style={styles.infoText}>
             Estimated delivery: 3–5 business days
           </Text>
         </View>
         <View style={styles.infoRow}>
-          <Feather name="mail" size={14} color="#8B7355" />
+          <Feather name="mail" size={14} color={Design.color.inkSoft} />
           <Text style={styles.infoText}>
             Confirmation will be sent to your email
           </Text>
@@ -83,12 +83,12 @@ export default function OrderSuccess() {
       </Animated.View>
 
       {/* Buttons */}
-      <Animated.View style={[styles.buttons, { opacity: fadeAnim }]}>
+      <Animated.View style={[styles.buttons, buttonsStyle]}>
         <TouchableOpacity
           style={styles.homeBtn}
           onPress={() => router.replace("/(user)/home")}
         >
-          <Feather name="home" size={15} color="#FAFAF8" />
+          <Feather name="home" size={15} color={Design.color.surface} />
           <Text style={styles.homeBtnText}>BACK TO HOME</Text>
         </TouchableOpacity>
       </Animated.View>
@@ -139,10 +139,10 @@ const styles = StyleSheet.create({
   },
   textBlock: { alignItems: "center", marginBottom: 40 },
   title: {
-    fontSize: 32,
-    fontFamily: Design.font.displayMedium,
+    fontSize: 36,
+    fontFamily: Design.font.display,
     color: Design.color.ink,
-    letterSpacing: 2,
+    letterSpacing: -0.8,
     marginBottom: 16,
   },
   goldDivider: {

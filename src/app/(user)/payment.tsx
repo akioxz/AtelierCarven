@@ -1,9 +1,7 @@
 import { Feather } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import {
-  Animated,
-  Easing,
   Modal,
   ScrollView,
   StatusBar,
@@ -13,6 +11,14 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import Animated, {
+  Easing,
+  cancelAnimation,
+  useAnimatedStyle,
+  useSharedValue,
+  withRepeat,
+  withTiming,
+} from "react-native-reanimated";
 import { CustomerNavigation } from "../../components/app-ui";
 import { Design } from "../../constants/design";
 import { supabase } from "../../lib/supabase";
@@ -32,8 +38,7 @@ export default function Payment() {
   const orderTotal = total ? Number(total) : 0;
 
   const [processing, setProcessing] = useState(false);
-  const spinAnim = useRef(new Animated.Value(0)).current;
-  const pulseAnim = useRef(new Animated.Value(1)).current;
+  const spin = useSharedValue(0);
 
   // Alert modal state
   const [alertVisible, setAlertVisible] = useState(false);
@@ -51,15 +56,6 @@ export default function Payment() {
     setAlertMessage(message);
     setAlertVisible(true);
   };
-
-  useEffect(() => {
-    Animated.loop(
-      Animated.sequence([
-        Animated.timing(pulseAnim, { toValue: 1.05, duration: 800, useNativeDriver: true, easing: Easing.inOut(Easing.ease) }),
-        Animated.timing(pulseAnim, { toValue: 1, duration: 800, useNativeDriver: true, easing: Easing.inOut(Easing.ease) }),
-      ])
-    ).start();
-  }, [pulseAnim]);
 
   const handleCardNumberChange = (text: string) => {
     const cleanText = text.replace(/[^0-9]/g, "");
@@ -104,9 +100,7 @@ export default function Payment() {
     setProcessing(true);
 
     // Start spin animation
-    Animated.loop(
-      Animated.timing(spinAnim, { toValue: 1, duration: 800, useNativeDriver: true, easing: Easing.linear })
-    ).start();
+    spin.set(withRepeat(withTiming(1, { duration: 800, easing: Easing.linear }), -1));
 
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -120,6 +114,7 @@ export default function Payment() {
 
       if (cartFetchErr || !cartItems || cartItems.length === 0) {
         showAlert("Empty Cart", "No items in your cart to checkout.");
+        cancelAnimation(spin);
         setProcessing(false);
         return;
       }
@@ -143,6 +138,7 @@ export default function Payment() {
       if (orderErr) {
         console.error("Orders Insert Error:", orderErr);
         showAlert("Checkout Error", "Failed to place your order. Please try again.");
+        cancelAnimation(spin);
         setProcessing(false);
         return;
       }
@@ -172,12 +168,15 @@ export default function Payment() {
       router.replace("/(user)/order-success");
     } catch (err) {
       console.error("Confirm order payment transaction failed:", err);
+      cancelAnimation(spin);
       setProcessing(false);
       showAlert("Payment Error", "Something went wrong. Please try again.");
     }
   };
 
-  const spin = spinAnim.interpolate({ inputRange: [0, 1], outputRange: ["0deg", "360deg"] });
+  const spinStyle = useAnimatedStyle(() => ({
+    transform: [{ rotate: `${spin.get() * 360}deg` }],
+  }));
 
   return (
     <View style={styles.container}>
@@ -420,7 +419,7 @@ export default function Payment() {
           disabled={processing}
         >
           {processing ? (
-            <Animated.View style={{ transform: [{ rotate: spin }] }}>
+            <Animated.View style={spinStyle}>
               <Feather name="loader" size={18} color={Design.color.gold} />
             </Animated.View>
           ) : (
