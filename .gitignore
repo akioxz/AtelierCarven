@@ -43,3 +43,9 @@ supabase/.temp/
 # generated native folders
 /ios
 /android
+
+# local agent/tooling config
+.claude/
+.codex/
+.cursor/
+web-smoke.log
