@@ -15,6 +15,7 @@ import {
 import { Design } from "../../constants/design";
 import { pickAndUploadImage } from "../../lib/imageUpload";
 import { supabase } from "../../lib/supabase";
+import { goBackOr } from "../../lib/navigation";
 import { AdminNavigation, ContentFrame, PageHeader } from "../../components/app-ui";
 import { PressScale, Reveal, staggerDelay } from "../../components/motion";
 import { ShimmerBlock } from "../../components/skeleton";
@@ -234,7 +235,7 @@ export default function ManageFurniture() {
 
       <ContentFrame>
       <View style={styles.header}>
-        <PressScale onPress={() => router.back()} style={styles.backButton} accessibilityLabel="Go back">
+        <PressScale onPress={() => goBackOr(router, "/(admin)/dashboard")} style={styles.backButton} accessibilityLabel="Go back">
           <Feather name="arrow-left" size={19} color={Design.color.ink} />
         </PressScale>
         <PageHeader index="02" title="Furniture" subtitle={`${filteredFurniture.length} ${activeFilter === "All" ? "items" : activeFilter.toLowerCase() + "s"} in the collection.`} style={styles.headerPage} />
@@ -309,7 +310,7 @@ export default function ManageFurniture() {
         onCancel={() => { setDeleteModalVisible(false); setItemToDelete(null); }}
       />
 
-      <Modal visible={modalVisible} animationType="slide" transparent>
+      <Modal visible={modalVisible} animationType="slide" transparent onRequestClose={() => setModalVisible(false)}>
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <ScrollView showsVerticalScrollIndicator={false}>

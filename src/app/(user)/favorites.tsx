@@ -10,6 +10,7 @@ import {
   View,
 } from "react-native";
 import { Design } from "../../constants/design";
+import { goBackOr } from "../../lib/navigation";
 import { supabase } from "../../lib/supabase";
 import { ContentFrame, CustomerNavigation, PageHeader, PrimaryButton } from "../../components/app-ui";
 import { PressScale, Reveal } from "../../components/motion";
@@ -61,7 +62,10 @@ export default function Favorites() {
     const {
       data: { user },
     } = await supabase.auth.getUser();
-    if (!user) return;
+    if (!user) {
+      router.replace("/(auth)/onboarding");
+      return;
+    }
 
     // Optimistically update the UI
     setFavorites((prev) => prev.filter((item) => item.furniture_id !== furnitureId));
@@ -114,7 +118,7 @@ export default function Favorites() {
               subtitle={loading || favorites.length === 0 ? "Your personal gallery wall." : `${favorites.length} piece${favorites.length === 1 ? "" : "s"} in your collection.`}
             />
           </View>
-          <PressScale accessibilityLabel="Go back" onPress={() => router.back()} style={styles.backButton}>
+          <PressScale accessibilityLabel="Go back" onPress={() => goBackOr(router, "/(user)/home")} style={styles.backButton}>
             <Feather name="arrow-left" size={19} color={Design.color.ink} />
           </PressScale>
         </View>

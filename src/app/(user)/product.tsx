@@ -8,6 +8,7 @@ import { PrimaryButton, Overline } from "../../components/app-ui";
 import { PressScale, Reveal, staggerDelay } from "../../components/motion";
 import { ShimmerBlock } from "../../components/skeleton";
 import { Design, layout } from "../../constants/design";
+import { goBackOr } from "../../lib/navigation";
 import { supabase } from "../../lib/supabase";
 
 const COLORS = [{ name: "Black", hex: "#211A16" }, { name: "White", hex: "#FFFCF8" }, { name: "Gray", hex: "#929292" }, { name: "Beige", hex: "#C6A27C" }];
@@ -43,13 +44,13 @@ export default function Product() {
   const fetchFavorite = useCallback(async () => { const { data: { user } } = await supabase.auth.getUser(); if (!user) return; const { data } = await supabase.from("favorites").select("id").eq("user_id", user.id).eq("furniture_id", id).single(); setIsFavorite(Boolean(data)); }, [id]);
   const fetchGallery = useCallback(async () => { const { data } = await supabase.from("furniture_images").select("*").eq("furniture_id", id).order("display_order"); setGalleryImages(data || []); }, [id]);
   useEffect(() => { fetchItem(); fetchFavorite(); fetchReviews(); fetchSizeGuide(); fetchGallery(); }, [fetchFavorite, fetchItem, fetchReviews, fetchSizeGuide, fetchGallery]);
-  const toggleFavorite = useCallback(async () => { const { data: { user } } = await supabase.auth.getUser(); if (!user) return; Haptics.selectionAsync(); setIsFavorite((value) => !value); if (isFavorite) await supabase.from("favorites").delete().eq("user_id", user.id).eq("furniture_id", id); else await supabase.from("favorites").insert({ user_id: user.id, furniture_id: id }); }, [id, isFavorite]);
+  const toggleFavorite = useCallback(async () => { const { data: { user } } = await supabase.auth.getUser(); if (!user) { router.replace("/(auth)/onboarding"); return; } Haptics.selectionAsync(); setIsFavorite((value) => !value); if (isFavorite) await supabase.from("favorites").delete().eq("user_id", user.id).eq("furniture_id", id); else await supabase.from("favorites").insert({ user_id: user.id, furniture_id: id }); }, [id, isFavorite, router]);
   const openSelection = useCallback((nextIntent: "cart" | "buy") => { setIntent(nextIntent); setQuantity(1); setSheetOpen(true); }, []);
   const submit = useCallback(async () => {
     setSubmitting(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      if (!user) { router.replace("/(auth)/onboarding"); return; }
       Haptics.selectionAsync();
       const { data: existing } = await supabase.from("cart").select("*").eq("user_id", user.id).eq("furniture_id", id).eq("color", selectedColor).eq("material", selectedMaterial).single();
       if (existing) await supabase.from("cart").update({ quantity: existing.quantity + quantity }).eq("id", existing.id);
@@ -65,7 +66,7 @@ export default function Product() {
     setSubmittingReview(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      if (!user) { router.replace("/(auth)/onboarding"); return; }
       await supabase.from("reviews").insert({ furniture_id: id, user_id: user.id, rating: reviewRating, comment: reviewComment.trim() || null });
       setReviewSheetOpen(false);
       setReviewRating(0);
@@ -75,7 +76,7 @@ export default function Product() {
     } finally {
       setSubmittingReview(false);
     }
-  }, [id, reviewRating, reviewComment, fetchItem, fetchReviews]);
+  }, [id, reviewRating, reviewComment, fetchItem, fetchReviews, router]);
 
   const allImages = useMemo(() => {
     if (!item) return [];
@@ -104,13 +105,13 @@ export default function Product() {
       </View>
     </View>
   );
-  if (!item) return <View style={styles.loading}><Text style={styles.notFound}>This piece is no longer available.</Text><PressScale accessibilityRole="link" accessibilityLabel="Return to collection" onPress={() => router.back()}><Text style={styles.return}>Return to collection</Text></PressScale></View>;
+  if (!item) return <View style={styles.loading}><Text style={styles.notFound}>This piece is no longer available.</Text><PressScale accessibilityRole="link" accessibilityLabel="Return to collection" onPress={() => goBackOr(router, "/(user)/home")}><Text style={styles.return}>Return to collection</Text></PressScale></View>;
 
   const listHeader = (
     <View style={[styles.frame, wide && styles.frameWide]}>
       <Reveal>
         <View style={styles.utility}>
-          <PressScale accessibilityLabel="Go back" onPress={() => router.back()} style={styles.utilityButton}>
+          <PressScale accessibilityLabel="Go back" onPress={() => goBackOr(router, "/(user)/home")} style={styles.utilityButton}>
             <Feather name="arrow-left" size={19} color={Design.color.ink} />
           </PressScale>
           <PressScale accessibilityLabel={isFavorite ? "Remove from saved" : "Save to favorites"} onPress={() => toggleFavorite()} style={styles.utilityButton}>

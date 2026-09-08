@@ -12,6 +12,7 @@ import {
 } from "react-native";
 import { Design } from "../../constants/design";
 import { supabase } from "../../lib/supabase";
+import { goBackOr } from "../../lib/navigation";
 import { AdminNavigation, ContentFrame, PageHeader } from "../../components/app-ui";
 import { PressScale, Reveal } from "../../components/motion";
 import { ShimmerBlock } from "../../components/skeleton";
@@ -206,7 +207,7 @@ export default function ManageOrders() {
       {/* Header */}
       <ContentFrame>
       <View style={styles.header}>
-        <PressScale onPress={() => router.back()} style={styles.backButton} accessibilityLabel="Go back">
+        <PressScale onPress={() => goBackOr(router, "/(admin)/dashboard")} style={styles.backButton} accessibilityLabel="Go back">
           <Feather name="arrow-left" size={19} color={Design.color.ink} />
         </PressScale>
         <PageHeader index="03" title="Orders" subtitle="Review deliveries and update statuses." />
@@ -269,7 +270,7 @@ export default function ManageOrders() {
       </ContentFrame>
 
       {/* Order Detail Modal */}
-      <Modal visible={selectedOrder !== null} animationType="slide" transparent>
+      <Modal visible={selectedOrder !== null} animationType="slide" transparent onRequestClose={() => setSelectedOrder(null)}>
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             {selectedOrder && (

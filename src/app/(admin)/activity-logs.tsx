@@ -7,6 +7,7 @@ import { useState, useEffect } from "react";
 import { Feather } from "@expo/vector-icons";
 import { Design, layout } from "../../constants/design";
 import { supabase } from "../../lib/supabase";
+import { goBackOr } from "../../lib/navigation";
 import { AdminNavigation, ContentFrame, PageHeader } from "../../components/app-ui";
 import { PressScale, Reveal, staggerDelay } from "../../components/motion";
 import { ShimmerBlock } from "../../components/skeleton";
@@ -42,7 +43,7 @@ export default function ActivityLogs() {
       <View style={styles.main}>
         <View style={[styles.header, isWeb && styles.headerWeb]}>
           {!isWeb && (
-            <PressScale onPress={() => router.back()} style={styles.backButton} accessibilityLabel="Go back">
+            <PressScale onPress={() => goBackOr(router, "/(admin)/dashboard")} style={styles.backButton} accessibilityLabel="Go back">
               <Feather name="arrow-left" size={19} color={Design.color.ink} />
             </PressScale>
           )}
@@ -97,7 +98,6 @@ export default function ActivityLogs() {
                     <Text style={styles.logTarget}>{log.target_item}</Text>
                     <Text style={styles.logTime}>{new Date(log.created_at).toLocaleString()}</Text>
                   </View>
-                  <Feather name="chevron-right" size={14} color={Design.color.gold} />
                 </View>
                 </Reveal>
               );

@@ -15,6 +15,7 @@ import Animated, { useAnimatedStyle, useSharedValue } from "react-native-reanima
 import { scheduleOnRN } from "react-native-worklets";
 import { Design } from "../../constants/design";
 import { supabase } from "../../lib/supabase";
+import { goBackOr } from "../../lib/navigation";
 import { CustomerNavigation, PageHeader } from "../../components/app-ui";
 import { PressScale, Reveal } from "../../components/motion";
 import { ShimmerBlock } from "../../components/skeleton";
@@ -156,7 +157,7 @@ export default function ImagePlacement() {
           <View style={styles.headerCopy}>
             <PageHeader index="06" title="Place" subtitle="Visualize furniture in your space." />
           </View>
-          <PressScale onPress={() => router.back()} accessibilityLabel="Go back" style={styles.backButton}>
+          <PressScale onPress={() => goBackOr(router, "/(user)/home")} accessibilityLabel="Go back" style={styles.backButton}>
             <Feather name="arrow-left" size={19} color={Design.color.ink} />
           </PressScale>
         </View>

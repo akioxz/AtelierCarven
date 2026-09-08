@@ -9,6 +9,7 @@ import { PressScale, Reveal, staggerDelay } from "../../components/motion";
 import { ProductCard } from "../../components/product-card";
 import { CardSkeleton } from "../../components/skeleton";
 import { Design, layout } from "../../constants/design";
+import { goBackOr } from "../../lib/navigation";
 import { supabase } from "../../lib/supabase";
 
 const CATEGORIES = ["All", "Sofa", "Chair", "Table", "Bed"];
@@ -76,7 +77,7 @@ export default function Search() {
 
   const toggleFavorite = async (furnitureId: string) => {
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
+    if (!user) { router.replace("/(auth)/onboarding"); return; }
     Haptics.selectionAsync();
     if (favorites.includes(furnitureId)) {
       setFavorites((previous) => previous.filter((id) => id !== furnitureId));
@@ -88,7 +89,7 @@ export default function Search() {
   };
   const addToCart = async (furnitureId: string) => {
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
+    if (!user) { router.replace("/(auth)/onboarding"); return; }
     Haptics.selectionAsync();
     const { data: existing } = await supabase.from("cart").select("*").eq("user_id", user.id).eq("furniture_id", furnitureId).single();
     if (existing) await supabase.from("cart").update({ quantity: existing.quantity + 1 }).eq("id", existing.id);
@@ -102,7 +103,7 @@ export default function Search() {
         <ContentFrame style={styles.frame}>
           <Reveal>
             <View style={styles.topbar}>
-              <PressScale accessibilityLabel="Go back" onPress={() => router.back()} style={styles.iconAction}>
+              <PressScale accessibilityLabel="Go back" onPress={() => goBackOr(router, "/(user)/home")} style={styles.iconAction}>
                 <Feather name="arrow-left" size={19} color={Design.color.ink} />
               </PressScale>
               <View style={styles.search}>
@@ -176,10 +177,7 @@ export default function Search() {
                     footerAction={
                       <PressScale
                         accessibilityLabel={`Add ${item.name} to cart`}
-                        onPress={(event) => {
-                          event.stopPropagation();
-                          addToCart(item.id);
-                        }}
+                        onPress={() => addToCart(item.id)}
                         style={styles.add}
                       >
                         <Feather name="plus" size={15} color={Design.color.surface} />

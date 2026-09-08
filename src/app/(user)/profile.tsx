@@ -13,6 +13,7 @@ import {
 } from "react-native";
 import { pickAndUploadImage } from "../../lib/imageUpload";
 import { supabase } from "../../lib/supabase";
+import { goBackOr } from "../../lib/navigation";
 import { Design } from "../../constants/design";
 import { getStatusBadge } from "../../constants/statuses";
 import { ContentFrame, CustomerNavigation, PageHeader } from "../../components/app-ui";
@@ -142,7 +143,7 @@ export default function UserProfile() {
           <View style={styles.headerCopy}>
             <PageHeader index="07" title="Profile" subtitle="Your details, orders, and gallery wall." />
           </View>
-          <PressScale onPress={() => router.back()} accessibilityLabel="Go back" style={styles.backButton}>
+          <PressScale onPress={() => goBackOr(router, "/(user)/home")} accessibilityLabel="Go back" style={styles.backButton}>
             <Feather name="arrow-left" size={19} color={Design.color.ink} />
           </PressScale>
         </View>
@@ -304,7 +305,7 @@ export default function UserProfile() {
       </ScrollView>
 
       {/* Order Detail Modal */}
-      <Modal visible={selectedOrder !== null} animationType="slide" transparent>
+      <Modal visible={selectedOrder !== null} animationType="slide" transparent onRequestClose={() => setSelectedOrder(null)}>
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             {selectedOrder && (() => {

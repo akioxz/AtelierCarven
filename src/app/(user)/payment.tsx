@@ -21,6 +21,7 @@ import Animated, {
 import { ContentFrame, CustomerNavigation, PageHeader } from "../../components/app-ui";
 import { PressScale, Reveal } from "../../components/motion";
 import { Design } from "../../constants/design";
+import { goBackOr } from "../../lib/navigation";
 import { supabase } from "../../lib/supabase";
 
 export default function Payment() {
@@ -104,7 +105,7 @@ export default function Payment() {
 
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) { router.replace("/(auth)/onboarding"); return; }
+      if (!user) { showAlert("Sign in required", "You need to be signed in to place an order."); cancelAnimation(spin); setProcessing(false); return; }
 
       // Retrieve user's current cart items
       const { data: cartItems, error: cartFetchErr } = await supabase
@@ -188,7 +189,7 @@ export default function Payment() {
           <View style={styles.headerCopy}>
             <PageHeader index="04" title="Payment" subtitle="Choose how you'd like to pay." />
           </View>
-          <PressScale onPress={() => router.back()} disabled={processing} accessibilityLabel="Go back" style={styles.backButton}>
+          <PressScale onPress={() => goBackOr(router, "/(user)/checkout")} disabled={processing} accessibilityLabel="Go back" style={styles.backButton}>
             <Feather name="arrow-left" size={19} color={Design.color.ink} />
           </PressScale>
         </View>
@@ -441,7 +442,7 @@ export default function Payment() {
       </View>
 
       {/* Custom Alert Modal */}
-      <Modal visible={alertVisible} animationType="fade" transparent>
+      <Modal visible={alertVisible} animationType="fade" transparent onRequestClose={() => setAlertVisible(false)}>
         <View style={styles.alertOverlay}>
           <View style={styles.alertContent}>
             <View style={styles.alertIconWrap}>

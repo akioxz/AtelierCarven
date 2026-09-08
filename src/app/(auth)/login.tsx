@@ -15,6 +15,7 @@ import {
 import { PressScale, Reveal } from "../../components/motion";
 import { Design, layout } from "../../constants/design";
 import { supabase } from "../../lib/supabase";
+import { goBackOr } from "../../lib/navigation";
 
 export default function Login() {
   const router = useRouter();
@@ -143,7 +144,7 @@ value={password}
         ) : (
           <>
             <View style={styles.header}>
-              <PressScale onPress={() => router.back()} style={styles.backBtn} accessibilityLabel="Go back">
+              <PressScale onPress={() => goBackOr(router, "/(auth)/onboarding")} style={styles.backBtn} accessibilityLabel="Go back">
                 <Feather name="arrow-left" size={18} color={Design.color.ink} />
               </PressScale>
               <Reveal>

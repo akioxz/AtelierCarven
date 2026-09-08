@@ -56,7 +56,7 @@ export default function Home() {
 
   const toggleFavorite = async (furnitureId: string) => {
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
+    if (!user) { router.replace("/(auth)/onboarding"); return; }
     Haptics.selectionAsync();
     if (favorites.includes(furnitureId)) {
       setFavorites((previous) => previous.filter((id) => id !== furnitureId));
@@ -68,7 +68,7 @@ export default function Home() {
   };
   const addToCart = async (furnitureId: string) => {
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
+    if (!user) { router.replace("/(auth)/onboarding"); return; }
     Haptics.selectionAsync();
     const { data: existing } = await supabase.from("cart").select("*").eq("user_id", user.id).eq("furniture_id", furnitureId).single();
     if (existing) await supabase.from("cart").update({ quantity: existing.quantity + 1 }).eq("id", existing.id);
@@ -130,7 +130,7 @@ export default function Home() {
           </View>
 
           <Reveal delay={staggerDelay(3)}>
-            <PressScale accessibilityLabel="Search the collection" onPress={() => router.push("/(user)/search" as never)} style={[styles.search, wide && styles.searchWide]}>
+            <PressScale accessibilityLabel="Search the collection" onPress={() => router.push("/(user)/search")} style={[styles.search, wide && styles.searchWide]}>
               <Feather name="search" size={17} color={Design.color.inkMuted} />
               <Text style={styles.searchPlaceholder}>Search the collection</Text>
               <Feather name="arrow-up-right" size={16} color={Design.color.inkMuted} />
@@ -179,10 +179,7 @@ export default function Home() {
                     footerAction={
                       <PressScale
                         accessibilityLabel={`Add ${item.name} to cart`}
-                        onPress={(event) => {
-                          event.stopPropagation();
-                          addToCart(item.id);
-                        }}
+                        onPress={() => addToCart(item.id)}
                         style={styles.add}
                       >
                         <Feather name="plus" size={15} color={Design.color.surface} />

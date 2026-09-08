@@ -15,6 +15,7 @@ import {
 import { PressScale, Reveal } from "../../components/motion";
 import { Design, layout } from "../../constants/design";
 import { supabase } from "../../lib/supabase";
+import { goBackOr } from "../../lib/navigation";
 import { ContentFrame } from "../../components/app-ui";
 
 export default function Signup() {
@@ -81,7 +82,7 @@ export default function Signup() {
         {/* Header */}
         <View style={styles.header}>
           <PressScale
-            onPress={() => router.back()}
+            onPress={() => goBackOr(router, "/(auth)/onboarding")}
             style={styles.backBtn}
             accessibilityLabel="Go back"
           >
