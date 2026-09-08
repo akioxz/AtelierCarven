@@ -45,6 +45,7 @@ supabase/.temp/
 /android
 
 # local agent/tooling config
+.impeccable/
 .claude/
 .codex/
 .cursor/
