@@ -50,3 +50,4 @@ supabase/.temp/
 .cursor/
 web-smoke.log
 .sb-pentest-audit.log
+.vercel
