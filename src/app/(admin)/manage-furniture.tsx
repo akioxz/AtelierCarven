@@ -1,9 +1,9 @@
 import { Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
+import { Image } from "expo-image";
 import { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
-  Image,
   Modal,
   Platform,
   ScrollView,
@@ -198,7 +198,8 @@ export default function ManageFurniture() {
           <Image
             source={{ uri: item.image_url }}
             style={styles.cardImage}
-            resizeMode="cover"
+            contentFit="cover"
+            transition={200}
           />
         ) : (
           <View style={styles.imagePlaceholder}>
@@ -335,7 +336,7 @@ export default function ManageFurniture() {
                 disabled={uploading}
               >
                 {imageUrl ? (
-                  <Image source={{ uri: imageUrl }} style={styles.uploadedImage} resizeMode="cover" />
+                  <Image source={{ uri: imageUrl }} style={styles.uploadedImage} contentFit="cover" transition={200} />
                 ) : (
                   <View style={styles.uploadPlaceholder}>
                     <Feather name="camera" size={28} color={Design.color.inkSoft} />
@@ -430,7 +431,7 @@ export default function ManageFurniture() {
                   <View style={styles.galleryGrid}>
                     {galleryImages.map((gi: any) => (
                       <View key={gi.id} style={styles.galleryThumb}>
-                        <Image source={{ uri: gi.image_url }} style={styles.galleryThumbImage} resizeMode="cover" />
+                        <Image source={{ uri: gi.image_url }} style={styles.galleryThumbImage} contentFit="cover" transition={200} />
                         <TouchableOpacity style={styles.galleryDelete} onPress={async () => {
                           await supabase.from("furniture_images").delete().eq("id", gi.id);
                           setGalleryImages((prev) => prev.filter((g: any) => g.id !== gi.id));

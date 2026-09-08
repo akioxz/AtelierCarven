@@ -1,10 +1,10 @@
 import { AntDesign, Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
+import { Image } from "expo-image";
 import { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
-  Image,
   RefreshControl,
   StatusBar,
   StyleSheet,
@@ -104,7 +104,7 @@ export default function Favorites() {
       >
         <View style={styles.imageWrapper}>
           {product.image_url ? (
-            <Image source={{ uri: product.image_url }} style={styles.cardImage} resizeMode="cover" />
+            <Image source={{ uri: product.image_url }} style={styles.cardImage} contentFit="cover" transition={200} />
           ) : (
             <View style={styles.placeholderImage}>
               <Feather name={getCategoryIcon(product.category) as any} size={36} color={Design.color.inkSoft} />

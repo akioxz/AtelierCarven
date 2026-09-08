@@ -1,15 +1,32 @@
 import { Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
+import { useState } from "react";
 import { Platform, Pressable, StatusBar, StyleSheet, Text, useWindowDimensions, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { BrandMark, PrimaryButton } from "../../components/app-ui";
 import { Design, layout } from "../../constants/design";
+
+const STYLE_OPTIONS = ["Minimalist", "Mid-Century", "Industrial", "Bohemian", "Classic", "Modern", "Rustic", "Eclectic"];
 
 export default function Onboarding() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
   const desktop = Platform.OS === "web" && width >= layout.desktopBreakpoint;
+  const [selectedStyles, setSelectedStyles] = useState<string[]>([]);
+
+  const toggleStyle = (style: string) => {
+    setSelectedStyles(prev => 
+      prev.includes(style) ? prev.filter(s => s !== style) : [...prev, style]
+    );
+  };
+
+  const handleContinue = () => {
+    router.push({
+      pathname: "/(auth)/signup",
+      params: { styles: selectedStyles.join(",") }
+    });
+  };
 
   return (
     <View style={styles.screen}>
@@ -24,9 +41,25 @@ export default function Onboarding() {
           {desktop ? <View style={styles.pillars}><Text style={styles.pillar}>MADE TO LAST</Text><Text style={styles.pillar}>CAREFULLY CURATED</Text><Text style={styles.pillar}>DELIVERED WITH CARE</Text></View> : null}
         </View>
         <View style={[styles.actionPanel, desktop && styles.actionPanelDesktop]}>
-          <Text style={[styles.title, desktop && styles.titleDesktop]}>Find the piece that feels like home.</Text>
-          <Text style={styles.copy}>Browse the collection, save what speaks to you, and place an order when you are ready.</Text>
-          <PrimaryButton label="EXPLORE THE COLLECTION" onPress={() => router.push("/(auth)/signup")} />
+          <Text style={[styles.title, desktop && styles.titleDesktop]}>What is your style?</Text>
+          <Text style={styles.copy}>Select a few styles to help us curate pieces that feel like home.</Text>
+
+          <View style={styles.chipsContainer}>
+            {STYLE_OPTIONS.map(style => {
+              const isSelected = selectedStyles.includes(style);
+              return (
+                <Pressable 
+                  key={style}
+                  onPress={() => toggleStyle(style)}
+                  style={[styles.chip, isSelected && styles.chipSelected]}
+                >
+                  <Text style={[styles.chipText, isSelected && styles.chipTextSelected]}>{style}</Text>
+                </Pressable>
+              );
+            })}
+          </View>
+
+          <PrimaryButton label="EXPLORE THE COLLECTION" onPress={handleContinue} />
           <Pressable onPress={() => router.push("/(auth)/login")} style={({ pressed }) => [styles.signIn, pressed && styles.signInPressed]}>
             <Text style={styles.signInText}>Already have an account?</Text><Text style={styles.signInLink}>Sign in</Text><Feather name="arrow-right" size={15} color={Design.color.gold} />
           </Pressable>
@@ -56,4 +89,9 @@ const styles = StyleSheet.create({
   signIn: { alignItems: "center", flexDirection: "row", gap: 7, justifyContent: "center", marginTop: 20, minHeight: 32 }, signInPressed: { opacity: 0.72 },
   signInText: { color: Design.color.inkMuted, fontFamily: Design.font.body, fontSize: 12 }, signInLink: { color: Design.color.gold, fontFamily: Design.font.bodyBold, fontSize: 12 },
   note: { color: Design.color.inkMuted, fontFamily: Design.font.body, fontSize: 10, lineHeight: 16, marginTop: 34, textAlign: "center" },
+  chipsContainer: { flexDirection: "row", flexWrap: "wrap", gap: 10, marginBottom: 32 },
+  chip: { paddingHorizontal: 16, paddingVertical: 10, borderRadius: Design.radius.pill, borderWidth: StyleSheet.hairlineWidth, borderColor: Design.color.line, backgroundColor: Design.color.surface },
+  chipSelected: { backgroundColor: Design.color.ink, borderColor: Design.color.ink },
+  chipText: { color: Design.color.inkSoft, fontFamily: Design.font.bodyMedium, fontSize: 12 },
+  chipTextSelected: { color: Design.color.surface },
 });

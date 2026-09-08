@@ -1,9 +1,9 @@
 import { Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
+import { Image } from "expo-image";
 import { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
-  Image,
   Modal,
   ScrollView,
   StatusBar,
@@ -155,7 +155,7 @@ export default function UserProfile() {
             disabled={uploadingAvatar}
           >
             {profile?.avatar_url ? (
-              <Image source={{ uri: profile.avatar_url }} style={styles.avatarImage} />
+              <Image source={{ uri: profile.avatar_url }} style={styles.avatarImage} contentFit="cover" transition={200} />
             ) : (
               <View style={styles.avatar}>
                 <Text style={styles.avatarText}>
@@ -341,7 +341,7 @@ export default function UserProfile() {
                           <View style={styles.itemRow}>
                             <View style={styles.itemImageWrap}>
                               {item.furniture?.image_url ? (
-                                <Image source={{ uri: item.furniture.image_url }} style={styles.itemImage} resizeMode="cover" />
+                                <Image source={{ uri: item.furniture.image_url }} style={styles.itemImage} contentFit="cover" transition={200} />
                               ) : (
                                 <Feather name="box" size={20} color={Design.color.inkSoft} />
                               )}

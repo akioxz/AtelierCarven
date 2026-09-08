@@ -1,5 +1,5 @@
 import { Feather } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
+import { useRouter, useLocalSearchParams } from "expo-router";
 import { useState } from "react";
 import {
     KeyboardAvoidingView,
@@ -19,6 +19,7 @@ import { ContentFrame } from "../../components/app-ui";
 
 export default function Signup() {
   const router = useRouter();
+  const { styles: stylesParam } = useLocalSearchParams<{ styles?: string }>();
   const { width } = useWindowDimensions();
   const isWeb = Platform.OS === "web" && width >= layout.desktopBreakpoint;
   const [username, setUsername] = useState("");
@@ -49,7 +50,11 @@ export default function Signup() {
       email,
       password,
       options: {
-        data: { username, role: "user" },
+        data: {
+          username,
+          role: "user",
+          style_preferences: stylesParam ? stylesParam.split(",") : [],
+        },
       },
     });
 

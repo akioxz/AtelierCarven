@@ -1,10 +1,10 @@
 import { Feather } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
+import { Image } from "expo-image";
 import { useRouter } from "expo-router";
 import { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
-  Image,
   ScrollView,
   StatusBar,
   StyleSheet,
@@ -173,7 +173,8 @@ export default function ImagePlacement() {
                 <Image
                   source={{ uri: selectedImage }}
                   style={styles.previewImage}
-                  resizeMode="cover"
+                  contentFit="cover"
+                  transition={200}
                 />
                 {selectedFurniture && (
                   <GestureDetector gesture={panGesture}>
@@ -187,7 +188,8 @@ export default function ImagePlacement() {
                         <Image
                           source={{ uri: selectedFurniture.image_url }}
                           style={styles.furnitureImage}
-                          resizeMode="contain"
+                          contentFit="contain"
+                          transition={200}
                         />
                       ) : (
                         <View style={styles.furniturePlaceholder}>
@@ -255,7 +257,8 @@ export default function ImagePlacement() {
                           <Image
                             source={{ uri: item.image_url }}
                             style={styles.catalogCardImg}
-                            resizeMode="cover"
+                            contentFit="cover"
+                            transition={200}
                           />
                         ) : (
                           <Feather

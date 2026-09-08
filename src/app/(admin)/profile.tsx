@@ -1,9 +1,9 @@
 import { Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
+import { Image } from "expo-image";
 import { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
-  Image,
   ScrollView,
   StatusBar,
   StyleSheet,
@@ -108,6 +108,8 @@ export default function AdminProfile() {
               <Image
                 source={{ uri: profile.avatar_url }}
                 style={styles.avatarImage}
+                contentFit="cover"
+                transition={200}
               />
             ) : (
               <View style={styles.avatar}>

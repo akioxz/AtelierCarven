@@ -2,7 +2,8 @@ import { AntDesign, Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
-import { ActivityIndicator, Image, Platform, Pressable, ScrollView, StatusBar, StyleSheet, Text, useWindowDimensions, View } from "react-native";
+import { Image } from "expo-image";
+import { ActivityIndicator, Platform, Pressable, ScrollView, StatusBar, StyleSheet, Text, useWindowDimensions, View } from "react-native";
 import { CategoryTiles } from "../../components/category-tiles";
 import { ContentFrame, CustomerNavigation, Overline } from "../../components/app-ui";
 import { Design, layout } from "../../constants/design";
@@ -127,7 +128,7 @@ export default function Home() {
               {furniture.map((item) => (
                 <Pressable key={item.id} onPress={() => router.push({ pathname: "/(user)/product", params: { id: item.id } })} style={({ pressed }) => [styles.card, wide && styles.cardWide, pressed && styles.cardPressed]}>
                   <View style={styles.imageWrap}>
-                    {item.image_url ? <Image source={{ uri: item.image_url }} style={styles.image} /> : <Feather name={iconFor(item.category)} size={42} color={Design.color.inkMuted} />}
+                    {item.image_url ? <Image source={{ uri: item.image_url }} style={styles.image} contentFit="cover" transition={200} /> : <Feather name={iconFor(item.category)} size={42} color={Design.color.inkMuted} />}
                     <Pressable accessibilityLabel={favorites.includes(item.id) ? "Remove from saved" : "Save furniture"} onPress={(event) => { event.stopPropagation(); toggleFavorite(item.id); }} style={({ pressed }) => [styles.heart, pressed && styles.pressed]}>
                       {favorites.includes(item.id) ? <AntDesign name="heart" size={14} color={Design.color.gold} /> : <Feather name="heart" size={15} color={Design.color.ink} />}
                     </Pressable>
