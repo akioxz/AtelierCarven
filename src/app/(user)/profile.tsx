@@ -30,6 +30,7 @@ export default function UserProfile() {
   const [address, setAddress] = useState("");
   const [mobile, setMobile] = useState("");
   const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState("");
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [logoutModalVisible, setLogoutModalVisible] = useState(false);
 
@@ -99,12 +100,18 @@ export default function UserProfile() {
 
   const handleSave = async () => {
     setSaving(true);
+    setSaveError("");
     const { data: { user } } = await supabase.auth.getUser();
-    await supabase
+    const { error } = await supabase
       .from("profiles")
       .update({ username, address, mobile_number: mobile })
       .eq("id", user!.id);
     setSaving(false);
+    if (error) {
+      console.error("Error saving profile:", error);
+      setSaveError("Couldn't save your changes. Please try again.");
+      return;
+    }
     setEditing(false);
     fetchProfile();
   };
@@ -284,10 +291,15 @@ export default function UserProfile() {
           </View>
 
           {editing && (
-            <PressScale style={styles.saveBtn} onPress={handleSave} disabled={saving} accessibilityLabel="Save changes">
-              <Feather name="check" size={15} color={Design.color.surface} />
-              <Text style={styles.saveBtnText}>{saving ? "SAVING..." : "SAVE CHANGES"}</Text>
-            </PressScale>
+            <>
+              {saveError ? (
+                <Text style={styles.saveError}>{saveError}</Text>
+              ) : null}
+              <PressScale style={styles.saveBtn} onPress={handleSave} disabled={saving} accessibilityLabel="Save changes">
+                <Feather name="check" size={15} color={Design.color.surface} />
+                <Text style={styles.saveBtnText}>{saving ? "SAVING..." : "SAVE CHANGES"}</Text>
+              </PressScale>
+            </>
           )}
         </View>
         </Reveal>
@@ -441,6 +453,7 @@ const styles = StyleSheet.create({
   infoInput: { fontFamily: Design.font.body, fontSize: 13, color: Design.color.ink, borderBottomWidth: 1, borderBottomColor: Design.color.gold, paddingVertical: 4, minWidth: 160, textAlign: "right" },
   infoDivider: { height: StyleSheet.hairlineWidth, backgroundColor: Design.color.line },
   saveBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, backgroundColor: Design.color.ink, borderRadius: Design.radius.small, padding: 16, marginTop: 16 },
+  saveError: { color: Design.color.danger, fontSize: 12, lineHeight: 18, marginTop: 16 },
   saveBtnText: { color: Design.color.surface, fontFamily: Design.font.bodyBold, fontSize: 11, letterSpacing: 1.5 },
 
   logoutSection: { paddingHorizontal: 24 },

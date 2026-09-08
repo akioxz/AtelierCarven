@@ -46,6 +46,7 @@ export default function ManageOrders() {
   const [modalStatus, setModalStatus] = useState("");
   const [updating, setUpdating] = useState(false);
   const [confirmUpdateOpen, setConfirmUpdateOpen] = useState(false);
+  const [updateError, setUpdateError] = useState("");
 
   const fetchOrders = useCallback(async () => {
     let query = supabase
@@ -95,6 +96,7 @@ export default function ManageOrders() {
   const openOrderDetails = (order: any) => {
     setSelectedOrder(order);
     setModalStatus(order.status);
+    setUpdateError("");
     fetchOrderItems(order.id);
   };
 
@@ -121,6 +123,7 @@ export default function ManageOrders() {
 
     if (error) {
       console.error("Error updating status:", error);
+      setUpdateError("Couldn't update the status. Please try again.");
       setUpdating(false);
       return;
     }
@@ -372,6 +375,9 @@ export default function ManageOrders() {
                       </PressScale>
                     ))}
                   </View>
+                  {updateError ? (
+                    <Text style={{ color: Design.color.danger, fontSize: 12, marginTop: 10, lineHeight: 18 }}>{updateError}</Text>
+                  ) : null}
                 </View>
 
                 {/* Modal Buttons */}

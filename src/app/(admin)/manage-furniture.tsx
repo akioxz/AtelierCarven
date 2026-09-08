@@ -126,9 +126,12 @@ export default function ManageFurniture() {
 
   const handlePickImage = async () => {
     setUploading(true);
-    const url = await pickAndUploadImage("furniture-images", "items");
-    if (url) setImageUrl(url);
-    setUploading(false);
+    try {
+      const url = await pickAndUploadImage("furniture-images", "items");
+      if (url) setImageUrl(url);
+    } finally {
+      setUploading(false);
+    }
   };
 
   const handleSave = async () => {
@@ -439,13 +442,16 @@ export default function ManageFurniture() {
                     ))}
                     <PressScale style={styles.galleryAddBtn} disabled={uploadingGallery} onPress={async () => {
                       setUploadingGallery(true);
-                      const url = await pickAndUploadImage("furniture-images", "gallery");
-                      if (url && editing?.id) {
-                        const nextOrder = galleryImages.length;
-                        const { data } = await supabase.from("furniture_images").insert({ furniture_id: editing.id, image_url: url, display_order: nextOrder }).select("*").single();
-                        if (data) setGalleryImages((prev) => [...prev, data]);
+                      try {
+                        const url = await pickAndUploadImage("furniture-images", "gallery");
+                        if (url && editing?.id) {
+                          const nextOrder = galleryImages.length;
+                          const { data } = await supabase.from("furniture_images").insert({ furniture_id: editing.id, image_url: url, display_order: nextOrder }).select("*").single();
+                          if (data) setGalleryImages((prev) => [...prev, data]);
+                        }
+                      } finally {
+                        setUploadingGallery(false);
                       }
-                      setUploadingGallery(false);
                     }} accessibilityLabel="Add gallery image">
                       <Feather name={uploadingGallery ? "loader" : "plus"} size={22} color={Design.color.inkSoft} />
                       <Text style={styles.uploadText}>{uploadingGallery ? "UPLOADING..." : "ADD"}</Text>

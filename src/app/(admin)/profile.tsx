@@ -45,22 +45,22 @@ export default function AdminProfile() {
 
   const handleAvatarUpload = async () => {
     setUploadingAvatar(true);
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) {
+    try {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) return;
+      const url = await pickAndUploadImage("avatars", `user-${user.id}`);
+      if (url) {
+        await supabase
+          .from("profiles")
+          .update({ avatar_url: url })
+          .eq("id", user.id);
+        fetchProfile();
+      }
+    } finally {
       setUploadingAvatar(false);
-      return;
     }
-    const url = await pickAndUploadImage("avatars", `user-${user.id}`);
-    if (url) {
-      await supabase
-        .from("profiles")
-        .update({ avatar_url: url })
-        .eq("id", user.id);
-      fetchProfile();
-    }
-    setUploadingAvatar(false);
   };
 
   const handleLogout = () => {
