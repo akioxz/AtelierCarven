@@ -75,6 +75,7 @@ export function PressScale({
 
   return (
     <Pressable
+      style={style}
       accessibilityRole={accessibilityRole}
       accessibilityLabel={accessibilityLabel}
       accessibilityState={accessibilityState}
@@ -93,7 +94,7 @@ export function PressScale({
         onPressOut?.();
       }}
     >
-      <Animated.View style={[style, animatedStyle]}>{children}</Animated.View>
+      <Animated.View style={animatedStyle}>{children}</Animated.View>
     </Pressable>
   );
 }
