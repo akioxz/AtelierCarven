@@ -4,12 +4,10 @@ import { Image } from "expo-image";
 import { useRouter } from "expo-router";
 import { useEffect, useRef, useState } from "react";
 import {
-  ActivityIndicator,
   ScrollView,
   StatusBar,
   StyleSheet,
   Text,
-  TouchableOpacity,
   View,
 } from "react-native";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
@@ -17,7 +15,9 @@ import Animated, { useAnimatedStyle, useSharedValue } from "react-native-reanima
 import { scheduleOnRN } from "react-native-worklets";
 import { Design } from "../../constants/design";
 import { supabase } from "../../lib/supabase";
-import { CustomerNavigation } from "../../components/app-ui";
+import { CustomerNavigation, PageHeader } from "../../components/app-ui";
+import { PressScale, Reveal } from "../../components/motion";
+import { ShimmerBlock } from "../../components/skeleton";
 
 export default function ImagePlacement() {
   const router = useRouter();
@@ -152,19 +152,17 @@ export default function ImagePlacement() {
         scrollEnabled={!isDragging}
       >
         {/* Header */}
-        <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.back()}>
-            <Feather name="arrow-left" size={22} color={Design.color.ink} />
-          </TouchableOpacity>
-          <View style={{ marginTop: 20 }}>
-            <Text style={styles.headerSmall}>PLACE</Text>
-            <Text style={styles.headerLarge}>Your Image</Text>
-            <View style={styles.goldDivider} />
-            <Text style={styles.headerSubtext}>Visualize furniture in your space</Text>
+        <View style={styles.headerRow}>
+          <View style={styles.headerCopy}>
+            <PageHeader index="06" title="Place" subtitle="Visualize furniture in your space." />
           </View>
+          <PressScale onPress={() => router.back()} accessibilityLabel="Go back" style={styles.backButton}>
+            <Feather name="arrow-left" size={19} color={Design.color.ink} />
+          </PressScale>
         </View>
 
         {/* Canvas */}
+        <Reveal>
         <View style={styles.section}>
           <Text style={styles.sectionLabel}>PREVIEW CANVAS</Text>
           <View style={styles.previewContainer}>
@@ -229,13 +227,19 @@ export default function ImagePlacement() {
             )}
           </View>
         </View>
+        </Reveal>
 
         {/* Furniture Catalog */}
         {selectedImage && (
+          <Reveal>
           <View style={styles.section}>
             <Text style={styles.sectionLabel}>SELECT FURNITURE</Text>
             {fetchingFurniture ? (
-              <ActivityIndicator color={Design.color.gold} style={{ marginVertical: 20 }} />
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.catalogScroll}>
+                <ShimmerBlock width={110} height={140} radius={Design.radius.card} />
+                <ShimmerBlock width={110} height={140} radius={Design.radius.card} />
+                <ShimmerBlock width={110} height={140} radius={Design.radius.card} />
+              </ScrollView>
             ) : furnitureList.length === 0 ? (
               <Text style={styles.emptyCatalogText}>No furniture pieces available.</Text>
             ) : (
@@ -247,10 +251,11 @@ export default function ImagePlacement() {
                 {furnitureList.map((item) => {
                   const isSelected = selectedFurniture?.id === item.id;
                   return (
-                    <TouchableOpacity
+                    <PressScale
                       key={item.id}
                       style={[styles.catalogCard, isSelected && styles.catalogCardActive]}
                       onPress={() => handleSelectFurniture(item)}
+                      accessibilityLabel={`Select ${item.name}`}
                     >
                       <View style={styles.catalogCardImage}>
                         {item.image_url ? (
@@ -281,12 +286,13 @@ export default function ImagePlacement() {
                           ₱{Number(item.price).toLocaleString()}
                         </Text>
                       </View>
-                    </TouchableOpacity>
+                    </PressScale>
                   );
                 })}
               </ScrollView>
             )}
           </View>
+          </Reveal>
         )}
 
         {/* Controls */}
@@ -302,15 +308,15 @@ export default function ImagePlacement() {
                   <Text style={styles.controlValue}>{Math.round(scaleValue * 100)}%</Text>
                 </View>
                 <View style={styles.controlButtons}>
-                  <TouchableOpacity style={styles.adjustButton} onPress={decreaseScale}>
+                  <PressScale style={styles.adjustButton} onPress={decreaseScale} accessibilityLabel="Decrease scale">
                     <Feather name="minus" size={14} color={Design.color.inkSoft} />
-                  </TouchableOpacity>
-                  <TouchableOpacity style={styles.adjustButtonReset} onPress={resetScale}>
+                  </PressScale>
+                  <PressScale style={styles.adjustButtonReset} onPress={resetScale} accessibilityLabel="Reset scale">
                     <Text style={styles.resetButtonText}>Reset</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity style={styles.adjustButton} onPress={increaseScale}>
+                  </PressScale>
+                  <PressScale style={styles.adjustButton} onPress={increaseScale} accessibilityLabel="Increase scale">
                     <Feather name="plus" size={14} color={Design.color.inkSoft} />
-                  </TouchableOpacity>
+                  </PressScale>
                 </View>
               </View>
 
@@ -324,21 +330,21 @@ export default function ImagePlacement() {
                   <Text style={styles.controlValue}>{rotationValue}°</Text>
                 </View>
                 <View style={styles.controlButtons}>
-                  <TouchableOpacity style={styles.adjustButton} onPress={rotateLeft}>
+                  <PressScale style={styles.adjustButton} onPress={rotateLeft} accessibilityLabel="Rotate left">
                     <Feather name="chevron-left" size={14} color={Design.color.inkSoft} />
-                  </TouchableOpacity>
-                  <TouchableOpacity style={styles.adjustButton} onPress={rotate90Left}>
+                  </PressScale>
+                  <PressScale style={styles.adjustButton} onPress={rotate90Left} accessibilityLabel="Rotate 90 degrees left">
                     <Text style={styles.quickRotationText}>-90°</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity style={styles.adjustButtonReset} onPress={resetRotation}>
+                  </PressScale>
+                  <PressScale style={styles.adjustButtonReset} onPress={resetRotation} accessibilityLabel="Reset rotation">
                     <Text style={styles.resetButtonText}>Reset</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity style={styles.adjustButton} onPress={rotate90Right}>
+                  </PressScale>
+                  <PressScale style={styles.adjustButton} onPress={rotate90Right} accessibilityLabel="Rotate 90 degrees right">
                     <Text style={styles.quickRotationText}>+90°</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity style={styles.adjustButton} onPress={rotateRight}>
+                  </PressScale>
+                  <PressScale style={styles.adjustButton} onPress={rotateRight} accessibilityLabel="Rotate right">
                     <Feather name="chevron-right" size={14} color={Design.color.inkSoft} />
-                  </TouchableOpacity>
+                  </PressScale>
                 </View>
               </View>
 
@@ -346,19 +352,20 @@ export default function ImagePlacement() {
 
               {/* Flip & Remove */}
               <View style={styles.extrasRow}>
-                <TouchableOpacity
+                <PressScale
                   style={[styles.flipButton, isFlipped && styles.flipButtonActive]}
                   onPress={toggleFlip}
+                  accessibilityLabel="Flip furniture"
                 >
                   <Feather name="repeat" size={14} color={isFlipped ? Design.color.surface : Design.color.inkSoft} />
                   <Text style={[styles.flipButtonText, { color: isFlipped ? Design.color.surface : Design.color.inkSoft }]}>
                     FLIP
                   </Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.deleteButton} onPress={handleRemoveFurniture}>
+                </PressScale>
+                <PressScale style={styles.deleteButton} onPress={handleRemoveFurniture} accessibilityLabel="Remove furniture">
                   <Feather name="trash-2" size={14} color={Design.color.surface} />
                   <Text style={styles.deleteButtonText}>REMOVE</Text>
-                </TouchableOpacity>
+                </PressScale>
               </View>
             </View>
           </View>
@@ -366,6 +373,7 @@ export default function ImagePlacement() {
 
         {/* How it works */}
         {!selectedImage && (
+          <Reveal>
           <View style={styles.section}>
             <Text style={styles.sectionLabel}>HOW IT WORKS</Text>
             <View style={styles.stepCard}>
@@ -389,44 +397,51 @@ export default function ImagePlacement() {
               ))}
             </View>
           </View>
+          </Reveal>
         )}
 
         {/* Image Picker */}
+        <Reveal>
         <View style={styles.section}>
           <Text style={styles.sectionLabel}>
             {selectedImage ? "CHANGE ROOM IMAGE" : "SELECT ROOM IMAGE"}
           </Text>
-          <TouchableOpacity style={styles.primaryButton} onPress={pickImage}>
+          <PressScale style={styles.primaryButton} onPress={pickImage} accessibilityLabel="Choose from gallery">
             <Feather name="image" size={16} color={Design.color.surface} />
             <Text style={styles.primaryButtonText}>CHOOSE FROM GALLERY</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.secondaryButton} onPress={takePhoto}>
+          </PressScale>
+          <PressScale style={styles.secondaryButton} onPress={takePhoto} accessibilityLabel="Take a photo">
             <Feather name="camera" size={16} color={Design.color.inkSoft} />
             <Text style={styles.secondaryButtonText}>TAKE A PHOTO</Text>
-          </TouchableOpacity>
+          </PressScale>
           {selectedImage && (
-            <TouchableOpacity
+            <PressScale
               style={styles.clearButton}
               onPress={() => {
                 setSelectedImage(null);
                 setSelectedFurniture(null);
               }}
+              accessibilityLabel="Clear canvas"
             >
               <Text style={styles.clearButtonText}>CLEAR CANVAS</Text>
-            </TouchableOpacity>
+            </PressScale>
           )}
         </View>
+        </Reveal>
 
+        <Reveal>
         <View style={styles.browseSection}>
           <View style={styles.browseDivider} />
           <Text style={styles.browseText}>Ready to find the perfect piece?</Text>
-          <TouchableOpacity
+          <PressScale
             style={styles.browseButton}
             onPress={() => router.push("/(user)/home")}
+            accessibilityLabel="Browse collection"
           >
             <Text style={styles.browseButtonText}>BROWSE COLLECTION</Text>
-          </TouchableOpacity>
+          </PressScale>
         </View>
+        </Reveal>
       </ScrollView>
 
 
@@ -436,11 +451,9 @@ export default function ImagePlacement() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Design.color.surface },
-  header: { backgroundColor: Design.color.surfaceMuted, padding: 28, paddingTop: 56, paddingBottom: 28 },
-  headerSmall: { fontSize: 10, letterSpacing: 4, color: Design.color.inkSoft },
-  headerLarge: { fontFamily: Design.font.display, fontSize: 34, letterSpacing: -0.8, lineHeight: 34, color: Design.color.ink, marginBottom: 16 },
-  goldDivider: { width: 40, height: 1.5, backgroundColor: Design.color.gold, marginBottom: 12 },
-  headerSubtext: { fontSize: 13, color: Design.color.inkMuted },
+  headerRow: { alignItems: "flex-start", flexDirection: "row", gap: 12, justifyContent: "space-between", paddingHorizontal: 24, paddingTop: 20 },
+  headerCopy: { flex: 1 },
+  backButton: { alignItems: "center", backgroundColor: Design.color.surface, borderColor: Design.color.line, borderRadius: 22, borderWidth: StyleSheet.hairlineWidth, height: 44, justifyContent: "center", width: 44 },
   section: { padding: 24, paddingBottom: 0 },
   sectionLabel: { fontSize: 10, letterSpacing: 2, color: Design.color.inkSoft, marginBottom: 12 },
 

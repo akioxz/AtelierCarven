@@ -3,18 +3,18 @@ import { useRouter } from "expo-router";
 import { Image } from "expo-image";
 import { useCallback, useEffect, useState } from "react";
 import {
-  ActivityIndicator,
   ScrollView,
   StatusBar,
   StyleSheet,
   Text,
-  TouchableOpacity,
   View,
 } from "react-native";
 import { Design } from "../../constants/design";
 import { pickAndUploadImage } from "../../lib/imageUpload";
 import { supabase } from "../../lib/supabase";
-import { AdminNavigation, ContentFrame } from "../../components/app-ui";
+import { AdminNavigation, ContentFrame, PageHeader } from "../../components/app-ui";
+import { PressScale, Reveal, staggerDelay } from "../../components/motion";
+import { ShimmerBlock } from "../../components/skeleton";
 import ConfirmModal from "../../components/confirm-modal";
 
 export default function AdminProfile() {
@@ -75,7 +75,10 @@ export default function AdminProfile() {
   if (loading)
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator color={Design.color.gold} />
+        <View style={styles.loadingHeader}>
+          <ShimmerBlock height={44} radius={22} width={44} />
+          <ShimmerBlock height={80} radius={Design.radius.card} width="100%" />
+        </View>
       </View>
     );
 
@@ -87,51 +90,52 @@ export default function AdminProfile() {
         <ContentFrame>
         {/* Header */}
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.back()}>
-            <Feather name="arrow-left" size={22} color={Design.color.ink} />
-          </TouchableOpacity>
-          <View style={{ marginTop: 20 }}>
-            <Text style={styles.headerSmall}>ADMIN</Text>
-            <Text style={styles.headerLarge}>Profile</Text>
-            <View style={styles.goldDivider} />
-          </View>
+          <PressScale onPress={() => router.back()} style={styles.backButton} accessibilityLabel="Go back">
+            <Feather name="arrow-left" size={19} color={Design.color.ink} />
+          </PressScale>
+          <PageHeader index="07" title="Profile" subtitle={`Signed in as ${profile?.username || "Administrator"}.`} style={styles.headerPage} />
         </View>
 
         {/* Avatar */}
+        <Reveal>
         <View style={styles.avatarSection}>
-          <TouchableOpacity
-            style={styles.avatarContainer}
+          <PressScale
             onPress={handleAvatarUpload}
             disabled={uploadingAvatar}
+            accessibilityLabel="Change profile photo"
           >
-            {profile?.avatar_url ? (
-              <Image
-                source={{ uri: profile.avatar_url }}
-                style={styles.avatarImage}
-                contentFit="cover"
-                transition={200}
-              />
-            ) : (
-              <View style={styles.avatar}>
-                <Text style={styles.avatarText}>
-                  {profile?.username?.charAt(0)?.toUpperCase() || "A"}
-                </Text>
+            <View style={styles.avatarContainer}>
+              {profile?.avatar_url ? (
+                <Image
+                  source={{ uri: profile.avatar_url }}
+                  style={styles.avatarImage}
+                  contentFit="cover"
+                  transition={200}
+                />
+              ) : (
+                <View style={styles.avatar}>
+                  <Text style={styles.avatarText}>
+                    {profile?.username?.charAt(0)?.toUpperCase() || "A"}
+                  </Text>
+                </View>
+              )}
+              <View style={styles.avatarEditBadge}>
+                <Feather
+                  name={uploadingAvatar ? "loader" : "camera"}
+                  size={11}
+                  color={Design.color.surface}
+                />
               </View>
-            )}
-            <View style={styles.avatarEditBadge}>
-              <Feather
-                name={uploadingAvatar ? "loader" : "camera"}
-                size={11}
-                color={Design.color.surface}
-              />
             </View>
-          </TouchableOpacity>
+          </PressScale>
           <Text style={styles.avatarName}>{profile?.username || "Admin"}</Text>
           <Text style={styles.avatarEmail}>{profile?.email}</Text>
           <Text style={styles.avatarHint}>Tap photo to change</Text>
         </View>
+        </Reveal>
 
         {/* Info — read only */}
+        <Reveal delay={staggerDelay(1)}>
         <View style={styles.infoSection}>
           <Text style={styles.sectionLabel}>ACCOUNT INFO</Text>
           <View style={styles.infoCard}>
@@ -176,14 +180,17 @@ export default function AdminProfile() {
             </Text>
           </View>
         </View>
+        </Reveal>
 
         {/* Logout */}
+        <Reveal delay={staggerDelay(2)}>
         <View style={styles.logoutSection}>
-          <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout}>
+          <PressScale style={styles.logoutBtn} onPress={handleLogout} accessibilityLabel="Sign out">
             <Feather name="log-out" size={14} color={Design.color.inkMuted} />
             <Text style={styles.logoutText}>SIGN OUT</Text>
-          </TouchableOpacity>
+          </PressScale>
         </View>
+        </Reveal>
 
         <View style={{ height: 100 }} />
         </ContentFrame>
@@ -208,26 +215,18 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Design.color.surface },
   loadingContainer: {
     flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
     backgroundColor: Design.color.surface,
+    padding: 16,
   },
+  loadingHeader: { gap: 20, alignItems: "flex-start" },
   header: {
-    backgroundColor: Design.color.surfaceMuted,
-    padding: 28,
-    paddingTop: 56,
-    paddingBottom: 28,
+    alignItems: "center",
+    flexDirection: "row",
+    gap: 16,
+    paddingHorizontal: 2,
   },
-  headerSmall: { fontSize: 10, letterSpacing: 4, color: Design.color.inkSoft },
-  headerLarge: {
-    fontFamily: Design.font.display,
-    fontSize: 34,
-    letterSpacing: -0.8,
-    lineHeight: 34,
-    color: Design.color.ink,
-    marginBottom: 16,
-  },
-  goldDivider: { width: 40, height: 1.5, backgroundColor: Design.color.gold },
+  headerPage: { flex: 1 },
+  backButton: { alignItems: "center", backgroundColor: Design.color.surface, borderColor: Design.color.line, borderRadius: 22, borderWidth: StyleSheet.hairlineWidth, height: 44, justifyContent: "center", width: 44 },
   avatarSection: { alignItems: "center", paddingVertical: 28 },
   avatarContainer: { position: "relative", marginBottom: 12 },
   avatarImage: {
@@ -321,73 +320,4 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   logoutText: { fontSize: 11, letterSpacing: 2, color: Design.color.inkMuted },
-
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.45)",
-    justifyContent: "center",
-    alignItems: "center",
-    padding: 32,
-  },
-  modalBox: {
-    backgroundColor: Design.color.surface,
-    borderRadius: 20,
-    padding: 28,
-    width: "100%",
-    alignItems: "center",
-    borderWidth: 0.5,
-    borderColor: Design.color.line,
-  },
-  modalIconWrap: {
-    width: 56,
-    height: 56,
-    borderRadius: Design.radius.pill,
-    backgroundColor: Design.color.surfaceMuted,
-    justifyContent: "center",
-    alignItems: "center",
-    marginBottom: 16,
-    borderWidth: 0.5,
-    borderColor: Design.color.gold,
-  },
-  modalTitle: {
-    fontSize: 16,
-    fontWeight: "500",
-    color: Design.color.ink,
-    marginBottom: 12,
-    letterSpacing: 1,
-  },
-  modalDivider: {
-    width: 32,
-    height: 1.5,
-    backgroundColor: Design.color.gold,
-    marginBottom: 12,
-  },
-  modalMessage: {
-    fontSize: 13,
-    color: Design.color.inkMuted,
-    textAlign: "center",
-    lineHeight: 20,
-    marginBottom: 24,
-  },
-  modalButtons: { flexDirection: "row", gap: 12, width: "100%" },
-  modalCancelBtn: {
-    flex: 1,
-    borderWidth: 1,
-    borderColor: Design.color.line,
-    borderRadius: Design.radius.small,
-    paddingVertical: 14,
-    alignItems: "center",
-  },
-  modalCancelText: { fontSize: 11, letterSpacing: 2, color: Design.color.inkMuted },
-  modalConfirmBtn: {
-    flex: 1,
-    flexDirection: "row",
-    gap: 6,
-    backgroundColor: Design.color.ink,
-    borderRadius: Design.radius.small,
-    paddingVertical: 14,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  modalConfirmText: { fontSize: 11, letterSpacing: 2, color: Design.color.surface },
 });

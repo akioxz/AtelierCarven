@@ -1,8 +1,10 @@
 import { Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { Platform, Pressable, StyleSheet, Text, useWindowDimensions, View, type TextStyle, type ViewStyle } from "react-native";
+import Animated, { ZoomIn } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Design, layout } from "../constants/design";
+import { PressScale, Reveal, staggerDelay } from "./motion";
 
 type NavKey = "home" | "favorites" | "placement" | "cart" | "profile" | "dashboard" | "furniture" | "orders" | "logs";
 
@@ -31,14 +33,44 @@ export function BrandMark({ inverse = false }: { inverse?: boolean }) {
   );
 }
 
-export function PageHeader({ title, subtitle, right }: { title: string; subtitle?: string; right?: React.ReactNode }) {
+export function PageHeader({ title, subtitle, right, index, style }: { title: string; subtitle?: string; right?: React.ReactNode; index?: string; style?: ViewStyle }) {
   return (
-    <View style={styles.pageHeader}>
+    <View style={[styles.pageHeader, style]}>
       <View style={styles.pageHeaderCopy}>
-        <Text style={styles.pageTitle}>{title}</Text>
-        {subtitle ? <Text style={styles.pageSubtitle}>{subtitle}</Text> : null}
+        {index ? (
+          <Reveal>
+            <Text style={styles.pageIndex}>{index}</Text>
+          </Reveal>
+        ) : null}
+        <Reveal delay={index ? staggerDelay(1) : 0}>
+          <Text style={styles.pageTitle}>{title}</Text>
+        </Reveal>
+        {subtitle ? (
+          <Reveal delay={staggerDelay(2)}>
+            <Text style={styles.pageSubtitle}>{subtitle}</Text>
+          </Reveal>
+        ) : null}
       </View>
       {right}
+    </View>
+  );
+}
+
+export function SectionHeading({ index, overline, title, style }: { index: string; overline: string; title: string; style?: ViewStyle }) {
+  return (
+    <View style={[styles.sectionHeading, style]}>
+      <Reveal>
+        <View style={styles.sectionTopRow}>
+          <Text style={styles.sectionIndex}>{index}</Text>
+          <View style={styles.sectionRule} />
+        </View>
+      </Reveal>
+      <Reveal delay={staggerDelay(1)}>
+        <Text style={styles.overline}>{overline}</Text>
+      </Reveal>
+      <Reveal delay={staggerDelay(2)}>
+        <Text style={styles.sectionTitle}>{title}</Text>
+      </Reveal>
     </View>
   );
 }
@@ -49,27 +81,17 @@ export function Overline({ label, tone = "gold", style }: { label: string; tone?
 
 export function PrimaryButton({ label, onPress, disabled = false, style }: { label: string; onPress: () => void; disabled?: boolean; style?: ViewStyle }) {
   return (
-    <Pressable
-      accessibilityRole="button"
-      disabled={disabled}
-      onPress={onPress}
-      style={({ pressed }) => [styles.primaryButton, disabled && styles.buttonDisabled, pressed && styles.buttonPressed, style]}
-    >
+    <PressScale onPress={onPress} disabled={disabled} accessibilityLabel={label} accessibilityState={{ disabled }} style={[styles.primaryButton, disabled && styles.buttonDisabled, style]}>
       <Text style={styles.primaryButtonLabel}>{label}</Text>
-    </Pressable>
+    </PressScale>
   );
 }
 
 export function SecondaryButton({ label, onPress, disabled = false, style }: { label: string; onPress: () => void; disabled?: boolean; style?: ViewStyle }) {
   return (
-    <Pressable
-      accessibilityRole="button"
-      disabled={disabled}
-      onPress={onPress}
-      style={({ pressed }) => [styles.secondaryButton, disabled && styles.buttonDisabled, pressed && styles.buttonPressed, style]}
-    >
+    <PressScale onPress={onPress} disabled={disabled} accessibilityLabel={label} accessibilityState={{ disabled }} style={[styles.secondaryButton, disabled && styles.buttonDisabled, style]}>
       <Text style={styles.secondaryButtonLabel}>{label}</Text>
-    </Pressable>
+    </PressScale>
   );
 }
 
@@ -116,7 +138,7 @@ function Navigation({ active, items, admin = false }: { active: NavKey; items: t
           <Pressable key={item.key} onPress={() => go(item.route)} accessibilityRole="tab" accessibilityState={{ selected }} style={({ pressed }) => [styles.mobileNavItem, pressed && styles.buttonPressed]} hitSlop={4}>
             <Feather name={item.icon} size={19} color={selected ? Design.color.ink : Design.color.inkMuted} />
             <Text style={[styles.mobileNavLabel, selected && styles.mobileNavLabelSelected]}>{item.label}</Text>
-            {selected ? <View style={styles.activeDot} /> : null}
+            {selected ? <Animated.View entering={ZoomIn.springify().damping(Design.motion.spring.damping)} style={styles.activeDot} /> : null}
           </Pressable>
         );
       })}
@@ -148,6 +170,12 @@ const styles = StyleSheet.create({
   pageHeader: { alignItems: "flex-start", flexDirection: "row", gap: Design.space.md, justifyContent: "space-between", marginBottom: Design.space.xl },
   pageHeaderCopy: { flex: 1 },
   pageTitle: { color: Design.color.ink, fontFamily: Design.font.display, fontSize: 42, letterSpacing: -1.3, lineHeight: 43 },
+  pageIndex: { color: Design.color.gold, fontFamily: Design.font.bodySemibold, fontSize: 12, letterSpacing: 3, marginBottom: 8 },
+  sectionHeading: { gap: 8, marginBottom: Design.space.lg },
+  sectionTopRow: { alignItems: "center", flexDirection: "row", gap: 12 },
+  sectionIndex: { color: Design.color.gold, fontFamily: Design.font.bodySemibold, fontSize: 12, letterSpacing: 2 },
+  sectionRule: { backgroundColor: Design.color.gold, flex: 1, height: 1, opacity: 0.6 },
+  sectionTitle: { color: Design.color.ink, fontFamily: Design.font.display, fontSize: 30, letterSpacing: -0.8, lineHeight: 32 },
   pageSubtitle: { color: Design.color.inkSoft, fontFamily: Design.font.body, fontSize: 13, lineHeight: 21, marginTop: 6, maxWidth: 460 },
   primaryButton: { alignItems: "center", backgroundColor: Design.color.ink, borderRadius: Design.radius.small, justifyContent: "center", minHeight: 52, paddingHorizontal: 20 },
   primaryButtonLabel: { color: Design.color.surface, fontFamily: Design.font.bodyBold, fontSize: 11, letterSpacing: 1.25 },

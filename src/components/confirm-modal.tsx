@@ -1,7 +1,8 @@
 import { Feather } from "@expo/vector-icons";
 import type { ReactNode } from "react";
-import { Modal, Pressable, StyleSheet, Text, View } from "react-native";
+import { Modal, StyleSheet, Text, View } from "react-native";
 import { Design } from "../constants/design";
+import { PressScale } from "./motion";
 
 type Props = {
   visible: boolean;
@@ -26,12 +27,12 @@ export default function ConfirmModal({ visible, title, message, confirmLabel, on
           <Text style={[styles.title, danger && styles.titleDanger]}>{title}</Text>
           <Text style={styles.message}>{message}</Text>
           <View style={styles.actions}>
-            <Pressable onPress={onCancel} style={({ pressed }) => [styles.cancelBtn, pressed && styles.pressed]}>
+            <PressScale onPress={onCancel} accessibilityLabel={cancelLabel} style={styles.cancelBtn}>
               <Text style={styles.cancelText}>{cancelLabel}</Text>
-            </Pressable>
-            <Pressable onPress={onConfirm} style={({ pressed }) => [styles.confirmBtn, danger && styles.confirmBtnDanger, pressed && styles.pressed]}>
+            </PressScale>
+            <PressScale onPress={onConfirm} accessibilityLabel={confirmLabel} style={[styles.confirmBtn, danger && styles.confirmBtnDanger]}>
               <Text style={styles.confirmText}>{confirmLabel}</Text>
-            </Pressable>
+            </PressScale>
           </View>
         </View>
       </View>
@@ -53,5 +54,4 @@ const styles = StyleSheet.create({
   confirmBtn: { alignItems: "center", backgroundColor: Design.color.gold, borderRadius: Design.radius.small, flex: 1, justifyContent: "center", paddingVertical: 13 },
   confirmBtnDanger: { backgroundColor: Design.color.danger },
   confirmText: { color: Design.color.surface, fontFamily: Design.font.bodyBold, fontSize: 11, letterSpacing: 1.8 },
-  pressed: { opacity: 0.75 },
 });

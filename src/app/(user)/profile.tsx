@@ -3,21 +3,21 @@ import { useRouter } from "expo-router";
 import { Image } from "expo-image";
 import { useCallback, useEffect, useState } from "react";
 import {
-  ActivityIndicator,
   Modal,
   ScrollView,
   StatusBar,
   StyleSheet,
   Text,
   TextInput,
-  TouchableOpacity,
   View,
 } from "react-native";
 import { pickAndUploadImage } from "../../lib/imageUpload";
 import { supabase } from "../../lib/supabase";
 import { Design } from "../../constants/design";
 import { getStatusBadge } from "../../constants/statuses";
-import { ContentFrame, CustomerNavigation } from "../../components/app-ui";
+import { ContentFrame, CustomerNavigation, PageHeader } from "../../components/app-ui";
+import { PressScale, Reveal, staggerDelay } from "../../components/motion";
+import { ShimmerBlock } from "../../components/skeleton";
 import ConfirmModal from "../../components/confirm-modal";
 
 export default function UserProfile() {
@@ -126,7 +126,9 @@ export default function UserProfile() {
   if (loading)
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator color={Design.color.gold} />
+        <ShimmerBlock width={88} height={88} radius={44} />
+        <ShimmerBlock width="50%" height={14} />
+        <ShimmerBlock width="70%" height={120} radius={Design.radius.card} />
       </View>
     );
 
@@ -136,23 +138,23 @@ export default function UserProfile() {
       <CustomerNavigation active="profile" />
       <ScrollView showsVerticalScrollIndicator={false}>
         <ContentFrame>
-        <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.back()}>
-            <Feather name="arrow-left" size={22} color={Design.color.ink} />
-          </TouchableOpacity>
-          <View style={{ marginTop: 20 }}>
-            <Text style={styles.headerSmall}>YOUR</Text>
-            <Text style={styles.headerLarge}>Profile</Text>
-            <View style={styles.goldDivider} />
+        <View style={styles.headerRow}>
+          <View style={styles.headerCopy}>
+            <PageHeader index="07" title="Profile" subtitle="Your details, orders, and gallery wall." />
           </View>
+          <PressScale onPress={() => router.back()} accessibilityLabel="Go back" style={styles.backButton}>
+            <Feather name="arrow-left" size={19} color={Design.color.ink} />
+          </PressScale>
         </View>
 
         {/* Avatar */}
+        <Reveal>
         <View style={styles.avatarSection}>
-          <TouchableOpacity
+          <PressScale
             style={styles.avatarWrapper}
             onPress={handleAvatarUpload}
             disabled={uploadingAvatar}
+            accessibilityLabel="Change profile photo"
           >
             {profile?.avatar_url ? (
               <Image source={{ uri: profile.avatar_url }} style={styles.avatarImage} contentFit="cover" transition={200} />
@@ -164,36 +166,35 @@ export default function UserProfile() {
               </View>
             )}
             <View style={styles.avatarEditBadge}>
-              {uploadingAvatar ? (
-                <ActivityIndicator size="small" color={Design.color.surface} />
-              ) : (
-                <Feather name="camera" size={12} color={Design.color.surface} />
-              )}
+              <Feather name="camera" size={12} color={Design.color.surface} />
             </View>
-          </TouchableOpacity>
+          </PressScale>
           <Text style={styles.avatarHint}>Tap to change photo</Text>
           <Text style={styles.avatarName}>{profile?.username || "User"}</Text>
           <Text style={styles.avatarEmail}>{profile?.email}</Text>
         </View>
+        </Reveal>
 
         {/* MY ORDERS */}
+        <Reveal delay={staggerDelay(1)}>
         <View style={styles.section}>
           <Text style={styles.sectionLabel}>MY ORDERS</Text>
           {loadingOrders ? (
-            <ActivityIndicator color={Design.color.gold} style={{ marginTop: 12 }} />
+            <View style={styles.orderSkeleton}><ShimmerBlock width="100%" height={76} radius={Design.radius.card} /><ShimmerBlock width="100%" height={76} radius={Design.radius.card} /></View>
           ) : orders.length === 0 ? (
             <View style={styles.emptyOrders}>
               <Feather name="shopping-bag" size={32} color={Design.color.line} />
               <Text style={styles.emptyOrdersText}>No orders yet</Text>
             </View>
           ) : (
-            orders.map((order) => {
+            orders.map((order, orderIndex) => {
               const badge = getStatusBadge(order.status);
               return (
-                <TouchableOpacity
-                  key={order.id}
+                <Reveal key={order.id} delay={staggerDelay(orderIndex, 60, 4)}>
+                <PressScale
                   style={styles.orderCard}
                   onPress={() => openOrder(order)}
+                  accessibilityLabel={`View order ${order.id.substring(0, 8).toUpperCase()}`}
                 >
                   <View style={styles.orderCardLeft}>
                     <Text style={styles.orderId}>
@@ -216,20 +217,23 @@ export default function UserProfile() {
                     </View>
                     <Feather name="chevron-right" size={14} color={Design.color.gold} style={{ marginTop: 8 }} />
                   </View>
-                </TouchableOpacity>
+                </PressScale>
+                </Reveal>
               );
             })
           )}
         </View>
+        </Reveal>
 
         {/* Personal Info */}
+        <Reveal delay={staggerDelay(2)}>
         <View style={styles.section}>
           <View style={styles.infoHeader}>
             <Text style={styles.sectionLabel}>PERSONAL INFO</Text>
-            <TouchableOpacity style={styles.editToggle} onPress={() => setEditing(!editing)}>
+            <PressScale style={styles.editToggle} onPress={() => setEditing(!editing)} accessibilityLabel={editing ? "Cancel editing" : "Edit profile"}>
               <Feather name={editing ? "x" : "edit-2"} size={13} color={Design.color.gold} />
               <Text style={styles.editBtn}>{editing ? "CANCEL" : "EDIT"}</Text>
-            </TouchableOpacity>
+            </PressScale>
           </View>
 
           <View style={styles.infoCard}>
@@ -279,19 +283,22 @@ export default function UserProfile() {
           </View>
 
           {editing && (
-            <TouchableOpacity style={styles.saveBtn} onPress={handleSave} disabled={saving}>
+            <PressScale style={styles.saveBtn} onPress={handleSave} disabled={saving} accessibilityLabel="Save changes">
               <Feather name="check" size={15} color={Design.color.surface} />
               <Text style={styles.saveBtnText}>{saving ? "SAVING..." : "SAVE CHANGES"}</Text>
-            </TouchableOpacity>
+            </PressScale>
           )}
         </View>
+        </Reveal>
 
+        <Reveal delay={staggerDelay(3)}>
         <View style={styles.logoutSection}>
-          <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout}>
+          <PressScale style={styles.logoutBtn} onPress={handleLogout} accessibilityLabel="Sign out">
             <Feather name="log-out" size={14} color={Design.color.inkMuted} />
             <Text style={styles.logoutText}>SIGN OUT</Text>
-          </TouchableOpacity>
+          </PressScale>
         </View>
+        </Reveal>
         <View style={{ height: 120 }} />
         </ContentFrame>
       </ScrollView>
@@ -311,9 +318,9 @@ export default function UserProfile() {
                         #{selectedOrder.id.substring(0, 8).toUpperCase()}
                       </Text>
                     </View>
-                    <TouchableOpacity style={styles.closeBtn} onPress={() => setSelectedOrder(null)}>
+                    <PressScale style={styles.closeBtn} onPress={() => setSelectedOrder(null)} accessibilityLabel="Close order details">
                       <Feather name="x" size={18} color={Design.color.inkSoft} />
-                    </TouchableOpacity>
+                    </PressScale>
                   </View>
                   <View style={styles.goldDivider} />
 
@@ -331,7 +338,7 @@ export default function UserProfile() {
                   <Text style={styles.modalSectionLabel}>ITEMS ORDERED</Text>
                   <View style={styles.modalCard}>
                     {loadingItems ? (
-                      <ActivityIndicator color={Design.color.gold} style={{ paddingVertical: 12 }} />
+                      <View style={styles.orderSkeleton}><ShimmerBlock width="100%" height={64} radius={Design.radius.card} /></View>
                     ) : orderItems.length === 0 ? (
                       <Text style={styles.noItemsText}>No items found.</Text>
                     ) : (
@@ -388,7 +395,11 @@ export default function UserProfile() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Design.color.canvas },
-  loadingContainer: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: Design.color.canvas },
+  loadingContainer: { alignItems: "center", backgroundColor: Design.color.canvas, flex: 1, gap: 14, justifyContent: "center", padding: 32 },
+  headerRow: { alignItems: "flex-start", flexDirection: "row", gap: 12, justifyContent: "space-between", paddingHorizontal: 24, paddingTop: 20 },
+  headerCopy: { flex: 1 },
+  backButton: { alignItems: "center", backgroundColor: Design.color.surface, borderColor: Design.color.line, borderRadius: 22, borderWidth: StyleSheet.hairlineWidth, height: 44, justifyContent: "center", width: 44 },
+  orderSkeleton: { gap: 10 },
   header: { backgroundColor: Design.color.surfaceMuted, padding: 28, paddingTop: 56, paddingBottom: 28 },
   headerSmall: { fontSize: 10, letterSpacing: 4, color: Design.color.inkSoft },
   headerLarge: { fontFamily: Design.font.display, fontSize: 34, letterSpacing: -0.8, lineHeight: 34, color: Design.color.ink, marginBottom: 16 },

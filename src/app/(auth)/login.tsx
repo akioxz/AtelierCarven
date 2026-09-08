@@ -9,10 +9,10 @@ import {
   StyleSheet,
   Text,
   TextInput,
-  TouchableOpacity,
   useWindowDimensions,
   View,
 } from "react-native";
+import { PressScale, Reveal } from "../../components/motion";
 import { Design, layout } from "../../constants/design";
 import { supabase } from "../../lib/supabase";
 
@@ -78,6 +78,7 @@ export default function Login() {
               <View style={styles.goldDivider} />
             </View>
             <View style={styles.form}>
+              <Reveal>
               <Text style={styles.title}>Welcome back.</Text>
               <Text style={styles.subtitle}>Sign in to continue your journey.</Text>
               {error ? (
@@ -85,6 +86,8 @@ export default function Login() {
                   <Text style={styles.errorText}>{error}</Text>
                 </View>
               ) : null}
+              </Reveal>
+              <Reveal delay={80}>
               <View style={styles.inputGroup}>
                 <Text style={styles.label}>EMAIL ADDRESS</Text>
                 <TextInput
@@ -113,40 +116,46 @@ value={password}
                     autoComplete="password"
                     textContentType="password"
                   />
-                  <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.eyeBtn}>
+                  <PressScale onPress={() => setShowPassword(!showPassword)} style={styles.eyeBtn} accessibilityLabel={showPassword ? "Hide password" : "Show password"}>
                     <Text style={styles.eyeText}>{showPassword ? "HIDE" : "SHOW"}</Text>
-                  </TouchableOpacity>
+                  </PressScale>
 </View>
               </View>
-              <TouchableOpacity onPress={() => router.push("/(auth)/forgot-password")} style={styles.forgotLink} hitSlop={8}>
+              <PressScale onPress={() => router.push("/(auth)/forgot-password")} style={styles.forgotLink} hitSlop={8}>
                 <Text style={styles.forgotLinkText}>Forgot password?</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.primaryButton} onPress={handleLogin} disabled={loading}>
+              </PressScale>
+              </Reveal>
+              <Reveal delay={160}>
+              <PressScale style={styles.primaryButton} onPress={handleLogin} disabled={loading} accessibilityLabel="Sign in">
                 <Text style={styles.primaryButtonText}>{loading ? "SIGNING IN..." : "SIGN IN"}</Text>
-              </TouchableOpacity>
+              </PressScale>
               <View style={styles.dividerRow}>
                 <View style={styles.line} />
                 <Text style={styles.dividerText}>or</Text>
                 <View style={styles.line} />
               </View>
-              <TouchableOpacity style={styles.secondaryButton} onPress={() => router.push("/(auth)/signup")}>
+              <PressScale style={styles.secondaryButton} onPress={() => router.push("/(auth)/signup")} accessibilityLabel="Create an account">
                 <Text style={styles.secondaryButtonText}>Create an account</Text>
-              </TouchableOpacity>
+              </PressScale>
+              </Reveal>
             </View>
           </View>
         ) : (
           <>
             <View style={styles.header}>
-              <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+              <PressScale onPress={() => router.back()} style={styles.backBtn} accessibilityLabel="Go back">
                 <Feather name="arrow-left" size={18} color={Design.color.ink} />
-              </TouchableOpacity>
+              </PressScale>
+              <Reveal>
               <View style={styles.brandRow}>
                 <Text style={styles.brandSmall}>Atelier</Text>
                 <Text style={styles.brandLarge}>Carvén</Text>
               </View>
               <View style={styles.goldDivider} />
+              </Reveal>
             </View>
             <View style={styles.form}>
+              <Reveal>
               <Text style={styles.title}>Welcome back.</Text>
               <Text style={styles.subtitle}>Sign in to continue your journey.</Text>
               {error ? (
@@ -154,6 +163,8 @@ value={password}
                   <Text style={styles.errorText}>{error}</Text>
                 </View>
               ) : null}
+              </Reveal>
+              <Reveal delay={80}>
               <View style={styles.inputGroup}>
                 <Text style={styles.label}>EMAIL ADDRESS</Text>
                 <TextInput
@@ -182,25 +193,28 @@ value={password}
                     autoComplete="password"
                     textContentType="password"
                   />
-                  <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.eyeBtn}>
+                  <PressScale onPress={() => setShowPassword(!showPassword)} style={styles.eyeBtn} accessibilityLabel={showPassword ? "Hide password" : "Show password"}>
                     <Text style={styles.eyeText}>{showPassword ? "HIDE" : "SHOW"}</Text>
-                  </TouchableOpacity>
+                  </PressScale>
 </View>
               </View>
-              <TouchableOpacity onPress={() => router.push("/(auth)/forgot-password")} style={styles.forgotLink} hitSlop={8}>
+              <PressScale onPress={() => router.push("/(auth)/forgot-password")} style={styles.forgotLink} hitSlop={8}>
                 <Text style={styles.forgotLinkText}>Forgot password?</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.primaryButton} onPress={handleLogin} disabled={loading}>
+              </PressScale>
+              </Reveal>
+              <Reveal delay={160}>
+              <PressScale style={styles.primaryButton} onPress={handleLogin} disabled={loading} accessibilityLabel="Sign in">
                 <Text style={styles.primaryButtonText}>{loading ? "SIGNING IN..." : "SIGN IN"}</Text>
-              </TouchableOpacity>
+              </PressScale>
               <View style={styles.dividerRow}>
                 <View style={styles.line} />
                 <Text style={styles.dividerText}>or</Text>
                 <View style={styles.line} />
               </View>
-              <TouchableOpacity style={styles.secondaryButton} onPress={() => router.push("/(auth)/signup")}>
+              <PressScale style={styles.secondaryButton} onPress={() => router.push("/(auth)/signup")} accessibilityLabel="Create an account">
                 <Text style={styles.secondaryButtonText}>Create an account</Text>
-              </TouchableOpacity>
+              </PressScale>
+              </Reveal>
             </View>
           </>
         )}

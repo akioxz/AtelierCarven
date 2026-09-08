@@ -3,7 +3,6 @@ import { useRouter } from "expo-router";
 import { Image } from "expo-image";
 import { useCallback, useEffect, useState } from "react";
 import {
-  ActivityIndicator,
   Modal,
   Platform,
   ScrollView,
@@ -11,13 +10,14 @@ import {
   StyleSheet,
   Text,
   TextInput,
-  TouchableOpacity,
   View,
 } from "react-native";
 import { Design } from "../../constants/design";
 import { pickAndUploadImage } from "../../lib/imageUpload";
 import { supabase } from "../../lib/supabase";
-import { AdminNavigation, ContentFrame } from "../../components/app-ui";
+import { AdminNavigation, ContentFrame, PageHeader } from "../../components/app-ui";
+import { PressScale, Reveal, staggerDelay } from "../../components/motion";
+import { ShimmerBlock } from "../../components/skeleton";
 import ConfirmModal from "../../components/confirm-modal";
 
 const isWeb = Platform.OS === "web";
@@ -214,14 +214,14 @@ export default function ManageFurniture() {
         <Text style={styles.cardName} numberOfLines={2}>{item.name}</Text>
         <Text style={styles.cardPrice}>₱{Number(item.price).toLocaleString()}</Text>
         <View style={styles.cardActions}>
-          <TouchableOpacity style={styles.editBtn} onPress={() => openEdit(item)}>
+          <PressScale style={styles.editBtn} onPress={() => openEdit(item)} accessibilityLabel={`Edit ${item.name}`}>
             <Feather name="edit-2" size={12} color={Design.color.inkSoft} />
             <Text style={styles.editBtnText}>EDIT</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.deleteBtn} onPress={() => handleDelete(item)}>
+          </PressScale>
+          <PressScale style={styles.deleteBtn} onPress={() => handleDelete(item)} accessibilityLabel={`Delete ${item.name}`}>
             <Feather name="trash-2" size={12} color={Design.color.danger} />
             <Text style={styles.deleteBtnText}>DEL</Text>
-          </TouchableOpacity>
+          </PressScale>
         </View>
       </View>
     </View>
@@ -234,17 +234,10 @@ export default function ManageFurniture() {
 
       <ContentFrame>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()}>
-          <Feather name="arrow-left" size={22} color={Design.color.ink} />
-        </TouchableOpacity>
-        <View style={{ marginTop: 20 }}>
-          <Text style={styles.headerSmall}>MANAGE</Text>
-          <Text style={styles.headerLarge}>Furniture</Text>
-          <View style={styles.goldDivider} />
-          <Text style={styles.itemCount}>
-            {filteredFurniture.length} {activeFilter === "All" ? "items" : activeFilter.toLowerCase() + "s"}
-          </Text>
-        </View>
+        <PressScale onPress={() => router.back()} style={styles.backButton} accessibilityLabel="Go back">
+          <Feather name="arrow-left" size={19} color={Design.color.ink} />
+        </PressScale>
+        <PageHeader index="02" title="Furniture" subtitle={`${filteredFurniture.length} ${activeFilter === "All" ? "items" : activeFilter.toLowerCase() + "s"} in the collection.`} style={styles.headerPage} />
       </View>
 
       {/* Filter tabs */}
@@ -259,10 +252,11 @@ export default function ManageFurniture() {
             ? furniture.length
             : furniture.filter((i) => i.category === f).length;
           return (
-            <TouchableOpacity
+            <PressScale
               key={f}
               style={[styles.filterPill, activeFilter === f && styles.filterPillActive]}
               onPress={() => setActiveFilter(f)}
+              accessibilityLabel={`Filter by ${f}`}
             >
               <Text style={[styles.filterText, activeFilter === f && styles.filterTextActive]}>
                 {f}
@@ -272,13 +266,13 @@ export default function ManageFurniture() {
                   {count}
                 </Text>
               </View>
-            </TouchableOpacity>
+            </PressScale>
           );
         })}
       </ScrollView>
 
       {loading ? (
-        <ActivityIndicator color={Design.color.gold} style={{ marginTop: 40 }} />
+        <View style={styles.loadingGrid}><ShimmerBlock height={240} radius={Design.radius.card} width="47.5%" /><ShimmerBlock height={240} radius={Design.radius.card} width="47.5%" /></View>
       ) : (
         <ScrollView
           style={styles.scroll}
@@ -291,16 +285,16 @@ export default function ManageFurniture() {
               <Text style={styles.emptyText}>No {activeFilter === "All" ? "furniture" : activeFilter} yet.</Text>
             </View>
           ) : (
-            filteredFurniture.map(renderCard)
+            filteredFurniture.map((item, i) => <Reveal key={item.id} delay={staggerDelay(i, 50, 6)}>{renderCard(item)}</Reveal>)
           )}
           <View style={{ height: 100 }} />
         </ScrollView>
       )}
 
-      <TouchableOpacity style={styles.addBtn} onPress={openAdd}>
+      <PressScale style={styles.addBtn} onPress={openAdd} accessibilityLabel="Add furniture">
         <Feather name="plus" size={16} color={Design.color.surface} />
         <Text style={styles.addBtnText}>ADD FURNITURE</Text>
-      </TouchableOpacity>
+      </PressScale>
       </ContentFrame>
 
       <ConfirmModal
@@ -323,17 +317,18 @@ export default function ManageFurniture() {
                 <Text style={styles.modalTitle}>
                   {editing ? "EDIT FURNITURE" : "ADD FURNITURE"}
                 </Text>
-                <TouchableOpacity onPress={() => setModalVisible(false)}>
+                <PressScale onPress={() => setModalVisible(false)} accessibilityLabel="Close">
                   <Feather name="x" size={20} color={Design.color.inkSoft} />
-                </TouchableOpacity>
+                </PressScale>
               </View>
               <View style={styles.goldDivider} />
 
               <Text style={styles.inputLabel}>FURNITURE IMAGE</Text>
-              <TouchableOpacity
+              <PressScale
                 style={styles.imageUploadBtn}
                 onPress={handlePickImage}
                 disabled={uploading}
+                accessibilityLabel="Upload furniture image"
               >
                 {imageUrl ? (
                   <Image source={{ uri: imageUrl }} style={styles.uploadedImage} contentFit="cover" transition={200} />
@@ -345,7 +340,7 @@ export default function ManageFurniture() {
                     </Text>
                   </View>
                 )}
-              </TouchableOpacity>
+              </PressScale>
 
               <Text style={styles.inputLabel}>OR PASTE IMAGE URL</Text>
               <TextInput
@@ -380,15 +375,16 @@ export default function ManageFurniture() {
               <Text style={styles.inputLabel}>CATEGORY</Text>
               <View style={styles.categoryRow}>
                 {CATEGORIES.map((cat) => (
-                  <TouchableOpacity
+                  <PressScale
                     key={cat}
                     style={[styles.categoryPill, category === cat && styles.categoryPillActive]}
                     onPress={() => setCategory(cat)}
+                    accessibilityLabel={`Set category to ${cat}`}
                   >
                     <Text style={[styles.categoryText, category === cat && styles.categoryTextActive]}>
                       {cat}
                     </Text>
-                  </TouchableOpacity>
+                  </PressScale>
                 ))}
               </View>
 
@@ -432,15 +428,15 @@ export default function ManageFurniture() {
                     {galleryImages.map((gi: any) => (
                       <View key={gi.id} style={styles.galleryThumb}>
                         <Image source={{ uri: gi.image_url }} style={styles.galleryThumbImage} contentFit="cover" transition={200} />
-                        <TouchableOpacity style={styles.galleryDelete} onPress={async () => {
+                        <PressScale style={styles.galleryDelete} onPress={async () => {
                           await supabase.from("furniture_images").delete().eq("id", gi.id);
                           setGalleryImages((prev) => prev.filter((g: any) => g.id !== gi.id));
-                        }}>
+                        }} accessibilityLabel="Remove gallery image">
                           <Feather name="x" size={12} color={Design.color.surface} />
-                        </TouchableOpacity>
+                        </PressScale>
                       </View>
                     ))}
-                    <TouchableOpacity style={styles.galleryAddBtn} disabled={uploadingGallery} onPress={async () => {
+                    <PressScale style={styles.galleryAddBtn} disabled={uploadingGallery} onPress={async () => {
                       setUploadingGallery(true);
                       const url = await pickAndUploadImage("furniture-images", "gallery");
                       if (url && editing?.id) {
@@ -449,10 +445,10 @@ export default function ManageFurniture() {
                         if (data) setGalleryImages((prev) => [...prev, data]);
                       }
                       setUploadingGallery(false);
-                    }}>
+                    }} accessibilityLabel="Add gallery image">
                       <Feather name={uploadingGallery ? "loader" : "plus"} size={22} color={Design.color.inkSoft} />
                       <Text style={styles.uploadText}>{uploadingGallery ? "UPLOADING..." : "ADD"}</Text>
-                    </TouchableOpacity>
+                    </PressScale>
                   </View>
                 </>
               ) : null}
@@ -462,12 +458,12 @@ export default function ManageFurniture() {
               ) : null}
 
               <View style={styles.modalButtons}>
-                <TouchableOpacity style={styles.cancelBtn} onPress={() => setModalVisible(false)}>
+                <PressScale style={styles.cancelBtn} onPress={() => setModalVisible(false)} accessibilityLabel="Cancel">
                   <Text style={styles.cancelBtnText}>CANCEL</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.saveBtn} onPress={handleSave} disabled={saving}>
+                </PressScale>
+                <PressScale style={styles.saveBtn} onPress={handleSave} disabled={saving} accessibilityLabel="Save furniture">
                   <Text style={styles.saveBtnText}>{saving ? "SAVING..." : "SAVE"}</Text>
-                </TouchableOpacity>
+                </PressScale>
               </View>
               <View style={{ height: 40 }} />
             </ScrollView>
@@ -482,31 +478,20 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Design.color.surface },
 
   header: {
-    backgroundColor: Design.color.surfaceMuted,
-    padding: 28,
-    paddingTop: 56,
-    paddingBottom: 20,
+    alignItems: "center",
+    flexDirection: "row",
+    gap: 16,
+    paddingHorizontal: 2,
   },
-  headerSmall: { fontSize: 10, letterSpacing: 4, color: Design.color.inkSoft },
-  headerLarge: {
-    fontFamily: Design.font.display,
-    fontSize: 34,
-    letterSpacing: -0.8,
-    lineHeight: 34,
-    color: Design.color.ink,
-    marginBottom: 12,
-  },
+  headerPage: { flex: 1 },
+  backButton: { alignItems: "center", backgroundColor: Design.color.surface, borderColor: Design.color.line, borderRadius: 22, borderWidth: StyleSheet.hairlineWidth, height: 44, justifyContent: "center", width: 44 },
   goldDivider: {
     width: 40,
     height: 1.5,
     backgroundColor: Design.color.gold,
     marginBottom: 8,
   },
-  itemCount: {
-    fontSize: 11,
-    color: Design.color.inkMuted,
-    letterSpacing: 1,
-  },
+  loadingGrid: { flexDirection: "row", flexWrap: "wrap", gap: 14, padding: 16 },
 
   filterScroll: {
     backgroundColor: Design.color.surfaceMuted,

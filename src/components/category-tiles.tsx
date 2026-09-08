@@ -1,6 +1,7 @@
 import { Feather } from "@expo/vector-icons";
-import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { ScrollView, StyleSheet, Text, View } from "react-native";
 import { Design } from "../constants/design";
+import { PressScale } from "./motion";
 
 const CATEGORY_ICONS: Record<string, React.ComponentProps<typeof Feather>["name"]> = {
   Sofa: "airplay",
@@ -15,18 +16,17 @@ export function CategoryTiles({ categories, selected, onSelect }: { categories: 
       {categories.map((category) => {
         const active = category === selected;
         return (
-          <Pressable
+          <PressScale
             key={category}
-            accessibilityRole="button"
-            accessibilityState={{ selected: active }}
+            accessibilityLabel={`Select category ${category}`}
+            style={[styles.tile, active && styles.tileActive]}
             onPress={() => onSelect(category)}
-            style={({ pressed }) => [styles.tile, active && styles.tileActive, pressed && styles.pressed]}
           >
             <View style={[styles.tileIcon, active && styles.tileIconActive]}>
               <Feather name={CATEGORY_ICONS[category] ?? "box"} size={22} color={active ? Design.color.gold : Design.color.inkSoft} />
             </View>
             <Text style={[styles.tileLabel, active && styles.tileLabelActive]}>{category}</Text>
-          </Pressable>
+          </PressScale>
         );
       })}
     </ScrollView>
@@ -41,5 +41,4 @@ const styles = StyleSheet.create({
   tileIconActive: { backgroundColor: "transparent" },
   tileLabel: { color: Design.color.inkSoft, fontFamily: Design.font.bodySemibold, fontSize: 11, marginTop: 7 },
   tileLabelActive: { color: Design.color.ink },
-  pressed: { opacity: 0.78, transform: [{ scale: 0.97 }] },
 });

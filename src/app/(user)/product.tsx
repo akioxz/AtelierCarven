@@ -3,9 +3,10 @@ import * as Haptics from "expo-haptics";
 import { Image } from "expo-image";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { ActivityIndicator, FlatList, Modal, Platform, Pressable, StatusBar, StyleSheet, Text, TextInput, useWindowDimensions, View } from "react-native";
-import Animated, { FadeInDown } from "react-native-reanimated";
-import { PrimaryButton } from "../../components/app-ui";
+import { FlatList, Modal, Platform, StatusBar, StyleSheet, Text, TextInput, useWindowDimensions, View } from "react-native";
+import { PrimaryButton, Overline } from "../../components/app-ui";
+import { PressScale, Reveal, staggerDelay } from "../../components/motion";
+import { ShimmerBlock } from "../../components/skeleton";
 import { Design, layout } from "../../constants/design";
 import { supabase } from "../../lib/supabase";
 
@@ -81,42 +82,67 @@ export default function Product() {
     return [item.image_url, ...galleryImages.map((g: any) => g.image_url)].filter(Boolean);
   }, [item, galleryImages]);
 
-  const renderReviewItem = useCallback(({ item: review }: { item: any }) => (
+  const renderReviewItem = useCallback(({ item: review, index }: { item: any; index: number }) => (
+    <Reveal delay={staggerDelay(index, 50, 4)}>
     <View style={styles.reviewItem}>
       <View style={styles.reviewTop}><Text style={styles.reviewAuthor}>{review.profiles?.username || "Customer"}</Text><View accessibilityLabel={`Rating: ${review.rating} of 5 stars`} style={styles.stars}>{[1, 2, 3, 4, 5].map((star) => <Feather key={star} name="star" size={11} color={star <= review.rating ? Design.color.gold : Design.color.line} />)}</View></View>
       {review.comment ? <Text style={styles.reviewComment}>{review.comment}</Text> : null}
       <Text style={styles.reviewDate}>{new Date(review.created_at).toLocaleDateString()}</Text>
     </View>
+    </Reveal>
   ), []);
 
-  if (loading) return <View style={styles.loading}><ActivityIndicator color={Design.color.gold} /></View>;
-  if (!item) return <View style={styles.loading}><Text style={styles.notFound}>This piece is no longer available.</Text><Pressable accessibilityRole="button" accessibilityLabel="Return to collection" onPress={() => router.back()}><Text style={styles.return}>Return to collection</Text></Pressable></View>;
+  if (loading) return (
+    <View style={styles.loading}>
+      <View style={{ width: "100%", maxWidth: 480, gap: 24, alignSelf: "center" }}>
+        <ShimmerBlock height={480} radius={Design.radius.card} width="100%" />
+        <ShimmerBlock height={18} radius={8} width={160} />
+        <ShimmerBlock height={44} radius={10} width="70%" />
+        <ShimmerBlock height={14} radius={6} width="100%" />
+        <ShimmerBlock height={14} radius={6} width="100%" />
+        <ShimmerBlock height={52} radius={Design.radius.small} width="100%" />
+      </View>
+    </View>
+  );
+  if (!item) return <View style={styles.loading}><Text style={styles.notFound}>This piece is no longer available.</Text><PressScale accessibilityRole="link" accessibilityLabel="Return to collection" onPress={() => router.back()}><Text style={styles.return}>Return to collection</Text></PressScale></View>;
 
   const listHeader = (
     <View style={[styles.frame, wide && styles.frameWide]}>
-      <View style={styles.utility}><Pressable accessibilityRole="button" accessibilityLabel="Go back" onPress={() => router.back()} style={({ pressed }) => [styles.utilityButton, pressed && styles.pressed]}><Feather name="arrow-left" size={19} color={Design.color.ink} /></Pressable><Pressable accessibilityRole="button" accessibilityLabel={isFavorite ? "Remove from saved" : "Save to favorites"} onPress={toggleFavorite} style={({ pressed }) => [styles.utilityButton, pressed && styles.pressed]}>{isFavorite ? <AntDesign name="heart" size={18} color={Design.color.gold} /> : <Feather name="heart" size={18} color={Design.color.ink} />}</Pressable></View>
-      <Animated.View entering={FadeInDown.duration(340)} style={[styles.content, wide && styles.contentWide]}>
-        <View style={[styles.imagePanel, wide && styles.imagePanelWide]}>
-          <View style={styles.mainImageWrapper} accessibilityLabel={`Product image ${activeImageIndex + 1} of ${allImages.length}`}>{(() => { const src = allImages[activeImageIndex]; return src ? <Image source={{ uri: src }} style={styles.image} contentFit="cover" transition={200} /> : <Feather name="box" size={88} color={Design.color.inkMuted} />; })()}</View>
-          {allImages.length > 1 ? <View style={styles.thumbnailStrip}>{allImages.map((url: string, i: number) => <Pressable key={url + i} accessibilityRole="button" accessibilityLabel={`View image ${i + 1}`} accessibilityState={{ selected: i === activeImageIndex }} onPress={() => setActiveImageIndex(i)} style={[styles.thumbnailItem, i === activeImageIndex && styles.thumbnailActive]}><Image source={{ uri: url }} style={styles.thumbnailImage} contentFit="cover" transition={150} /></Pressable>)}</View> : null}
+      <Reveal>
+        <View style={styles.utility}>
+          <PressScale accessibilityLabel="Go back" onPress={() => router.back()} style={styles.utilityButton}>
+            <Feather name="arrow-left" size={19} color={Design.color.ink} />
+          </PressScale>
+          <PressScale accessibilityLabel={isFavorite ? "Remove from saved" : "Save to favorites"} onPress={() => toggleFavorite()} style={styles.utilityButton}>
+            {isFavorite ? <AntDesign name="heart" size={18} color={Design.color.gold} /> : <Feather name="heart" size={18} color={Design.color.ink} />}
+          </PressScale>
         </View>
-        <View style={styles.details}>
-          <Text style={styles.category}>{item.category}</Text><Text accessibilityRole="header" style={styles.name}>{item.name}</Text><View style={styles.rule} />
+      </Reveal>
+      <Reveal delay={staggerDelay(1)}>
+        <View style={[styles.content, wide && styles.contentWide]}>
+          <View style={[styles.imagePanel, wide && styles.imagePanelWide]}>
+            <View style={styles.mainImageWrapper} accessibilityLabel={`Product image ${activeImageIndex + 1} of ${allImages.length}`}>{(() => { const src = allImages[activeImageIndex]; return src ? <Image source={{ uri: src }} style={styles.image} contentFit="cover" transition={200} /> : <Feather name="box" size={88} color={Design.color.inkMuted} />; })()}</View>
+            {allImages.length > 1 ? <View style={styles.thumbnailStrip}>{allImages.map((url: string, i: number) => <PressScale key={url + i} accessibilityLabel={`View image ${i + 1}`} accessibilityState={{ selected: i === activeImageIndex }} onPress={() => setActiveImageIndex(i)} style={[styles.thumbnailItem, i === activeImageIndex && styles.thumbnailActive]}><Image source={{ uri: url }} style={styles.thumbnailImage} contentFit="cover" transition={150} /></PressScale>)}</View> : null}
+          </View>
+          <View style={styles.details}>
+            <Overline label={item.category} />
+            <Text accessibilityRole="header" style={styles.name}>{item.name}</Text><View style={styles.rule} />
           {item.rating != null ? <View accessibilityLabel={`Rated ${Number(item.rating).toFixed(1)} out of 5${item.review_count != null ? `, ${item.review_count} reviews` : ""}`} style={styles.rating}><View style={styles.stars}>{[1, 2, 3, 4, 5].map((star) => <Feather key={star} name="star" size={13} color={star <= Math.round(item.rating) ? Design.color.gold : Design.color.line} />)}</View><Text style={styles.ratingText}>{Number(item.rating).toFixed(1)}{item.review_count != null ? ` · ${item.review_count} reviews` : ""}</Text></View> : null}
           <Text accessibilityLabel={`Price: ${Number(item.price).toLocaleString()} Philippine Pesos`} style={styles.price}>₱{Number(item.price).toLocaleString()}</Text>
           <Text style={styles.description}>{item.description || "A carefully selected piece designed to bring lasting comfort and character to your home."}</Text>
           <View style={styles.inlineSelectors}>
-            <Text style={styles.optionLabel}>Colour</Text><View accessibilityRole="radiogroup" accessibilityLabel="Select a colour" style={styles.colorChoices}>{COLORS.map((color) => <Pressable key={color.name} accessibilityRole="radio" accessibilityLabel={`Colour: ${color.name}`} accessibilityState={{ checked: selectedColor === color.name }} onPress={() => setSelectedColor(color.name)} style={({ pressed }) => [styles.colorChoice, selectedColor === color.name && styles.colorChoiceSelected, pressed && styles.pressed]}><View style={[styles.swatch, { backgroundColor: color.hex }, color.name === "White" && styles.whiteSwatch]} /><Text style={styles.choiceText}>{color.name}</Text></Pressable>)}</View>
-            <Text style={styles.optionLabel}>Material</Text><View accessibilityRole="radiogroup" accessibilityLabel="Select a material" style={styles.materialChoices}>{MATERIALS.map((material) => <Pressable key={material} accessibilityRole="radio" accessibilityLabel={`Material: ${material}`} accessibilityState={{ checked: selectedMaterial === material }} onPress={() => setSelectedMaterial(material)} style={({ pressed }) => [styles.material, selectedMaterial === material && styles.materialSelected, pressed && styles.pressed]}><Text style={[styles.materialText, selectedMaterial === material && styles.materialTextSelected]}>{material}</Text></Pressable>)}</View>
+            <Text style={styles.optionLabel}>Colour</Text><View accessibilityRole="radiogroup" accessibilityLabel="Select a colour" style={styles.colorChoices}>{COLORS.map((color) => <PressScale key={color.name} accessibilityRole="radio" accessibilityLabel={`Colour: ${color.name}`} accessibilityState={{ checked: selectedColor === color.name }} onPress={() => setSelectedColor(color.name)} style={[styles.colorChoice, selectedColor === color.name && styles.colorChoiceSelected]}><View style={[styles.swatch, { backgroundColor: color.hex }, color.name === "White" && styles.whiteSwatch]} /><Text style={styles.choiceText}>{color.name}</Text></PressScale>)}</View>
+            <Text style={styles.optionLabel}>Material</Text><View accessibilityRole="radiogroup" accessibilityLabel="Select a material" style={styles.materialChoices}>{MATERIALS.map((material) => <PressScale key={material} accessibilityRole="radio" accessibilityLabel={`Material: ${material}`} accessibilityState={{ checked: selectedMaterial === material }} onPress={() => setSelectedMaterial(material)} style={[styles.material, selectedMaterial === material && styles.materialSelected]}><Text style={[styles.materialText, selectedMaterial === material && styles.materialTextSelected]}>{material}</Text></PressScale>)}</View>
           </View>
-          <View style={styles.metaLinks}>{sizeGuide ? <Pressable accessibilityRole="button" accessibilityLabel="View size guide" onPress={() => setSizeGuideOpen(true)} style={({ pressed }) => [styles.metaLink, pressed && styles.pressed]}><Feather name="maximize" size={14} color={Design.color.gold} /><Text style={styles.metaLinkText}>SIZE GUIDE</Text></Pressable> : null}<Pressable accessibilityRole="button" accessibilityLabel="Write a review" onPress={() => setReviewSheetOpen(true)} style={({ pressed }) => [styles.metaLink, pressed && styles.pressed]}><Feather name="edit-3" size={14} color={Design.color.gold} /><Text style={styles.metaLinkText}>WRITE A REVIEW</Text></Pressable></View>
+          <View style={styles.metaLinks}>{sizeGuide ? <PressScale accessibilityLabel="View size guide" onPress={() => setSizeGuideOpen(true)} style={styles.metaLink}><Feather name="maximize" size={14} color={Design.color.gold} /><Text style={styles.metaLinkText}>SIZE GUIDE</Text></PressScale> : null}<PressScale accessibilityLabel="Write a review" onPress={() => setReviewSheetOpen(true)} style={styles.metaLink}><Feather name="edit-3" size={14} color={Design.color.gold} /><Text style={styles.metaLinkText}>WRITE A REVIEW</Text></PressScale></View>
           <View style={styles.reviewsSection}>
             <View style={styles.reviewsHeader}><Text style={styles.reviewsTitle}>Reviews</Text>{item.rating != null ? <Text style={styles.reviewsCount}>{Number(item.rating).toFixed(1)} · {item.review_count ?? 0} review{item.review_count === 1 ? "" : "s"}</Text> : null}</View>
             {reviews.length === 0 ? <Text style={styles.noReviews}>No reviews yet — be the first to share your thoughts.</Text> : null}
           </View>
-{wide ? <View style={styles.desktopActions}><Pressable accessibilityRole="button" accessibilityLabel="Add to cart" onPress={() => openSelection("cart")} style={({ pressed }) => [styles.secondaryAction, pressed && styles.pressed]}><Text style={styles.secondaryActionText}>ADD TO CART</Text></Pressable><PrimaryButton label="BUY NOW" onPress={() => openSelection("buy")} style={styles.primaryAction} /></View> : null}
+{wide ? <View style={styles.desktopActions}><PressScale accessibilityLabel="Add to cart" onPress={() => openSelection("cart")} style={styles.secondaryAction}><Text style={styles.secondaryActionText}>ADD TO CART</Text></PressScale><PrimaryButton label="BUY NOW" onPress={() => openSelection("buy")} style={styles.primaryAction} /></View> : null}
         </View>
-      </Animated.View>
+      </View>
+      </Reveal>
     </View>
   );
 
@@ -131,17 +157,17 @@ export default function Product() {
         contentContainerStyle={styles.scroll}
         showsVerticalScrollIndicator={false}
       />
-      {!wide ? <View style={styles.bottomActions}><Pressable accessibilityRole="button" accessibilityLabel="Add to cart" onPress={() => openSelection("cart")} style={({ pressed }) => [styles.secondaryAction, styles.bottomSecondary, pressed && styles.pressed]}><Text style={styles.secondaryActionText}>ADD TO CART</Text></Pressable><Pressable accessibilityRole="button" accessibilityLabel="Buy now" onPress={() => openSelection("buy")} style={({ pressed }) => [styles.buyAction, pressed && styles.pressed]}><Text style={styles.buyActionText}>BUY NOW</Text></Pressable></View> : null}
+      {!wide ? <View style={styles.bottomActions}><PressScale accessibilityLabel="Add to cart" onPress={() => openSelection("cart")} style={[styles.secondaryAction, styles.bottomSecondary]}><Text style={styles.secondaryActionText}>ADD TO CART</Text></PressScale><PressScale accessibilityLabel="Buy now" onPress={() => openSelection("buy")} style={styles.buyAction}><Text style={styles.buyActionText}>BUY NOW</Text></PressScale></View> : null}
       <Modal visible={sheetOpen} animationType="slide" transparent onRequestClose={() => setSheetOpen(false)}>
-        <View style={styles.overlay}><View style={styles.sheet}><View style={styles.sheetHandle} /><View style={styles.sheetHeader}><View><Text style={styles.sheetTitle}>Ready to add</Text><Text style={styles.sheetSub}>{selectedColor} · {selectedMaterial}</Text></View><Pressable accessibilityRole="button" accessibilityLabel="Close" onPress={() => setSheetOpen(false)} style={styles.close}><Feather name="x" size={18} color={Design.color.ink} /></Pressable></View>
-          <View style={[styles.quantityRow, { marginTop: 0 }]}><View><Text style={styles.optionLabel}>Quantity</Text><Text style={styles.quantityHint}>Select the number of pieces.</Text></View><View style={styles.stepper}><Pressable accessibilityRole="button" accessibilityLabel="Decrease quantity" onPress={() => setQuantity((value) => Math.max(1, value - 1))} style={styles.step}><Feather name="minus" size={15} color={Design.color.ink} /></Pressable><Text accessibilityLabel={`Quantity: ${quantity}`} style={styles.quantity}>{quantity}</Text><Pressable accessibilityRole="button" accessibilityLabel="Increase quantity" onPress={() => setQuantity((value) => value + 1)} style={styles.step}><Feather name="plus" size={15} color={Design.color.ink} /></Pressable></View></View>
+        <View style={styles.overlay}><View style={styles.sheet}><View style={styles.sheetHandle} /><View style={styles.sheetHeader}><View><Text style={styles.sheetTitle}>Ready to add</Text><Text style={styles.sheetSub}>{selectedColor} · {selectedMaterial}</Text></View><PressScale accessibilityLabel="Close" onPress={() => setSheetOpen(false)} style={styles.close}><Feather name="x" size={18} color={Design.color.ink} /></PressScale></View>
+          <View style={[styles.quantityRow, { marginTop: 0 }]}><View><Text style={styles.optionLabel}>Quantity</Text><Text style={styles.quantityHint}>Select the number of pieces.</Text></View><View style={styles.stepper}><PressScale accessibilityLabel="Decrease quantity" onPress={() => setQuantity((value) => Math.max(1, value - 1))} style={styles.step}><Feather name="minus" size={15} color={Design.color.ink} /></PressScale><Text accessibilityLabel={`Quantity: ${quantity}`} style={styles.quantity}>{quantity}</Text><PressScale accessibilityLabel="Increase quantity" onPress={() => setQuantity((value) => value + 1)} style={styles.step}><Feather name="plus" size={15} color={Design.color.ink} /></PressScale></View></View>
           <PrimaryButton label={submitting ? "ADDING…" : intent === "buy" ? "CONTINUE TO CHECKOUT" : "ADD TO CART"} disabled={submitting} onPress={submit} />
         </View></View>
       </Modal>
       <Modal visible={reviewSheetOpen} animationType="slide" transparent onRequestClose={() => setReviewSheetOpen(false)}>
-        <View style={styles.overlay}><View style={styles.sheet}><View style={styles.sheetHandle} /><View style={styles.sheetHeader}><View><Text style={styles.sheetTitle}>Write a review</Text><Text style={styles.sheetSub}>{item.name}</Text></View><Pressable accessibilityRole="button" accessibilityLabel="Close" onPress={() => setReviewSheetOpen(false)} style={styles.close}><Feather name="x" size={18} color={Design.color.ink} /></Pressable></View>
+        <View style={styles.overlay}><View style={styles.sheet}><View style={styles.sheetHandle} /><View style={styles.sheetHeader}><View><Text style={styles.sheetTitle}>Write a review</Text><Text style={styles.sheetSub}>{item.name}</Text></View><PressScale accessibilityLabel="Close" onPress={() => setReviewSheetOpen(false)} style={styles.close}><Feather name="x" size={18} color={Design.color.ink} /></PressScale></View>
           <Text style={styles.optionLabel}>Your rating</Text>
-          <View style={styles.reviewStars}>{[1, 2, 3, 4, 5].map((star) => <Pressable key={star} accessibilityRole="button" accessibilityLabel={`Rate ${star} of 5`} onPress={() => setReviewRating(star)} hitSlop={4} style={({ pressed }) => [styles.reviewStar, pressed && styles.pressed]}>{star <= reviewRating ? <AntDesign name="star" size={30} color={Design.color.gold} /> : <Feather name="star" size={30} color={Design.color.line} />}</Pressable>)}</View>
+          <View style={styles.reviewStars}>{[1, 2, 3, 4, 5].map((star) => <PressScale key={star} accessibilityLabel={`Rate ${star} of 5`} onPress={() => setReviewRating(star)} hitSlop={4} style={styles.reviewStar}>{star <= reviewRating ? <AntDesign name="star" size={30} color={Design.color.gold} /> : <Feather name="star" size={30} color={Design.color.line} />}</PressScale>)}</View>
           <Text style={styles.reviewHint}>{reviewRating === 0 ? "Tap to rate this piece" : `${reviewRating} of 5`}</Text>
           <Text style={styles.optionLabel}>Comment (optional)</Text>
           <TextInput accessibilityLabel="Review comment" value={reviewComment} onChangeText={setReviewComment} placeholder="What did you like or dislike?" placeholderTextColor={Design.color.inkMuted} style={styles.reviewInput} multiline numberOfLines={4} />
@@ -149,7 +175,7 @@ export default function Product() {
         </View></View>
       </Modal>
       <Modal visible={sizeGuideOpen} animationType="slide" transparent onRequestClose={() => setSizeGuideOpen(false)}>
-        <View style={styles.overlay}><View style={styles.sheet}><View style={styles.sheetHandle} /><View style={styles.sheetHeader}><View><Text style={styles.sheetTitle}>Size guide</Text><Text style={styles.sheetSub}>{item.name}</Text></View><Pressable accessibilityRole="button" accessibilityLabel="Close" onPress={() => setSizeGuideOpen(false)} style={styles.close}><Feather name="x" size={18} color={Design.color.ink} /></Pressable></View>
+        <View style={styles.overlay}><View style={styles.sheet}><View style={styles.sheetHandle} /><View style={styles.sheetHeader}><View><Text style={styles.sheetTitle}>Size guide</Text><Text style={styles.sheetSub}>{item.name}</Text></View><PressScale accessibilityLabel="Close" onPress={() => setSizeGuideOpen(false)} style={styles.close}><Feather name="x" size={18} color={Design.color.ink} /></PressScale></View>
           <View style={styles.measureRow}><Text style={styles.measureLabel}>Width</Text><Text style={styles.measureValue}>{sizeGuide?.width_cm != null ? `${Number(sizeGuide.width_cm)} cm` : "—"}</Text></View>
           <View style={styles.measureDivider} />
           <View style={styles.measureRow}><Text style={styles.measureLabel}>Height</Text><Text style={styles.measureValue}>{sizeGuide?.height_cm != null ? `${Number(sizeGuide.height_cm)} cm` : "—"}</Text></View>

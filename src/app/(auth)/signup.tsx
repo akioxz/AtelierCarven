@@ -9,10 +9,10 @@ import {
     StyleSheet,
     Text,
     TextInput,
-    TouchableOpacity,
     useWindowDimensions,
     View,
 } from "react-native";
+import { PressScale, Reveal } from "../../components/motion";
 import { Design, layout } from "../../constants/design";
 import { supabase } from "../../lib/supabase";
 import { ContentFrame } from "../../components/app-ui";
@@ -80,21 +80,25 @@ export default function Signup() {
         <ContentFrame>
         {/* Header */}
         <View style={styles.header}>
-          <TouchableOpacity
+          <PressScale
             onPress={() => router.back()}
             style={styles.backBtn}
+            accessibilityLabel="Go back"
           >
             <Feather name="arrow-left" size={18} color={Design.color.ink} />
-          </TouchableOpacity>
+          </PressScale>
+          <Reveal>
           <View style={styles.brandRow}>
             <Text style={styles.brandSmall}>Atelier</Text>
             <Text style={styles.brandLarge}>Carvén</Text>
           </View>
           <View style={styles.goldDivider} />
+          </Reveal>
         </View>
 
         {/* Form */}
         <View style={[styles.form, isWeb && styles.formWeb]}>
+          <Reveal>
           <Text style={styles.title}>Create account.</Text>
           <Text style={styles.subtitle}>
             Join us and discover luxury furniture.
@@ -105,7 +109,9 @@ export default function Signup() {
               <Text style={styles.errorText}>{error}</Text>
             </View>
           ) : null}
+          </Reveal>
 
+          <Reveal delay={80}>
           <View style={styles.inputGroup}>
             <Text style={styles.label}>USERNAME</Text>
             <TextInput
@@ -149,14 +155,15 @@ export default function Signup() {
                 autoComplete="new-password"
                 textContentType="newPassword"
               />
-              <TouchableOpacity
+              <PressScale
                 onPress={() => setShowPassword(!showPassword)}
                 style={styles.eyeBtn}
+                accessibilityLabel={showPassword ? "Hide password" : "Show password"}
               >
                 <Text style={styles.eyeText}>
                   {showPassword ? "HIDE" : "SHOW"}
                 </Text>
-              </TouchableOpacity>
+              </PressScale>
             </View>
           </View>
 
@@ -174,16 +181,19 @@ export default function Signup() {
               textContentType="newPassword"
             />
           </View>
+          </Reveal>
 
-          <TouchableOpacity
+          <Reveal delay={160}>
+          <PressScale
             style={styles.primaryButton}
             onPress={handleSignup}
             disabled={loading}
+            accessibilityLabel="Create account"
           >
             <Text style={styles.primaryButtonText}>
               {loading ? "CREATING ACCOUNT..." : "CREATE ACCOUNT"}
             </Text>
-          </TouchableOpacity>
+          </PressScale>
 
           <View style={styles.dividerRow}>
             <View style={styles.line} />
@@ -191,14 +201,16 @@ export default function Signup() {
             <View style={styles.line} />
           </View>
 
-          <TouchableOpacity
+          <PressScale
             style={styles.secondaryButton}
             onPress={() => router.push("/(auth)/login")}
+            accessibilityLabel="Sign in to existing account"
           >
             <Text style={styles.secondaryButtonText}>
               Sign in to existing account
             </Text>
-          </TouchableOpacity>
+          </PressScale>
+          </Reveal>
         </View>
         </ContentFrame>
       </ScrollView>

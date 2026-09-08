@@ -9,10 +9,10 @@ import {
   StyleSheet,
   Text,
   TextInput,
-  TouchableOpacity,
   View,
 } from "react-native";
 import { ContentFrame, TextLink } from "../../components/app-ui";
+import { PressScale, Reveal } from "../../components/motion";
 import { Design } from "../../constants/design";
 import { supabase } from "../../lib/supabase";
 
@@ -47,9 +47,9 @@ export default function ForgotPassword() {
       <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
         <ContentFrame>
           <View style={styles.card}>
-            <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} hitSlop={8}>
+            <PressScale onPress={() => router.back()} style={styles.backBtn} hitSlop={8} accessibilityLabel="Go back">
               <Feather name="arrow-left" size={18} color={Design.color.ink} />
-            </TouchableOpacity>
+            </PressScale>
             <View style={styles.brand}>
               <Text style={styles.brandSmall}>ATELIER</Text>
               <Text style={styles.brandLarge}>Carvén</Text>
@@ -57,6 +57,7 @@ export default function ForgotPassword() {
             </View>
             <View style={styles.form}>
               {sent ? (
+                <Reveal>
                 <View style={styles.success}>
                   <View style={styles.successIcon}>
                     <Feather name="check" size={22} color={Design.color.success} />
@@ -66,12 +67,14 @@ export default function ForgotPassword() {
                     We sent a reset link to {email.trim()}. Open it to choose a new password. If it doesn&apos;t
                     arrive in a few minutes, check your spam folder.
                   </Text>
-                  <TouchableOpacity style={styles.primaryButton} onPress={() => router.replace("/(auth)/login")}>
+                  <PressScale style={styles.primaryButton} onPress={() => router.replace("/(auth)/login")} accessibilityLabel="Back to sign in">
                     <Text style={styles.primaryButtonText}>BACK TO SIGN IN</Text>
-                  </TouchableOpacity>
+                  </PressScale>
                 </View>
+                </Reveal>
               ) : (
                 <>
+                  <Reveal>
                   <Text style={styles.title}>Reset your password.</Text>
                   <Text style={styles.subtitle}>
                     Enter the email linked to your account and we&apos;ll send you a secure reset link.
@@ -81,6 +84,8 @@ export default function ForgotPassword() {
                       <Text style={styles.errorText}>{error}</Text>
                     </View>
                   ) : null}
+                  </Reveal>
+                  <Reveal delay={80}>
                   <View style={styles.inputGroup}>
                     <Text style={styles.label}>EMAIL ADDRESS</Text>
                     <TextInput
@@ -95,10 +100,13 @@ export default function ForgotPassword() {
                       textContentType="emailAddress"
                     />
                   </View>
-                  <TouchableOpacity style={styles.primaryButton} onPress={handleSubmit} disabled={loading}>
+                  </Reveal>
+                  <Reveal delay={160}>
+                  <PressScale style={styles.primaryButton} onPress={handleSubmit} disabled={loading} accessibilityLabel="Send reset link">
                     <Text style={styles.primaryButtonText}>{loading ? "SENDING..." : "SEND RESET LINK"}</Text>
-                  </TouchableOpacity>
+                  </PressScale>
                   <TextLink label="Return to sign in" onPress={() => router.back()} style={styles.backLink} />
+                  </Reveal>
                 </>
               )}
             </View>

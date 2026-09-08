@@ -1,13 +1,15 @@
 import {
-  View, Text, StyleSheet, ScrollView, TouchableOpacity,
-  StatusBar, ActivityIndicator, useWindowDimensions, Platform,
+  View, Text, StyleSheet, ScrollView,
+  StatusBar, useWindowDimensions, Platform,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { useState, useEffect } from "react";
 import { Feather } from "@expo/vector-icons";
 import { Design, layout } from "../../constants/design";
 import { supabase } from "../../lib/supabase";
-import { AdminNavigation, ContentFrame } from "../../components/app-ui";
+import { AdminNavigation, ContentFrame, PageHeader } from "../../components/app-ui";
+import { PressScale, Reveal, staggerDelay } from "../../components/motion";
+import { ShimmerBlock } from "../../components/skeleton";
 
 export default function ActivityLogs() {
   const router = useRouter();
@@ -40,19 +42,15 @@ export default function ActivityLogs() {
       <View style={styles.main}>
         <View style={[styles.header, isWeb && styles.headerWeb]}>
           {!isWeb && (
-            <TouchableOpacity onPress={() => router.back()}>
-              <Feather name="arrow-left" size={22} color={Design.color.ink} />
-            </TouchableOpacity>
+            <PressScale onPress={() => router.back()} style={styles.backButton} accessibilityLabel="Go back">
+              <Feather name="arrow-left" size={19} color={Design.color.ink} />
+            </PressScale>
           )}
-          <View style={isWeb ? {} : { marginTop: 20 }}>
-            {!isWeb && <Text style={styles.headerSmall}>ACTIVITY</Text>}
-            <Text style={[styles.headerLarge, isWeb && styles.headerLargeWeb]}>Activity Logs</Text>
-            {!isWeb && <View style={styles.goldDivider} />}
-          </View>
+          <PageHeader index="04" title="Activity Logs" subtitle="A record of every action taken across the store." />
         </View>
 
         {loading ? (
-          <ActivityIndicator color={Design.color.gold} style={{ marginTop: 40 }} />
+          <View style={styles.loading}><ShimmerBlock height={48} radius={Design.radius.card} width="100%" /><ShimmerBlock height={48} radius={Design.radius.card} width="100%" /><ShimmerBlock height={48} radius={Design.radius.card} width="100%" /></View>
         ) : logs.length === 0 ? (
           <View style={styles.empty}>
             <Feather name="clipboard" size={40} color={Design.color.line} />
@@ -69,10 +67,11 @@ export default function ActivityLogs() {
               </View>
             )}
 
-            {logs.map((log) => {
+            {logs.map((log, i) => {
               const badge = getLogBadge(log.action);
               return isWeb ? (
-                <View key={log.id} style={styles.tableRow}>
+                <Reveal key={log.id} delay={staggerDelay(i, 40, 10)}>
+                <View style={styles.tableRow}>
                   <View style={styles.tableCell}>
                     <View style={[styles.logBadge, { backgroundColor: badge.bg }]}>
                       <Feather name={badge.icon as any} size={12} color={badge.color} />
@@ -86,8 +85,10 @@ export default function ActivityLogs() {
                     <Text style={styles.logTime}>{new Date(log.created_at).toLocaleString()}</Text>
                   </View>
                 </View>
+                </Reveal>
               ) : (
-                <View key={log.id} style={styles.logItem}>
+                <Reveal key={log.id} delay={staggerDelay(i, 40, 10)}>
+                <View style={styles.logItem}>
                   <View style={[styles.logBadge, { backgroundColor: badge.bg }]}>
                     <Feather name={badge.icon as any} size={12} color={badge.color} />
                     <Text style={[styles.logBadgeText, { color: badge.color }]}>{badge.label}</Text>
@@ -98,6 +99,7 @@ export default function ActivityLogs() {
                   </View>
                   <Feather name="chevron-right" size={14} color={Design.color.gold} />
                 </View>
+                </Reveal>
               );
             })}
             <View style={{ height: 40 }} />
@@ -113,13 +115,16 @@ export default function ActivityLogs() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Design.color.surface },
-  goldDivider: { width: 40, height: 1.5, backgroundColor: Design.color.gold },
   main: { flex: 1 },
-  header: { backgroundColor: Design.color.surfaceMuted, padding: 28, paddingTop: 56, paddingBottom: 28 },
-  headerWeb: { backgroundColor: Design.color.surface, paddingTop: 32, paddingBottom: 20, borderBottomWidth: 0.5, borderBottomColor: Design.color.line, flexDirection: "row", alignItems: "center" },
-  headerSmall: { fontSize: 10, letterSpacing: 4, color: Design.color.inkSoft },
-  headerLarge: { fontFamily: Design.font.display, fontSize: 34, letterSpacing: -0.8, lineHeight: 34, color: Design.color.ink, marginBottom: 16 },
-  headerLargeWeb: { fontSize: 28, marginBottom: 0 },
+  header: {
+    alignItems: "center",
+    flexDirection: "row",
+    gap: 16,
+    paddingHorizontal: 2,
+  },
+  headerWeb: { paddingHorizontal: 0 },
+  backButton: { alignItems: "center", backgroundColor: Design.color.surface, borderColor: Design.color.line, borderRadius: 22, borderWidth: StyleSheet.hairlineWidth, height: 44, justifyContent: "center", width: 44 },
+  loading: { gap: 12, padding: 16 },
   list: { flex: 1, padding: 24 },
   listWeb: { padding: 32 },
   tableHeader: { flexDirection: "row", paddingVertical: 12, paddingHorizontal: 16, backgroundColor: Design.color.surfaceMuted, borderRadius: Design.radius.small, marginBottom: 8 },

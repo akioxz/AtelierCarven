@@ -5,7 +5,6 @@ import { useEffect } from "react";
 import {
     StyleSheet,
     Text,
-    TouchableOpacity,
     View,
 } from "react-native";
 import Animated, {
@@ -18,6 +17,7 @@ import Animated, {
   withSpring,
   withTiming,
 } from "react-native-reanimated";
+import { PressScale } from "../../components/motion";
 import { Design } from "../../constants/design";
 
 const EASE_OUT = Easing.bezier(0.23, 1, 0.32, 1);
@@ -84,13 +84,10 @@ export default function OrderSuccess() {
 
       {/* Buttons */}
       <Animated.View style={[styles.buttons, buttonsStyle]}>
-        <TouchableOpacity
-          style={styles.homeBtn}
-          onPress={() => router.replace("/(user)/home")}
-        >
+        <PressScale onPress={() => router.replace("/(user)/home")} accessibilityLabel="Back to home" style={styles.homeBtn}>
           <Feather name="home" size={15} color={Design.color.surface} />
           <Text style={styles.homeBtnText}>BACK TO HOME</Text>
-        </TouchableOpacity>
+        </PressScale>
       </Animated.View>
     </View>
   );

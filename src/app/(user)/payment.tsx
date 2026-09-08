@@ -8,7 +8,6 @@ import {
   StyleSheet,
   Text,
   TextInput,
-  TouchableOpacity,
   View,
 } from "react-native";
 import Animated, {
@@ -19,7 +18,8 @@ import Animated, {
   withRepeat,
   withTiming,
 } from "react-native-reanimated";
-import { ContentFrame, CustomerNavigation } from "../../components/app-ui";
+import { ContentFrame, CustomerNavigation, PageHeader } from "../../components/app-ui";
+import { PressScale, Reveal } from "../../components/motion";
 import { Design } from "../../constants/design";
 import { supabase } from "../../lib/supabase";
 
@@ -184,19 +184,18 @@ export default function Payment() {
       <CustomerNavigation active="cart" />
       <ScrollView showsVerticalScrollIndicator={false} style={styles.scrollContainer} contentContainerStyle={{ paddingBottom: 24 }}>
         <ContentFrame>
-        <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.back()} disabled={processing}>
-            <Feather name="arrow-left" size={22} color={Design.color.ink} />
-          </TouchableOpacity>
-          <View style={{ marginTop: 20 }}>
-            <Text style={styles.headerSmall}>FINAL STEP</Text>
-            <Text style={styles.headerLarge}>Payment</Text>
-            <View style={styles.goldDivider} />
+        <View style={styles.headerRow}>
+          <View style={styles.headerCopy}>
+            <PageHeader index="04" title="Payment" subtitle="Choose how you'd like to pay." />
           </View>
+          <PressScale onPress={() => router.back()} disabled={processing} accessibilityLabel="Go back" style={styles.backButton}>
+            <Feather name="arrow-left" size={19} color={Design.color.ink} />
+          </PressScale>
         </View>
 
         {/* GCash Instructions */}
         {paymentMethod === "gcash" && (
+          <Reveal>
           <View style={styles.section}>
             <Text style={styles.sectionLabel}>PAYMENT INSTRUCTIONS</Text>
             <View style={styles.card}>
@@ -237,10 +236,12 @@ export default function Payment() {
               </View>
             </View>
           </View>
+          </Reveal>
         )}
 
         {/* Maya Instructions */}
         {paymentMethod === "maya" && (
+          <Reveal>
           <View style={styles.section}>
             <Text style={styles.sectionLabel}>PAYMENT INSTRUCTIONS</Text>
             <View style={styles.card}>
@@ -281,10 +282,12 @@ export default function Payment() {
               </View>
             </View>
           </View>
+          </Reveal>
         )}
 
         {/* COD Note */}
         {paymentMethod === "cod" && (
+          <Reveal>
           <View style={styles.section}>
             <Text style={styles.sectionLabel}>CASH ON DELIVERY</Text>
             <View style={styles.card}>
@@ -301,10 +304,12 @@ export default function Payment() {
               </View>
             </View>
           </View>
+          </Reveal>
         )}
 
         {/* Credit/Debit Card Form */}
         {paymentMethod === "card" && (
+          <Reveal>
           <View style={styles.section}>
             <Text style={styles.sectionLabel}>CREDIT / DEBIT CARD (DEMO)</Text>
 
@@ -398,9 +403,11 @@ export default function Payment() {
               </View>
             </View>
           </View>
+          </Reveal>
         )}
 
         {/* Security Note */}
+        <Reveal>
         <View style={styles.section}>
           <View style={styles.securityRow}>
             <Feather name="shield" size={13} color={Design.color.inkSoft} />
@@ -409,17 +416,14 @@ export default function Payment() {
             </Text>
           </View>
         </View>
+        </Reveal>
 
       </ContentFrame>
       </ScrollView>
 
       {/* Confirm Button */}
       <View style={styles.footer}>
-        <TouchableOpacity
-          style={[styles.confirmBtn, processing && styles.confirmBtnDisabled]}
-          onPress={handleConfirmPayment}
-          disabled={processing}
-        >
+        <PressScale style={[styles.confirmBtn, processing && styles.confirmBtnDisabled]} onPress={handleConfirmPayment} disabled={processing} accessibilityLabel={processing ? "Processing payment" : "Confirm order"}>
           {processing ? (
             <Animated.View style={spinStyle}>
               <Feather name="loader" size={18} color={Design.color.gold} />
@@ -430,7 +434,7 @@ export default function Payment() {
           <Text style={styles.confirmBtnText}>
             {processing ? "PROCESSING..." : "CONFIRM ORDER"}
           </Text>
-        </TouchableOpacity>
+        </PressScale>
         <Text style={styles.footerNote}>
           By confirming, you agree to our terms and return policy.
         </Text>
@@ -446,9 +450,9 @@ export default function Payment() {
             <Text style={styles.alertTitle}>{alertTitle.toUpperCase()}</Text>
             <View style={styles.alertDivider} />
             <Text style={styles.alertMessage}>{alertMessage}</Text>
-            <TouchableOpacity style={styles.alertBtn} onPress={() => setAlertVisible(false)}>
+            <PressScale style={styles.alertBtn} onPress={() => setAlertVisible(false)} accessibilityLabel="Dismiss alert">
               <Text style={styles.alertBtnText}>GOT IT</Text>
-            </TouchableOpacity>
+            </PressScale>
           </View>
         </View>
       </Modal>
@@ -458,10 +462,9 @@ export default function Payment() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Design.color.surface },
-  header: { backgroundColor: Design.color.surfaceMuted, padding: 28, paddingTop: 56, paddingBottom: 28 },
-  headerSmall: { fontSize: 10, letterSpacing: 4, color: Design.color.inkSoft },
-  headerLarge: { fontFamily: Design.font.display, fontSize: 34, letterSpacing: -0.8, lineHeight: 34, color: Design.color.ink, marginBottom: 16 },
-  goldDivider: { width: 40, height: 1.5, backgroundColor: Design.color.gold },
+  headerRow: { alignItems: "flex-start", flexDirection: "row", gap: 12, justifyContent: "space-between", paddingHorizontal: 24, paddingTop: 20 },
+  headerCopy: { flex: 1 },
+  backButton: { alignItems: "center", backgroundColor: Design.color.surface, borderColor: Design.color.line, borderRadius: 22, borderWidth: StyleSheet.hairlineWidth, height: 44, justifyContent: "center", width: 44 },
   section: { paddingHorizontal: 24, paddingTop: 24 },
   sectionLabel: { fontSize: 10, letterSpacing: 2, color: Design.color.inkSoft, marginBottom: 12 },
   card: { backgroundColor: Design.color.surfaceMuted, borderRadius: Design.radius.card, padding: 16, borderWidth: 0.5, borderColor: Design.color.line },

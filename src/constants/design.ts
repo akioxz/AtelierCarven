@@ -8,7 +8,9 @@ export const Design = {
     inkMuted: "#6B5D52",
     line: "#DED2C4",
     gold: "#A87842",
+    goldDeep: "#7A5228",
     goldSoft: "#E9D8C2",
+    inkWash: "rgba(33,26,22,0.55)",
     success: "#2F6D52",
     danger: "#A7473A",
   },
@@ -23,8 +25,17 @@ export const Design = {
     bodySemibold: "Manrope_600SemiBold",
     bodyBold: "Manrope_700Bold",
   },
-  space: { xs: 6, sm: 10, md: 16, lg: 24, xl: 32, xxl: 48 },
+  space: { xs: 6, sm: 10, md: 16, lg: 24, xl: 32, xxl: 48, xxxl: 72 },
   radius: { small: 10, card: 16, sheet: 24, pill: 999 },
+  motion: {
+    stagger: 70,
+    quick: 160,
+    base: 260,
+    slow: 420,
+    revealY: 18,
+    spring: { damping: 22, stiffness: 260 },
+    pressScale: 0.965,
+  },
 } as const;
 
 export const layout = {
