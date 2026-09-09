@@ -68,7 +68,7 @@ export default function Splash() {
       </Animated.View>
 
       <Animated.View style={[styles.bottom, bottomStyle]}>
-        <Text style={styles.bottomText}>LUXURY · CRAFTED · TIMELESS</Text>
+        <Text style={styles.bottomText}>ATELIER CARVÉN · EST. 2026</Text>
       </Animated.View>
     </View>
   );
