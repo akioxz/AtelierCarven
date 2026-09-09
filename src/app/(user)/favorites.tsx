@@ -134,12 +134,12 @@ export default function Favorites() {
         ) : favorites.length === 0 ? (
           <Reveal>
             <View style={styles.emptyContainer}>
-              <Feather name="heart" size={40} color={Design.color.goldSoft} />
+              <Feather name="heart" size={40} color={Design.color.accent} />
               <Text style={styles.emptyTitle}>No saved pieces yet</Text>
               <Text style={styles.emptySubtext}>
                 Tap the heart on any piece to start your gallery wall.
               </Text>
-              <PrimaryButton label="EXPLORE PIECES" onPress={() => router.push("/(user)/home")} />
+              <PrimaryButton label="BROWSE THE COLLECTION" onPress={() => router.push("/(user)/home")} />
             </View>
           </Reveal>
         ) : (
@@ -155,8 +155,8 @@ export default function Favorites() {
               <RefreshControl
                 refreshing={refreshing}
                 onRefresh={handleRefresh}
-                tintColor={Design.color.gold}
-                colors={[Design.color.gold]}
+                tintColor={Design.color.accent}
+                colors={[Design.color.accent]}
               />
             }
           />
@@ -171,12 +171,12 @@ const styles = StyleSheet.create({
   frame: { paddingHorizontal: 20, paddingTop: 20 },
   headerRow: { alignItems: "flex-start", flexDirection: "row", justifyContent: "space-between", gap: 12 },
   headerCopy: { flex: 1 },
-  backButton: { alignItems: "center", backgroundColor: Design.color.surface, borderColor: Design.color.line, borderRadius: 22, borderWidth: StyleSheet.hairlineWidth, height: 44, justifyContent: "center", width: 44 },
+  backButton: { alignItems: "center", backgroundColor: Design.color.surface, borderColor: Design.color.line, borderRadius: Design.radius.small, borderWidth: StyleSheet.hairlineWidth, height: 44, justifyContent: "center", width: 44 },
   grid: { flexDirection: "row", flexWrap: "wrap", gap: 14, marginTop: 8 },
   list: { paddingBottom: 100 },
   row: { justifyContent: "space-between", marginBottom: 14 },
   cell: { width: "47.8%" },
-  emptyContainer: { alignItems: "center", backgroundColor: Design.color.surface, borderRadius: Design.radius.sheet, gap: 10, justifyContent: "center", marginTop: 8, padding: 40, ...Design.shadow.card },
+  emptyContainer: { alignItems: "center", backgroundColor: Design.color.surface, borderRadius: Design.radius.card, gap: 10, justifyContent: "center", marginTop: 8, padding: 40, ...Design.shadow.card },
   emptyTitle: { color: Design.color.ink, fontFamily: Design.font.display, fontSize: 28, letterSpacing: -0.6, marginTop: 8, textAlign: "center" },
   emptySubtext: { color: Design.color.inkSoft, fontFamily: Design.font.body, fontSize: 13, lineHeight: 20, marginBottom: 12, textAlign: "center" },
 });

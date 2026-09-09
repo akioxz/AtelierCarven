@@ -227,7 +227,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 2,
   },
   headerPage: { flex: 1 },
-  backButton: { alignItems: "center", backgroundColor: Design.color.surface, borderColor: Design.color.line, borderRadius: 22, borderWidth: StyleSheet.hairlineWidth, height: 44, justifyContent: "center", width: 44 },
+  backButton: { alignItems: "center", backgroundColor: Design.color.surface, borderColor: Design.color.line, borderRadius: Design.radius.small, borderWidth: StyleSheet.hairlineWidth, height: 44, justifyContent: "center", width: 44 },
   avatarSection: { alignItems: "center", paddingVertical: 28 },
   avatarContainer: { position: "relative", marginBottom: 12 },
   avatarImage: {
@@ -235,7 +235,7 @@ const styles = StyleSheet.create({
     height: 80,
     borderRadius: Design.radius.pill,
     borderWidth: 1,
-    borderColor: Design.color.gold,
+    borderColor: Design.color.accent,
   },
   avatar: {
     width: 80,
@@ -245,7 +245,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     borderWidth: 1,
-    borderColor: Design.color.gold,
+    borderColor: Design.color.accent,
   },
   avatarText: { fontSize: 32, fontWeight: "500", color: Design.color.inkSoft },
   avatarEditBadge: {
@@ -254,7 +254,7 @@ const styles = StyleSheet.create({
     right: 0,
     width: 24,
     height: 24,
-    borderRadius: Design.radius.card,
+    borderRadius: Design.radius.small,
     backgroundColor: Design.color.ink,
     justifyContent: "center",
     alignItems: "center",
@@ -266,7 +266,7 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   avatarEmail: { fontSize: 12, color: Design.color.inkMuted, marginBottom: 4 },
-  avatarHint: { fontSize: 10, color: Design.color.gold, letterSpacing: 1 },
+  avatarHint: { fontSize: 10, color: Design.color.accent, letterSpacing: 1 },
   infoSection: { paddingHorizontal: 24, marginBottom: 20 },
   sectionLabel: {
     fontSize: 10,
@@ -294,11 +294,11 @@ const styles = StyleSheet.create({
   infoDivider: { height: 0.5, backgroundColor: Design.color.line },
   roleBadge: {
     backgroundColor: Design.color.surfaceMuted,
-    borderRadius: 20,
+    borderRadius: Design.radius.small,
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderWidth: 0.5,
-    borderColor: Design.color.gold,
+    borderColor: Design.color.accent,
   },
   roleBadgeText: { fontSize: 9, letterSpacing: 1.5, color: Design.color.inkSoft },
   noteRow: {

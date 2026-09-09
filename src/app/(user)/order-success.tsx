@@ -62,6 +62,7 @@ export default function OrderSuccess() {
 
       {/* Text */}
       <Animated.View style={[styles.textBlock, textStyle]}>
+        <Text style={styles.stamp}>DISPATCH STAMP · THE CRATE GOES OUT</Text>
         <Text style={styles.title}>Order Placed!</Text>
         <View style={styles.goldDivider} />
         <Text style={styles.subtitle}>
@@ -109,7 +110,7 @@ const styles = StyleSheet.create({
     height: 400,
     borderRadius: 200,
     borderWidth: 1,
-    borderColor: Design.color.gold,
+    borderColor: Design.color.accent,
     opacity: 0.15,
   },
   circleInner: {
@@ -120,7 +121,7 @@ const styles = StyleSheet.create({
     height: 200,
     borderRadius: 100,
     borderWidth: 1,
-    borderColor: Design.color.gold,
+    borderColor: Design.color.accent,
     opacity: 0.1,
   },
   iconWrapper: { marginBottom: 32 },
@@ -132,7 +133,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     borderWidth: 4,
-    borderColor: Design.color.gold,
+    borderColor: Design.color.accent,
   },
   textBlock: { alignItems: "center", marginBottom: 40 },
   title: {
@@ -145,7 +146,7 @@ const styles = StyleSheet.create({
   goldDivider: {
     width: 40,
     height: 1.5,
-    backgroundColor: Design.color.gold,
+    backgroundColor: Design.color.accent,
     marginBottom: 16,
   },
   subtitle: {
@@ -174,4 +175,5 @@ const styles = StyleSheet.create({
     padding: 18,
   },
   homeBtnText: { color: Design.color.surface, fontSize: 11, fontFamily: Design.font.bodyBold, letterSpacing: 2 },
+  stamp: { color: Design.color.inkMuted, fontFamily: Design.font.mono, fontSize: 10, letterSpacing: 2.5, marginBottom: 14 },
 });

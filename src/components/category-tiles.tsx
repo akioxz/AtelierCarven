@@ -23,7 +23,7 @@ export function CategoryTiles({ categories, selected, onSelect }: { categories: 
             onPress={() => onSelect(category)}
           >
             <View style={[styles.tileIcon, active && styles.tileIconActive]}>
-              <Feather name={CATEGORY_ICONS[category] ?? "box"} size={22} color={active ? Design.color.gold : Design.color.inkSoft} />
+              <Feather name={CATEGORY_ICONS[category] ?? "box"} size={22} color={active ? Design.color.accent : Design.color.inkSoft} />
             </View>
             <Text style={[styles.tileLabel, active && styles.tileLabelActive]}>{category}</Text>
           </PressScale>
@@ -36,8 +36,8 @@ export function CategoryTiles({ categories, selected, onSelect }: { categories: 
 const styles = StyleSheet.create({
   band: { gap: 10, paddingHorizontal: 2, paddingVertical: 14 },
   tile: { alignItems: "center", backgroundColor: Design.color.surface, borderColor: Design.color.line, borderRadius: Design.radius.card, borderWidth: StyleSheet.hairlineWidth, paddingHorizontal: 14, paddingVertical: 12, width: 76 },
-  tileActive: { backgroundColor: Design.color.surfaceMuted, borderColor: Design.color.gold },
-  tileIcon: { alignItems: "center", backgroundColor: Design.color.surfaceMuted, borderRadius: 22, height: 44, justifyContent: "center", width: 44 },
+  tileActive: { backgroundColor: Design.color.surfaceMuted, borderColor: Design.color.accent },
+  tileIcon: { alignItems: "center", backgroundColor: Design.color.surfaceMuted, borderRadius: Design.radius.small, height: 44, justifyContent: "center", width: 44 },
   tileIconActive: { backgroundColor: "transparent" },
   tileLabel: { color: Design.color.inkSoft, fontFamily: Design.font.bodySemibold, fontSize: 11, marginTop: 7 },
   tileLabelActive: { color: Design.color.ink },

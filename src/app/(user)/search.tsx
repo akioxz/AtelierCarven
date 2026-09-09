@@ -158,7 +158,7 @@ export default function Search() {
           ) : furniture.length === 0 ? (
             <Reveal>
               <View style={styles.empty}>
-                <Feather name="search" size={28} color={Design.color.gold} />
+                <Feather name="search" size={28} color={Design.color.accent} />
                 <Text style={styles.emptyTitle}>No pieces found</Text>
                 <Text style={styles.emptyCopy}>Try a different search term or category.</Text>
               </View>
@@ -196,12 +196,12 @@ export default function Search() {
 
 const styles = StyleSheet.create({
   screen: { backgroundColor: Design.color.canvas, flex: 1 }, scroll: { paddingBottom: 16 }, frame: { paddingHorizontal: 20, paddingTop: 20 },
-  topbar: { alignItems: "center", flexDirection: "row", gap: 10, marginBottom: 18 }, iconAction: { alignItems: "center", backgroundColor: Design.color.surface, borderColor: Design.color.line, borderRadius: 22, borderWidth: StyleSheet.hairlineWidth, height: 44, justifyContent: "center", width: 44 },
+  topbar: { alignItems: "center", flexDirection: "row", gap: 10, marginBottom: 18 }, iconAction: { alignItems: "center", backgroundColor: Design.color.surface, borderColor: Design.color.line, borderRadius: Design.radius.small, borderWidth: StyleSheet.hairlineWidth, height: 44, justifyContent: "center", width: 44 },
   search: { alignItems: "center", backgroundColor: Design.color.surface, borderColor: Design.color.line, borderRadius: Design.radius.card, borderWidth: StyleSheet.hairlineWidth, flex: 1, flexDirection: "row", gap: 10, minHeight: 52, paddingHorizontal: 15 }, searchInput: { color: Design.color.ink, flex: 1, fontFamily: Design.font.bodyMedium, fontSize: 13, minHeight: 50 },
-  activeRow: { alignItems: "center", flexDirection: "row", gap: 10, marginBottom: 14 }, activeChip: { alignItems: "center", backgroundColor: Design.color.ink, borderRadius: Design.radius.pill, flexDirection: "row", gap: 5, minHeight: 30, paddingHorizontal: 12 }, activeChipText: { color: Design.color.surface, fontFamily: Design.font.bodyMedium, fontSize: 11 }, clearAll: { color: Design.color.inkMuted, fontFamily: Design.font.body, fontSize: 11 },
-  sortBlock: { marginTop: 8 }, sortRow: { alignItems: "center", flexDirection: "row", gap: 12, justifyContent: "space-between", marginBottom: 14 }, resultCount: { color: Design.color.inkMuted, fontFamily: Design.font.body, fontSize: 11 }, sortScroll: { flexDirection: "row", gap: 6 },
-  sortChip: { borderColor: Design.color.line, borderRadius: Design.radius.pill, borderWidth: StyleSheet.hairlineWidth, minHeight: 30, paddingHorizontal: 12, justifyContent: "center" }, sortChipSelected: { borderColor: Design.color.gold, backgroundColor: Design.color.goldSoft }, sortText: { color: Design.color.inkSoft, fontFamily: Design.font.bodyMedium, fontSize: 10 }, sortTextSelected: { color: Design.color.ink },
+  activeRow: { alignItems: "center", flexDirection: "row", gap: 10, marginBottom: 14 }, activeChip: { alignItems: "center", backgroundColor: Design.color.ink, borderRadius: Design.radius.small, flexDirection: "row", gap: 5, minHeight: 30, paddingHorizontal: 12 }, activeChipText: { color: Design.color.surface, fontFamily: Design.font.bodyMedium, fontSize: 11 }, clearAll: { color: Design.color.inkMuted, fontFamily: Design.font.body, fontSize: 11 },
+  sortBlock: { marginTop: 8 }, sortRow: { alignItems: "center", flexDirection: "row", gap: 12, justifyContent: "space-between", marginBottom: 14 }, resultCount: { color: Design.color.inkMuted, fontFamily: Design.font.mono, fontSize: 10 }, sortScroll: { flexDirection: "row", gap: 6 },
+  sortChip: { borderColor: Design.color.line, borderRadius: Design.radius.small, borderWidth: StyleSheet.hairlineWidth, minHeight: 30, paddingHorizontal: 12, justifyContent: "center" }, sortChipSelected: { borderColor: Design.color.accent, backgroundColor: Design.color.accentSoft }, sortText: { color: Design.color.inkSoft, fontFamily: Design.font.bodyMedium, fontSize: 10 }, sortTextSelected: { color: Design.color.ink },
   grid: { flexDirection: "row", flexWrap: "wrap", gap: 14 }, gridWide: { gap: 20 }, cell: { width: "47.8%" }, cellWide: { width: "31.7%" },
-  add: { alignItems: "center", backgroundColor: Design.color.ink, borderRadius: 16, height: 32, justifyContent: "center", width: 32 },
+  add: { alignItems: "center", backgroundColor: Design.color.ink, borderRadius: Design.radius.small, height: 32, justifyContent: "center", width: 32 },
   empty: { alignItems: "center", backgroundColor: Design.color.surface, borderColor: Design.color.line, borderRadius: Design.radius.card, borderWidth: StyleSheet.hairlineWidth, marginTop: 8, padding: 36 }, emptyTitle: { color: Design.color.ink, fontFamily: Design.font.display, fontSize: 26, marginTop: 12 }, emptyCopy: { color: Design.color.inkSoft, fontFamily: Design.font.body, fontSize: 12, marginTop: 4 },
 });

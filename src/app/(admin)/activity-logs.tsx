@@ -28,9 +28,9 @@ export default function ActivityLogs() {
   };
 
   const getLogBadge = (action: string) => {
-    if (action.includes("Added")) return { color: "#3B6D11", bg: "#EAF3DE", icon: "plus-circle", label: "ADDED" };
+    if (action.includes("Added")) return { color: "#3B6D11", bg: "#E2EAD9", icon: "plus-circle", label: "ADDED" };
     if (action.includes("Edited")) return { color: "#854F0B", bg: "#FAEEDA", icon: "edit-2", label: "EDITED" };
-    if (action.includes("Deleted")) return { color: "#A32D2D", bg: "#FCEBEB", icon: "trash-2", label: "DELETED" };
+    if (action.includes("Deleted")) return { color: "#A32D2D", bg: "#F2DBD7", icon: "trash-2", label: "DELETED" };
     return { color: Design.color.inkSoft, bg: "#EDE5D8", icon: "activity", label: "ACTION" };
   };
 
@@ -123,7 +123,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 2,
   },
   headerWeb: { paddingHorizontal: 0 },
-  backButton: { alignItems: "center", backgroundColor: Design.color.surface, borderColor: Design.color.line, borderRadius: 22, borderWidth: StyleSheet.hairlineWidth, height: 44, justifyContent: "center", width: 44 },
+  backButton: { alignItems: "center", backgroundColor: Design.color.surface, borderColor: Design.color.line, borderRadius: Design.radius.small, borderWidth: StyleSheet.hairlineWidth, height: 44, justifyContent: "center", width: 44 },
   loading: { gap: 12, padding: 16 },
   list: { flex: 1, padding: 24 },
   listWeb: { padding: 32 },
@@ -131,7 +131,7 @@ const styles = StyleSheet.create({
   tableHeaderCell: { flex: 1, fontSize: 10, letterSpacing: 2, color: Design.color.inkSoft },
   tableRow: { flexDirection: "row", alignItems: "center", paddingVertical: 14, paddingHorizontal: 16, backgroundColor: Design.color.surface, borderRadius: Design.radius.small, marginBottom: 6, borderWidth: 0.5, borderColor: Design.color.line },
   tableCell: { flex: 1 },
-  logBadge: { flexDirection: "row", alignItems: "center", gap: 5, borderRadius: 6, paddingHorizontal: 8, paddingVertical: 5, alignSelf: "flex-start" },
+  logBadge: { flexDirection: "row", alignItems: "center", gap: 5, borderRadius: Design.radius.small, paddingHorizontal: 8, paddingVertical: 5, alignSelf: "flex-start" },
   logBadgeText: { fontSize: 9, letterSpacing: 1 },
   logItem: { flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 14, paddingBottom: 14, borderBottomWidth: 0.5, borderBottomColor: Design.color.line },
   logContent: { flex: 1 },

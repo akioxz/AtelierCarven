@@ -117,13 +117,13 @@ export default function Home() {
               <Animated.View entering={ZoomIn.springify().damping(Design.motion.spring.damping).delay(staggerDelay(4))} style={[styles.callout, styles.calloutTop]}>
                 <View style={styles.calloutDot} />
                 <View style={styles.calloutCopy}>
-                  <Text style={styles.calloutText}>Hand-finished pieces from local makers.</Text>
+                  <Text style={styles.calloutText}>Every piece, numbered and catalogued.</Text>
                 </View>
               </Animated.View>
               <Animated.View entering={ZoomIn.springify().damping(Design.motion.spring.damping).delay(staggerDelay(5))} style={[styles.callout, styles.calloutBottom]}>
                 <View style={styles.calloutCopy}>
-                  <Text style={styles.calloutNumber}>50+</Text>
-                  <Text style={styles.calloutSub}>signature furniture pieces</Text>
+                  <Text style={styles.calloutNumber}>{loading ? "—" : furniture.length}</Text>
+                  <Text style={styles.calloutSub}>pieces in the ledger</Text>
                 </View>
               </Animated.View>
             </View>
@@ -160,7 +160,7 @@ export default function Home() {
           ) : furniture.length === 0 ? (
             <Reveal>
               <View style={styles.empty}>
-                <Feather name="search" size={28} color={Design.color.gold} />
+                <Feather name="search" size={28} color={Design.color.accent} />
                 <Text style={styles.emptyTitle}>No pieces found</Text>
                 <Text style={styles.emptyCopy}>Try a different category or search term.</Text>
               </View>
@@ -201,12 +201,12 @@ const styles = StyleSheet.create({
   hero: { flexDirection: "column", gap: 22, marginBottom: 30 }, heroWide: { alignItems: "center", flexDirection: "row", gap: 56, marginTop: 26 }, heroCopy: { flex: 1, maxWidth: 680 },
   greeting: { color: Design.color.inkSoft, fontFamily: Design.font.bodyMedium, fontSize: 13, marginBottom: 10 }, title: { color: Design.color.ink, fontFamily: Design.font.display, fontSize: 46, letterSpacing: -1.5, lineHeight: 46, maxWidth: 630, marginTop: 10 }, subtitle: { color: Design.color.inkSoft, fontFamily: Design.font.body, fontSize: 13, lineHeight: 21, marginTop: 11 },
   heroVisual: { marginTop: 6, position: "relative", width: "100%" }, heroVisualWide: { maxWidth: 540, width: "46%" }, heroImage: { alignItems: "center", aspectRatio: 1.5, backgroundColor: Design.color.surfaceMuted, borderRadius: Design.radius.sheet, justifyContent: "center", overflow: "hidden" },
-  callout: { alignItems: "center", backgroundColor: "rgba(255,252,248,0.97)", borderColor: Design.color.line, borderRadius: Design.radius.card, borderWidth: StyleSheet.hairlineWidth, flexDirection: "row", gap: 10, paddingHorizontal: 15, paddingVertical: 12, position: "absolute", ...Design.shadow.card },
-  calloutTop: { right: 16, top: -18 }, calloutBottom: { bottom: -18, left: 16 }, calloutDot: { backgroundColor: Design.color.gold, borderRadius: 4, height: 8, width: 8 }, calloutCopy: { flex: 1 }, calloutText: { color: Design.color.ink, fontFamily: Design.font.bodySemibold, fontSize: 12, lineHeight: 17 }, calloutNumber: { color: Design.color.ink, fontFamily: Design.font.display, fontSize: 22, letterSpacing: -0.4, lineHeight: 22 }, calloutSub: { color: Design.color.inkMuted, fontFamily: Design.font.body, fontSize: 11, marginTop: 2 },
-  heroActions: { flexDirection: "row", gap: 8, marginTop: 24 }, iconAction: { alignItems: "center", backgroundColor: Design.color.surface, borderColor: Design.color.line, borderRadius: 22, borderWidth: StyleSheet.hairlineWidth, height: 44, justifyContent: "center", position: "relative", width: 44 }, count: { alignItems: "center", backgroundColor: Design.color.gold, borderColor: Design.color.surface, borderRadius: 9, borderWidth: 1.5, height: 18, justifyContent: "center", position: "absolute", right: -5, top: -5, minWidth: 18 }, countText: { color: Design.color.surface, fontFamily: Design.font.bodyBold, fontSize: 8 },
+  callout: { alignItems: "center", backgroundColor: "rgba(245,240,228,0.97)", borderColor: Design.color.line, borderRadius: Design.radius.card, borderWidth: StyleSheet.hairlineWidth, flexDirection: "row", gap: 10, paddingHorizontal: 15, paddingVertical: 12, position: "absolute", ...Design.shadow.card },
+  calloutTop: { right: 16, top: -18 }, calloutBottom: { bottom: -18, left: 16 }, calloutDot: { backgroundColor: Design.color.accent, borderRadius: 4, height: 8, width: 8 }, calloutCopy: { flex: 1 }, calloutText: { color: Design.color.ink, fontFamily: Design.font.bodySemibold, fontSize: 12, lineHeight: 17 }, calloutNumber: { color: Design.color.ink, fontFamily: Design.font.display, fontSize: 22, letterSpacing: -0.4, lineHeight: 22 }, calloutSub: { color: Design.color.inkMuted, fontFamily: Design.font.mono, fontSize: 10, marginTop: 2 },
+  heroActions: { flexDirection: "row", gap: 8, marginTop: 24 }, iconAction: { alignItems: "center", backgroundColor: Design.color.surface, borderColor: Design.color.line, borderRadius: Design.radius.small, borderWidth: StyleSheet.hairlineWidth, height: 44, justifyContent: "center", position: "relative", width: 44 }, count: { alignItems: "center", backgroundColor: Design.color.accent, borderColor: Design.color.surface, borderRadius: Design.radius.small, borderWidth: 1.5, height: 18, justifyContent: "center", position: "absolute", right: -5, top: -5, minWidth: 18 }, countText: { color: Design.color.surface, fontFamily: Design.font.bodyBold, fontSize: 8 },
   search: { alignItems: "center", backgroundColor: Design.color.surface, borderColor: Design.color.line, borderRadius: Design.radius.card, borderWidth: StyleSheet.hairlineWidth, flexDirection: "row", gap: 10, minHeight: 52, paddingHorizontal: 15 }, searchWide: { maxWidth: 560 }, searchPlaceholder: { color: Design.color.inkMuted, flex: 1, fontFamily: Design.font.bodyMedium, fontSize: 13 },
-  collectionWrap: { alignItems: "flex-end", flexDirection: "row", justifyContent: "space-between", marginTop: 32 }, collectionCount: { color: Design.color.inkMuted, fontFamily: Design.font.body, fontSize: 11, marginBottom: Design.space.lg },
+  collectionWrap: { alignItems: "flex-end", flexDirection: "row", justifyContent: "space-between", marginTop: 32 }, collectionCount: { color: Design.color.inkMuted, fontFamily: Design.font.mono, fontSize: 10, marginBottom: Design.space.lg },
   grid: { flexDirection: "row", flexWrap: "wrap", gap: 14 }, gridWide: { gap: 20 }, cell: { width: "47.8%" }, cellWide: { width: "31.7%" }, skeleton: { width: "47.8%" }, skeletonWide: { width: "31.7%" },
-  add: { alignItems: "center", backgroundColor: Design.color.ink, borderRadius: 16, height: 32, justifyContent: "center", width: 32 },
+  add: { alignItems: "center", backgroundColor: Design.color.ink, borderRadius: Design.radius.small, height: 32, justifyContent: "center", width: 32 },
   empty: { alignItems: "center", backgroundColor: Design.color.surface, borderColor: Design.color.line, borderRadius: Design.radius.card, borderWidth: StyleSheet.hairlineWidth, marginTop: 8, padding: 36 }, emptyTitle: { color: Design.color.ink, fontFamily: Design.font.display, fontSize: 26, marginTop: 12 }, emptyCopy: { color: Design.color.inkSoft, fontFamily: Design.font.body, fontSize: 12, marginTop: 4 },
 });

@@ -254,7 +254,7 @@ brandLarge: {
   goldDivider: {
     width: 40,
     height: 1.5,
-    backgroundColor: Design.color.gold,
+    backgroundColor: Design.color.accent,
   },
   form: {
     flex: 1,
@@ -278,7 +278,7 @@ brandLarge: {
     marginBottom: 32,
   },
   errorBox: {
-    backgroundColor: "#FDF0F0",
+    backgroundColor: "#F2DBD7",
     borderLeftWidth: 3,
     borderLeftColor: Design.color.danger,
     padding: 12,
@@ -316,7 +316,7 @@ brandLarge: {
   eyeText: {
     fontSize: 10,
     letterSpacing: 1,
-    color: Design.color.gold,
+    color: Design.color.accent,
   },
   primaryButton: {
     backgroundColor: Design.color.ink,
@@ -348,7 +348,7 @@ brandLarge: {
   },
   secondaryButton: {
     borderWidth: 1,
-    borderColor: Design.color.gold,
+    borderColor: Design.color.accent,
     borderRadius: Design.radius.small,
     padding: 17,
     alignItems: "center",

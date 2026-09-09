@@ -49,7 +49,7 @@ export function ProductCard({
           </View>
         </PressScale>
 
-        {tag ? (
+{tag ? (
           <View style={styles.tag}>
             <Text style={styles.tagText}>{tag}</Text>
           </View>
@@ -63,7 +63,7 @@ export function ProductCard({
             style={[styles.heart, isFavorite && styles.heartActive]}
           >
             {isFavorite ? (
-              <AntDesign name="heart" size={14} color={Design.color.gold} />
+              <AntDesign name="heart" size={14} color={Design.color.accent} />
             ) : (
               <Feather name="heart" size={15} color={Design.color.ink} />
             )}
@@ -77,7 +77,7 @@ export function ProductCard({
             ) : null}
             {item.rating != null ? (
               <View style={styles.rating}>
-                <AntDesign name="star" size={11} color={Design.color.gold} />
+                <AntDesign name="star" size={11} color={Design.color.accent} />
                 <Text style={styles.ratingText}>{Number(item.rating).toFixed(1)}</Text>
               </View>
             ) : null}
@@ -91,20 +91,20 @@ export function ProductCard({
 
 const styles = StyleSheet.create({
   reveal: { flex: 1 },
-  card: { backgroundColor: Design.color.surface, borderRadius: Design.radius.card, overflow: "hidden", ...Design.shadow.card },
+  card: { backgroundColor: Design.color.surface, borderColor: Design.color.line, borderRadius: Design.radius.card, borderWidth: StyleSheet.hairlineWidth, overflow: "hidden" },
   cardBody: { flex: 1 },
   imageWrap: { alignItems: "center", aspectRatio: 1, backgroundColor: Design.color.surfaceMuted, justifyContent: "center", width: "100%" },
   image: { height: "100%", width: "100%" },
-  tag: { backgroundColor: Design.color.goldSoft, borderRadius: Design.radius.pill, left: 10, paddingHorizontal: 10, paddingVertical: 5, position: "absolute", top: 10 },
-  tagText: { color: Design.color.ink, fontFamily: Design.font.bodySemibold, fontSize: 10, letterSpacing: 0.8 },
-  heart: { alignItems: "center", backgroundColor: Design.color.surface, borderRadius: 19, height: 38, justifyContent: "center", position: "absolute", right: 10, top: 10, width: 38, zIndex: 1 },
-  heartActive: { borderColor: Design.color.goldSoft, borderWidth: 1 },
+  tag: { backgroundColor: Design.color.accentDeep, borderRadius: Design.radius.small, left: 10, paddingHorizontal: 8, paddingVertical: 4, position: "absolute", top: 10 },
+  tagText: { color: Design.color.surface, fontFamily: Design.font.monoBold, fontSize: 9, letterSpacing: 1 },
+  heart: { alignItems: "center", backgroundColor: Design.color.surface, borderColor: Design.color.line, borderRadius: Design.radius.small, borderWidth: StyleSheet.hairlineWidth, height: 38, justifyContent: "center", position: "absolute", right: 10, top: 10, width: 38, zIndex: 1 },
+  heartActive: { borderColor: Design.color.accent, borderWidth: 1 },
   copy: { gap: 4, paddingHorizontal: 14, paddingBottom: 6, paddingTop: 14 },
-  category: { color: Design.color.gold, fontFamily: Design.font.bodySemibold, fontSize: 10, letterSpacing: 1.6, textTransform: "uppercase" },
-  name: { color: Design.color.ink, fontFamily: Design.font.display, fontSize: 21, letterSpacing: -0.4, lineHeight: 23 },
+  category: { color: Design.color.accent, fontFamily: Design.font.monoMedium, fontSize: 9, letterSpacing: 1.4, textTransform: "uppercase" },
+  name: { color: Design.color.ink, fontFamily: Design.font.bodySemibold, fontSize: 20, letterSpacing: -0.3, lineHeight: 23 },
   metaOuter: { alignItems: "center", flexDirection: "row", justifyContent: "space-between", paddingHorizontal: 14, paddingBottom: 14, paddingTop: 4 },
   metaLeft: { alignItems: "center", flexDirection: "row", gap: 10 },
-  price: { color: Design.color.ink, fontFamily: Design.font.bodyBold, fontSize: 13 },
+  price: { color: Design.color.ink, fontFamily: Design.font.monoBold, fontSize: 13 },
   rating: { alignItems: "center", flexDirection: "row", gap: 4 },
-  ratingText: { color: Design.color.inkSoft, fontFamily: Design.font.bodyMedium, fontSize: 11 },
+  ratingText: { color: Design.color.inkSoft, fontFamily: Design.font.monoMedium, fontSize: 11 },
 });

@@ -427,10 +427,10 @@ export default function Payment() {
         <PressScale style={[styles.confirmBtn, processing && styles.confirmBtnDisabled]} onPress={handleConfirmPayment} disabled={processing} accessibilityLabel={processing ? "Processing payment" : "Confirm order"}>
           {processing ? (
             <Animated.View style={spinStyle}>
-              <Feather name="loader" size={18} color={Design.color.gold} />
+              <Feather name="loader" size={18} color={Design.color.accent} />
             </Animated.View>
           ) : (
-            <Feather name="check-circle" size={18} color={Design.color.gold} />
+            <Feather name="check-circle" size={18} color={Design.color.accent} />
           )}
           <Text style={styles.confirmBtnText}>
             {processing ? "PROCESSING..." : "CONFIRM ORDER"}
@@ -446,7 +446,7 @@ export default function Payment() {
         <View style={styles.alertOverlay}>
           <View style={styles.alertContent}>
             <View style={styles.alertIconWrap}>
-              <Feather name="alert-circle" size={28} color={Design.color.gold} />
+              <Feather name="alert-circle" size={28} color={Design.color.accent} />
             </View>
             <Text style={styles.alertTitle}>{alertTitle.toUpperCase()}</Text>
             <View style={styles.alertDivider} />
@@ -465,7 +465,7 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Design.color.surface },
   headerRow: { alignItems: "flex-start", flexDirection: "row", gap: 12, justifyContent: "space-between", paddingHorizontal: 24, paddingTop: 20 },
   headerCopy: { flex: 1 },
-  backButton: { alignItems: "center", backgroundColor: Design.color.surface, borderColor: Design.color.line, borderRadius: 22, borderWidth: StyleSheet.hairlineWidth, height: 44, justifyContent: "center", width: 44 },
+  backButton: { alignItems: "center", backgroundColor: Design.color.surface, borderColor: Design.color.line, borderRadius: Design.radius.small, borderWidth: StyleSheet.hairlineWidth, height: 44, justifyContent: "center", width: 44 },
   section: { paddingHorizontal: 24, paddingTop: 24 },
   sectionLabel: { fontSize: 10, letterSpacing: 2, color: Design.color.inkSoft, marginBottom: 12 },
   card: { backgroundColor: Design.color.surfaceMuted, borderRadius: Design.radius.card, padding: 16, borderWidth: 0.5, borderColor: Design.color.line },
@@ -476,14 +476,14 @@ const styles = StyleSheet.create({
   gcashDivider: { height: 0.5, backgroundColor: Design.color.line, marginBottom: 16 },
   gcashDetail: { backgroundColor: Design.color.surfaceMuted, borderRadius: Design.radius.small, padding: 16, alignItems: "center", marginBottom: 20 },
   mayaIconBox: { width: 44, height: 44, borderRadius: Design.radius.card, backgroundColor: "#E6F7F0", justifyContent: "center", alignItems: "center" },
-  creditCardContainer: { backgroundColor: Design.color.ink, borderRadius: 16, padding: 24, borderWidth: 1, borderColor: Design.color.gold, shadowColor: "#000", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 5, marginBottom: 24 },
-  creditCardTitle: { fontSize: 9, letterSpacing: 3, color: Design.color.gold, fontWeight: "600", marginBottom: 16 },
+  creditCardContainer: { backgroundColor: Design.color.ink, borderRadius: Design.radius.card, padding: 24, borderWidth: 1, borderColor: Design.color.accent, shadowColor: "#1D1B17", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 5, marginBottom: 24 },
+  creditCardTitle: { fontSize: 9, letterSpacing: 3, color: Design.color.accent, fontWeight: "600", marginBottom: 16 },
   creditCardChip: { width: 40, height: 30, borderRadius: 6, backgroundColor: "#E6C587", opacity: 0.8, marginBottom: 20 },
   creditCardNumber: { fontSize: 20, letterSpacing: 2, color: Design.color.surface, fontFamily: "Courier", marginBottom: 24 },
   creditCardBottom: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-end" },
   creditCardLabel: { fontSize: 8, letterSpacing: 1, color: Design.color.inkSoft, marginBottom: 4 },
   creditCardValue: { fontSize: 12, color: Design.color.surface, fontWeight: "500", letterSpacing: 1 },
-  creditCardBrand: { fontSize: 16, fontStyle: "italic", fontWeight: "bold", color: Design.color.gold },
+  creditCardBrand: { fontSize: 16, fontStyle: "italic", fontWeight: "bold", color: Design.color.accent },
   inputGroup: { marginBottom: 16 },
   inputLabel: { fontSize: 10, letterSpacing: 2, color: Design.color.inkSoft, marginBottom: 6 },
   input: { borderBottomWidth: 1, borderBottomColor: Design.color.line, paddingVertical: 10, fontSize: 14, color: Design.color.ink },
@@ -496,7 +496,7 @@ const styles = StyleSheet.create({
   demoNoticeText: { flex: 1, fontSize: 12, color: Design.color.inkMuted, lineHeight: 18 },
   stepList: { gap: 12 },
   stepRow: { flexDirection: "row", alignItems: "flex-start", gap: 10 },
-  stepBadge: { width: 22, height: 22, borderRadius: 11, backgroundColor: Design.color.gold, justifyContent: "center", alignItems: "center", marginTop: 1 },
+  stepBadge: { width: 22, height: 22, borderRadius: 11, backgroundColor: Design.color.accent, justifyContent: "center", alignItems: "center", marginTop: 1 },
   stepBadgeText: { fontSize: 11, fontWeight: "500", color: Design.color.surface },
   stepText: { flex: 1, fontSize: 13, color: Design.color.ink, lineHeight: 22 },
   codRow: { flexDirection: "row", gap: 10, alignItems: "flex-start" },
@@ -512,7 +512,7 @@ const styles = StyleSheet.create({
 
   alertOverlay: {
     flex: 1,
-    backgroundColor: "rgba(0,0,0,0.4)",
+    backgroundColor: "rgba(29,27,23,0.5)",
     justifyContent: "center",
     alignItems: "center",
   },
@@ -543,7 +543,7 @@ const styles = StyleSheet.create({
   alertDivider: {
     width: 40,
     height: 1.5,
-    backgroundColor: Design.color.gold,
+    backgroundColor: Design.color.accent,
     marginBottom: 12,
   },
   alertMessage: {

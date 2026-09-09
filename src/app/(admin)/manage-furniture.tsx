@@ -207,7 +207,7 @@ export default function ManageFurniture() {
           />
         ) : (
           <View style={styles.imagePlaceholder}>
-            <Feather name={getCategoryIcon(item.category) as any} size={36} color={Design.color.gold} />
+            <Feather name={getCategoryIcon(item.category) as any} size={36} color={Design.color.accent} />
           </View>
         )}
         <View style={styles.badge}>
@@ -491,11 +491,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 2,
   },
   headerPage: { flex: 1 },
-  backButton: { alignItems: "center", backgroundColor: Design.color.surface, borderColor: Design.color.line, borderRadius: 22, borderWidth: StyleSheet.hairlineWidth, height: 44, justifyContent: "center", width: 44 },
+  backButton: { alignItems: "center", backgroundColor: Design.color.surface, borderColor: Design.color.line, borderRadius: Design.radius.small, borderWidth: StyleSheet.hairlineWidth, height: 44, justifyContent: "center", width: 44 },
   goldDivider: {
     width: 40,
     height: 1.5,
-    backgroundColor: Design.color.gold,
+    backgroundColor: Design.color.accent,
     marginBottom: 8,
   },
   loadingGrid: { flexDirection: "row", flexWrap: "wrap", gap: 14, padding: 16 },
@@ -518,7 +518,7 @@ const styles = StyleSheet.create({
     gap: 5,
     paddingHorizontal: 12,
     paddingVertical: 5,
-    borderRadius: 20,
+    borderRadius: Design.radius.small,
     borderWidth: 0.5,
     borderColor: Design.color.line,
     backgroundColor: Design.color.surface,
@@ -600,7 +600,7 @@ const styles = StyleSheet.create({
     top: 10,
     left: 10,
     backgroundColor: "rgba(28,28,26,0.68)",
-    borderRadius: 20,
+    borderRadius: Design.radius.small,
     paddingHorizontal: 9,
     paddingVertical: 4,
   },
@@ -620,7 +620,7 @@ const styles = StyleSheet.create({
   },
   cardPrice: {
     fontSize: 15,
-    color: Design.color.gold,
+    color: Design.color.accent,
     marginBottom: 12,
   },
   cardActions: { flexDirection: "row", gap: 8 },
@@ -631,7 +631,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     gap: 5,
     backgroundColor: Design.color.surfaceMuted,
-    borderRadius: 8,
+    borderRadius: Design.radius.small,
     paddingVertical: 8,
   },
   editBtnText: { fontSize: 10, letterSpacing: 1, color: Design.color.inkSoft, fontWeight: "500" },
@@ -641,8 +641,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     gap: 5,
-    backgroundColor: "#FCEBEB",
-    borderRadius: 8,
+    backgroundColor: "#F2DBD7",
+    borderRadius: Design.radius.small,
     paddingVertical: 8,
   },
   deleteBtnText: { fontSize: 10, letterSpacing: 1, color: Design.color.danger, fontWeight: "500" },
@@ -702,7 +702,7 @@ const styles = StyleSheet.create({
   textArea: {
     borderWidth: 1,
     borderColor: Design.color.line,
-    borderRadius: 8,
+    borderRadius: Design.radius.small,
     padding: 10,
     marginTop: 4,
     height: 80,
@@ -711,7 +711,7 @@ const styles = StyleSheet.create({
   categoryRow: { flexDirection: "row", gap: 8, flexWrap: "wrap" },
   categoryPill: {
     backgroundColor: Design.color.surfaceMuted,
-    borderRadius: 20,
+    borderRadius: Design.radius.small,
     paddingHorizontal: 14,
     paddingVertical: 6,
     borderWidth: 0.5,
@@ -769,6 +769,6 @@ const styles = StyleSheet.create({
   galleryGrid: { flexDirection: "row", flexWrap: "wrap", gap: 10, marginBottom: 16 },
   galleryThumb: { width: 72, height: 72, borderRadius: Design.radius.small, overflow: "hidden", position: "relative" },
   galleryThumbImage: { width: "100%", height: "100%" },
-  galleryDelete: { position: "absolute", top: 4, right: 4, width: 20, height: 20, borderRadius: 10, backgroundColor: "rgba(33,26,22,0.7)", alignItems: "center", justifyContent: "center" },
+  galleryDelete: { position: "absolute", top: 4, right: 4, width: 20, height: 20, borderRadius: Design.radius.small, backgroundColor: "rgba(33,26,22,0.7)", alignItems: "center", justifyContent: "center" },
   galleryAddBtn: { width: 72, height: 72, borderRadius: Design.radius.small, borderWidth: 1, borderColor: Design.color.line, borderStyle: "dashed", alignItems: "center", justifyContent: "center", gap: 4 },
 });

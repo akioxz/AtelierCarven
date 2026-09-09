@@ -223,7 +223,7 @@ export default function UserProfile() {
                         {badge.label}
                       </Text>
                     </View>
-                    <Feather name="chevron-right" size={14} color={Design.color.gold} style={{ marginTop: 8 }} />
+                    <Feather name="chevron-right" size={14} color={Design.color.accent} style={{ marginTop: 8 }} />
                   </View>
                 </PressScale>
                 </Reveal>
@@ -239,7 +239,7 @@ export default function UserProfile() {
           <View style={styles.infoHeader}>
             <Text style={styles.sectionLabel}>PERSONAL INFO</Text>
             <PressScale style={styles.editToggle} onPress={() => setEditing(!editing)} accessibilityLabel={editing ? "Cancel editing" : "Edit profile"}>
-              <Feather name={editing ? "x" : "edit-2"} size={13} color={Design.color.gold} />
+              <Feather name={editing ? "x" : "edit-2"} size={13} color={Design.color.accent} />
               <Text style={styles.editBtn}>{editing ? "CANCEL" : "EDIT"}</Text>
             </PressScale>
           </View>
@@ -411,16 +411,16 @@ const styles = StyleSheet.create({
   loadingContainer: { alignItems: "center", backgroundColor: Design.color.canvas, flex: 1, gap: 14, justifyContent: "center", padding: 32 },
   headerRow: { alignItems: "flex-start", flexDirection: "row", gap: 12, justifyContent: "space-between", paddingHorizontal: 24, paddingTop: 20 },
   headerCopy: { flex: 1 },
-  backButton: { alignItems: "center", backgroundColor: Design.color.surface, borderColor: Design.color.line, borderRadius: 22, borderWidth: StyleSheet.hairlineWidth, height: 44, justifyContent: "center", width: 44 },
+  backButton: { alignItems: "center", backgroundColor: Design.color.surface, borderColor: Design.color.line, borderRadius: Design.radius.small, borderWidth: StyleSheet.hairlineWidth, height: 44, justifyContent: "center", width: 44 },
   orderSkeleton: { gap: 10 },
   header: { backgroundColor: Design.color.surfaceMuted, padding: 28, paddingTop: 56, paddingBottom: 28 },
   headerSmall: { fontSize: 10, letterSpacing: 4, color: Design.color.inkSoft },
   headerLarge: { fontFamily: Design.font.display, fontSize: 34, letterSpacing: -0.8, lineHeight: 34, color: Design.color.ink, marginBottom: 16 },
-  goldDivider: { width: 42, height: 1, backgroundColor: Design.color.gold, marginBottom: 8 },
+  goldDivider: { width: 42, height: 1, backgroundColor: Design.color.accent, marginBottom: 8 },
   avatarSection: { alignItems: "center", paddingVertical: 28 },
   avatarWrapper: { position: "relative", marginBottom: 8 },
-  avatarImage: { width: 88, height: 88, borderRadius: 44, borderWidth: 2, borderColor: Design.color.gold },
-  avatar: { width: 88, height: 88, borderRadius: 44, backgroundColor: Design.color.surfaceMuted, justifyContent: "center", alignItems: "center", borderWidth: 2, borderColor: Design.color.gold },
+  avatarImage: { width: 88, height: 88, borderRadius: 44, borderWidth: 2, borderColor: Design.color.accent },
+  avatar: { width: 88, height: 88, borderRadius: 44, backgroundColor: Design.color.surfaceMuted, justifyContent: "center", alignItems: "center", borderWidth: 2, borderColor: Design.color.accent },
   avatarText: { fontFamily: Design.font.display, fontSize: 34, letterSpacing: -0.8, color: Design.color.ink },
   avatarEditBadge: { position: "absolute", bottom: 0, right: 0, width: 28, height: 28, borderRadius: 14, backgroundColor: Design.color.ink, justifyContent: "center", alignItems: "center", borderWidth: 2, borderColor: Design.color.surface },
   avatarHint: { fontSize: 10, color: Design.color.inkMuted, letterSpacing: 1, marginBottom: 10 },
@@ -438,19 +438,19 @@ const styles = StyleSheet.create({
   orderCardRight: { alignItems: "flex-end" },
   orderId: { fontFamily: Design.font.bodySemibold, fontSize: 11, color: Design.color.ink, letterSpacing: 1, marginBottom: 4 },
   orderDate: { fontFamily: Design.font.body, fontSize: 11, color: Design.color.inkMuted, marginBottom: 6 },
-  orderTotal: { fontFamily: Design.font.display, fontSize: 17, color: Design.color.gold },
+  orderTotal: { fontFamily: Design.font.display, fontSize: 17, color: Design.color.accent },
   statusBadge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 6 },
   statusText: { fontFamily: Design.font.bodySemibold, fontSize: 9, letterSpacing: 1 },
 
   infoHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 12 },
   editToggle: { flexDirection: "row", alignItems: "center", gap: 5 },
-  editBtn: { fontFamily: Design.font.bodyBold, fontSize: 10, letterSpacing: 1.5, color: Design.color.gold },
+  editBtn: { fontFamily: Design.font.bodyBold, fontSize: 10, letterSpacing: 1.5, color: Design.color.accent },
   infoCard: { backgroundColor: Design.color.surfaceMuted, borderRadius: Design.radius.card, padding: 16, borderWidth: StyleSheet.hairlineWidth, borderColor: Design.color.line },
   infoRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingVertical: 10 },
   infoLabelRow: { flexDirection: "row", alignItems: "center", gap: 6 },
   infoLabel: { fontFamily: Design.font.bodySemibold, fontSize: 10, letterSpacing: 1.5, color: Design.color.inkSoft },
   infoValue: { fontFamily: Design.font.body, fontSize: 13, color: Design.color.ink },
-  infoInput: { fontFamily: Design.font.body, fontSize: 13, color: Design.color.ink, borderBottomWidth: 1, borderBottomColor: Design.color.gold, paddingVertical: 4, minWidth: 160, textAlign: "right" },
+  infoInput: { fontFamily: Design.font.body, fontSize: 13, color: Design.color.ink, borderBottomWidth: 1, borderBottomColor: Design.color.accent, paddingVertical: 4, minWidth: 160, textAlign: "right" },
   infoDivider: { height: StyleSheet.hairlineWidth, backgroundColor: Design.color.line },
   saveBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, backgroundColor: Design.color.ink, borderRadius: Design.radius.small, padding: 16, marginTop: 16 },
   saveError: { color: Design.color.danger, fontSize: 12, lineHeight: 18, marginTop: 16 },
@@ -461,7 +461,7 @@ const styles = StyleSheet.create({
   logoutText: { fontFamily: Design.font.bodySemibold, fontSize: 11, letterSpacing: 1.5, color: Design.color.inkMuted },
 
   // Order detail modal
-  modalOverlay: { flex: 1, backgroundColor: "rgba(33,26,22,0.45)", justifyContent: "flex-end" },
+  modalOverlay: { flex: 1, backgroundColor: "rgba(29,27,23,0.5)", justifyContent: "flex-end" },
   modalContent: { backgroundColor: Design.color.surface, borderTopLeftRadius: Design.radius.sheet, borderTopRightRadius: Design.radius.sheet, padding: 24, paddingBottom: 40, maxHeight: "85%" },
   modalHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 12 },
   modalTitle: { fontFamily: Design.font.bodySemibold, fontSize: 10, letterSpacing: 2, color: Design.color.inkSoft },
@@ -477,18 +477,18 @@ const styles = StyleSheet.create({
   itemImage: { width: 48, height: 48 },
   itemName: { fontFamily: Design.font.bodySemibold, fontSize: 13, color: Design.color.ink, marginBottom: 2 },
   itemMeta: { fontFamily: Design.font.body, fontSize: 11, color: Design.color.inkMuted },
-  itemPrice: { fontFamily: Design.font.bodySemibold, fontSize: 13, color: Design.color.gold },
+  itemPrice: { fontFamily: Design.font.bodySemibold, fontSize: 13, color: Design.color.accent },
   noItemsText: { fontFamily: Design.font.body, fontSize: 12, color: Design.color.inkMuted, textAlign: "center" },
   modalTotalRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingHorizontal: 4 },
   modalTotalLabel: { fontFamily: Design.font.bodySemibold, fontSize: 10, letterSpacing: 2, color: Design.color.inkSoft },
-  modalTotalAmt: { fontFamily: Design.font.display, fontSize: 22, color: Design.color.gold },
+  modalTotalAmt: { fontFamily: Design.font.display, fontSize: 22, color: Design.color.accent },
 
   // Logout modal
-  logoutModalOverlay: { flex: 1, backgroundColor: "rgba(33,26,22,0.45)", justifyContent: "center", alignItems: "center", padding: 32 },
+  logoutModalOverlay: { flex: 1, backgroundColor: "rgba(29,27,23,0.5)", justifyContent: "center", alignItems: "center", padding: 32 },
   logoutModalBox: { backgroundColor: Design.color.surface, borderRadius: 20, padding: 28, width: "100%", alignItems: "center", borderWidth: StyleSheet.hairlineWidth, borderColor: Design.color.line },
-  logoutModalIcon: { width: 56, height: 56, borderRadius: 28, backgroundColor: Design.color.surfaceMuted, justifyContent: "center", alignItems: "center", marginBottom: 16, borderWidth: StyleSheet.hairlineWidth, borderColor: Design.color.gold },
+  logoutModalIcon: { width: 56, height: 56, borderRadius: 28, backgroundColor: Design.color.surfaceMuted, justifyContent: "center", alignItems: "center", marginBottom: 16, borderWidth: StyleSheet.hairlineWidth, borderColor: Design.color.accent },
   logoutModalTitle: { fontFamily: Design.font.bodySemibold, fontSize: 15, color: Design.color.ink, marginBottom: 12, letterSpacing: 1 },
-  logoutModalDivider: { width: 32, height: 1.5, backgroundColor: Design.color.gold, marginBottom: 12 },
+  logoutModalDivider: { width: 32, height: 1.5, backgroundColor: Design.color.accent, marginBottom: 12 },
   logoutModalMessage: { fontFamily: Design.font.body, fontSize: 13, color: Design.color.inkSoft, textAlign: "center", lineHeight: 20, marginBottom: 24 },
   logoutModalButtons: { flexDirection: "row", gap: 12, width: "100%" },
   logoutModalCancelBtn: { flex: 1, borderWidth: 1, borderColor: Design.color.line, borderRadius: Design.radius.small, paddingVertical: 14, alignItems: "center" },
