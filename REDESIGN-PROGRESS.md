@@ -1,8 +1,8 @@
 # Redesign Progress Notes
 
 ## Branch
-`master` tracking `origin/security-maintenance`  
-Push with: `git push origin master:security-maintenance`
+`master` tracking `origin/master`  
+Push with: `git push origin master`
 
 ## Re-skin: The Workshop Manifest (committed + pushed)
 World direction chosen via impeccable: maker's-atelier ledger — kraft/canvas neutrals, graphite ink, one burnt-oxide signal, IBM Plex Mono tabular data, Archivo display, squared corners, no gold/ornament. Scope: customer-facing first; full replacement; "too precious/decorative" is the worst outcome.
@@ -33,6 +33,11 @@ World direction chosen via impeccable: maker's-atelier ledger — kraft/canvas n
 - Legacy `gold` style names scrubbed from `src` (`goldDivider`→`accentDivider`, `goldLine`→`accentLine`, Overline tone `"gold"`→`"accent"`) — zero `gold` matches remain.
 - `DESIGN.md` rewritten to the shipped Workshop Manifest world (Archivo + IBM Plex Mono, canvas/surface/ink/accent tokens, radii 4/10/14, FINISH line verbatim).
 - Shipping rasters captured to `.impeccable/review/` with provenance + verdict (`desktop.png`, `mobile.png`, route shots; `PROVENANCE.md`, `VERDICT.md`). `scripts/capture-review.mjs` added.
+
+### Branch consolidation — done
+- Merged `security-maintenance` into `origin/master` (default branch) via temp `release-master`; pushed `1c33932..a0f7a3d master`. `src/` matches the work branch (old master-only src edits superseded by the re-skin).
+- Local `master` re-pointed to track `origin/master`; simple `git push origin master` now.
+- Rasters re-verified programmatically via `scripts/check-rasters.mjs` (all 7 valid: no blank/black, luminance 27–240).
 
 ## Completed
 - `90add6e` — Fix PressScale wrapper collapsing absolutely-positioned buttons on web

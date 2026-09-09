@@ -25,12 +25,12 @@ supabase db advisors    # security/performance lints
 ```
 
 ## Git & Branching
-- **Local `master` tracks `origin/security-maintenance`** — push with:
+- **Local `master` tracks `origin/master`** — work directly on `master`:
   ```bash
-  git push origin master:security-maintenance
+  git push origin master
   ```
 - Remote default branch is `master` (no `main`)
-- `security-maintenance` branch holds security/DB hardening work
+- `security-maintenance` is a merged/legacy line (security + DB hardening work); `merge-security-maintenance` was its PR branch. Cleanup when convenient.
 
 ## Supabase Notes
 - **Imperative migrations** in `supabase/migrations/` (no declarative schemas)
