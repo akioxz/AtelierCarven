@@ -213,10 +213,10 @@ export default function AdminProfile() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Design.color.surface },
+  container: { flex: 1, backgroundColor: Design.color.canvas },
   loadingContainer: {
     flex: 1,
-    backgroundColor: Design.color.surface,
+    backgroundColor: Design.color.canvas,
     padding: 16,
   },
   loadingHeader: { gap: 20, alignItems: "flex-start" },
@@ -233,14 +233,14 @@ const styles = StyleSheet.create({
   avatarImage: {
     width: 80,
     height: 80,
-    borderRadius: Design.radius.pill,
+    borderRadius: Design.radius.small,
     borderWidth: 1,
     borderColor: Design.color.accent,
   },
   avatar: {
     width: 80,
     height: 80,
-    borderRadius: Design.radius.pill,
+    borderRadius: Design.radius.small,
     backgroundColor: Design.color.surfaceMuted,
     justifyContent: "center",
     alignItems: "center",
@@ -265,11 +265,12 @@ const styles = StyleSheet.create({
     color: Design.color.ink,
     marginBottom: 4,
   },
-  avatarEmail: { fontSize: 12, color: Design.color.inkMuted, marginBottom: 4 },
+  avatarEmail: { fontSize: 12, fontFamily: Design.font.monoMedium, color: Design.color.inkMuted, marginBottom: 4 },
   avatarHint: { fontSize: 10, color: Design.color.accent, letterSpacing: 1 },
   infoSection: { paddingHorizontal: 24, marginBottom: 20 },
   sectionLabel: {
     fontSize: 10,
+    fontFamily: Design.font.monoMedium,
     letterSpacing: 2,
     color: Design.color.inkSoft,
     marginBottom: 12,
@@ -288,7 +289,7 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
   },
   infoLabelRow: { flexDirection: "row", alignItems: "center", gap: 6 },
-  infoLabel: { fontSize: 10, letterSpacing: 1, color: Design.color.inkSoft },
+  infoLabel: { fontSize: 10, fontFamily: Design.font.monoMedium, letterSpacing: 1, color: Design.color.inkSoft },
   infoValue: { fontSize: 13, color: Design.color.ink },
   readOnlyBadge: { flexDirection: "row", alignItems: "center", gap: 6 },
   infoDivider: { height: 0.5, backgroundColor: Design.color.line },
@@ -300,7 +301,7 @@ const styles = StyleSheet.create({
     borderWidth: 0.5,
     borderColor: Design.color.accent,
   },
-  roleBadgeText: { fontSize: 9, letterSpacing: 1.5, color: Design.color.inkSoft },
+  roleBadgeText: { fontSize: 9, fontFamily: Design.font.monoMedium, letterSpacing: 1.5, color: Design.color.inkSoft },
   noteRow: {
     flexDirection: "row",
     alignItems: "center",
@@ -320,5 +321,5 @@ const styles = StyleSheet.create({
     borderRadius: Design.radius.small,
     padding: 16,
   },
-  logoutText: { fontSize: 11, letterSpacing: 2, color: Design.color.inkMuted },
+  logoutText: { fontSize: 11, fontFamily: Design.font.monoMedium, letterSpacing: 2, color: Design.color.inkMuted },
 });

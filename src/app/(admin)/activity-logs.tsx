@@ -114,7 +114,7 @@ export default function ActivityLogs() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Design.color.surface },
+  container: { flex: 1, backgroundColor: Design.color.canvas },
   main: { flex: 1 },
   header: {
     alignItems: "center",
@@ -128,15 +128,15 @@ const styles = StyleSheet.create({
   list: { flex: 1, padding: 24 },
   listWeb: { padding: 32 },
   tableHeader: { flexDirection: "row", paddingVertical: 12, paddingHorizontal: 16, backgroundColor: Design.color.surfaceMuted, borderRadius: Design.radius.small, marginBottom: 8 },
-  tableHeaderCell: { flex: 1, fontSize: 10, letterSpacing: 2, color: Design.color.inkSoft },
+  tableHeaderCell: { flex: 1, fontSize: 10, fontFamily: Design.font.monoMedium, letterSpacing: 2, color: Design.color.inkSoft },
   tableRow: { flexDirection: "row", alignItems: "center", paddingVertical: 14, paddingHorizontal: 16, backgroundColor: Design.color.surface, borderRadius: Design.radius.small, marginBottom: 6, borderWidth: 0.5, borderColor: Design.color.line },
   tableCell: { flex: 1 },
   logBadge: { flexDirection: "row", alignItems: "center", gap: 5, borderRadius: Design.radius.small, paddingHorizontal: 8, paddingVertical: 5, alignSelf: "flex-start" },
-  logBadgeText: { fontSize: 9, letterSpacing: 1 },
+  logBadgeText: { fontSize: 9, fontFamily: Design.font.monoMedium, letterSpacing: 1 },
   logItem: { flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 14, paddingBottom: 14, borderBottomWidth: 0.5, borderBottomColor: Design.color.line },
   logContent: { flex: 1 },
   logTarget: { fontSize: 13, fontWeight: "500", color: Design.color.ink, marginBottom: 2 },
-  logTime: { fontSize: 11, color: Design.color.inkMuted },
+  logTime: { fontSize: 11, fontFamily: Design.font.mono, color: Design.color.inkMuted },
   empty: { flex: 1, justifyContent: "center", alignItems: "center", gap: 12, marginTop: 80 },
   emptyText: { fontSize: 13, color: Design.color.inkMuted },
 

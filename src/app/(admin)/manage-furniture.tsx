@@ -481,7 +481,7 @@ export default function ManageFurniture() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Design.color.surface },
+  container: { flex: 1, backgroundColor: Design.color.canvas },
 
   header: {
     alignItems: "center",
@@ -528,6 +528,7 @@ const styles = StyleSheet.create({
   },
   filterText: {
     fontSize: 12,
+    fontFamily: Design.font.monoMedium,
     color: Design.color.inkSoft,
   },
   filterTextActive: {
@@ -546,6 +547,7 @@ const styles = StyleSheet.create({
   },
   filterCountText: {
     fontSize: 10,
+    fontFamily: Design.font.monoMedium,
     color: Design.color.inkSoft,
     fontWeight: "500",
   },
@@ -605,6 +607,7 @@ const styles = StyleSheet.create({
   },
   badgeText: {
     fontSize: 9,
+    fontFamily: Design.font.monoMedium,
     letterSpacing: 1.5,
     color: Design.color.surface,
   },
@@ -619,6 +622,7 @@ const styles = StyleSheet.create({
   },
   cardPrice: {
     fontSize: 15,
+    fontFamily: Design.font.monoBold,
     color: Design.color.accent,
     marginBottom: 12,
   },
@@ -633,7 +637,7 @@ const styles = StyleSheet.create({
     borderRadius: Design.radius.small,
     paddingVertical: 8,
   },
-  editBtnText: { fontSize: 10, letterSpacing: 1, color: Design.color.inkSoft, fontWeight: "500" },
+  editBtnText: { fontSize: 10, fontFamily: Design.font.monoMedium, letterSpacing: 1, color: Design.color.inkSoft, fontWeight: "500" },
   deleteBtn: {
     flex: 1,
     flexDirection: "row",
@@ -644,7 +648,7 @@ const styles = StyleSheet.create({
     borderRadius: Design.radius.small,
     paddingVertical: 8,
   },
-  deleteBtnText: { fontSize: 10, letterSpacing: 1, color: Design.color.danger, fontWeight: "500" },
+  deleteBtnText: { fontSize: 10, fontFamily: Design.font.monoMedium, letterSpacing: 1, color: Design.color.danger, fontWeight: "500" },
 
   empty: { alignItems: "center", paddingVertical: 60, gap: 12, width: "100%" },
   emptyText: { fontSize: 13, color: Design.color.inkMuted },
@@ -662,7 +666,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     gap: 8,
   },
-  addBtnText: { color: Design.color.surface, fontSize: 11, letterSpacing: 2 },
+  addBtnText: { color: Design.color.surface, fontSize: 11, fontFamily: Design.font.monoMedium, letterSpacing: 2 },
 
   modalOverlay: {
     flex: 1,
@@ -683,9 +687,10 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 12,
   },
-  modalTitle: { fontSize: 11, letterSpacing: 3, color: Design.color.inkSoft },
+  modalTitle: { fontSize: 11, fontFamily: Design.font.monoMedium, letterSpacing: 3, color: Design.color.inkSoft },
   inputLabel: {
     fontSize: 10,
+    fontFamily: Design.font.monoMedium,
     letterSpacing: 2,
     color: Design.color.inkSoft,
     marginBottom: 8,
@@ -734,7 +739,7 @@ const styles = StyleSheet.create({
     padding: 16,
     alignItems: "center",
   },
-  cancelBtnText: { fontSize: 11, letterSpacing: 2, color: Design.color.inkMuted },
+  cancelBtnText: { fontSize: 11, fontFamily: Design.font.monoMedium, letterSpacing: 2, color: Design.color.inkMuted },
   saveBtn: {
     flex: 1,
     backgroundColor: Design.color.ink,
@@ -742,7 +747,7 @@ const styles = StyleSheet.create({
     padding: 16,
     alignItems: "center",
   },
-  saveBtnText: { fontSize: 11, letterSpacing: 2, color: Design.color.surface },
+  saveBtnText: { fontSize: 11, fontFamily: Design.font.monoMedium, letterSpacing: 2, color: Design.color.surface },
   imageUploadBtn: {
     width: "100%",
     height: 160,
@@ -759,11 +764,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 10,
   },
-  uploadText: { fontSize: 10, letterSpacing: 2, color: Design.color.inkSoft },
+  uploadText: { fontSize: 10, fontFamily: Design.font.monoMedium, letterSpacing: 2, color: Design.color.inkSoft },
   uploadedImage: { width: "100%", height: 160 },
   dimColumns: { flexDirection: "row", flexWrap: "wrap", gap: 12, marginBottom: 8 },
   dimField: { flex: 1, minWidth: 140 },
-  dimCaption: { fontSize: 9, letterSpacing: 1.2, color: Design.color.inkSoft, marginBottom: 6 },
+  dimCaption: { fontSize: 9, fontFamily: Design.font.monoMedium, letterSpacing: 1.2, color: Design.color.inkSoft, marginBottom: 6 },
   dimHint: { fontSize: 10, color: Design.color.inkMuted, marginBottom: 12 },
   galleryGrid: { flexDirection: "row", flexWrap: "wrap", gap: 10, marginBottom: 16 },
   galleryThumb: { width: 72, height: 72, borderRadius: Design.radius.small, overflow: "hidden", position: "relative" },
