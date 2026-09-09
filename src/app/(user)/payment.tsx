@@ -187,7 +187,7 @@ export default function Payment() {
         <ContentFrame>
         <View style={styles.headerRow}>
           <View style={styles.headerCopy}>
-            <PageHeader index="04" title="Payment" subtitle="Choose how you'd like to pay." />
+            <PageHeader title="Payment" subtitle="Choose how you'd like to pay." />
           </View>
           <PressScale onPress={() => goBackOr(router, "/(user)/checkout")} disabled={processing} accessibilityLabel="Go back" style={styles.backButton}>
             <Feather name="arrow-left" size={19} color={Design.color.ink} />

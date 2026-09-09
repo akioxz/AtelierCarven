@@ -33,20 +33,15 @@ export function BrandMark({ inverse = false }: { inverse?: boolean }) {
   );
 }
 
-export function PageHeader({ title, subtitle, right, index, style }: { title: string; subtitle?: string; right?: React.ReactNode; index?: string; style?: ViewStyle }) {
+export function PageHeader({ title, subtitle, right, style }: { title: string; subtitle?: string; right?: React.ReactNode; style?: ViewStyle }) {
   return (
     <View style={[styles.pageHeader, style]}>
       <View style={styles.pageHeaderCopy}>
-        {index ? (
-          <Reveal>
-            <Text style={styles.pageIndex}>{index}</Text>
-          </Reveal>
-        ) : null}
-        <Reveal delay={index ? staggerDelay(1) : 0}>
+        <Reveal>
           <Text style={styles.pageTitle}>{title}</Text>
         </Reveal>
         {subtitle ? (
-          <Reveal delay={staggerDelay(2)}>
+          <Reveal delay={staggerDelay(1)}>
             <Text style={styles.pageSubtitle}>{subtitle}</Text>
           </Reveal>
         ) : null}
@@ -56,19 +51,13 @@ export function PageHeader({ title, subtitle, right, index, style }: { title: st
   );
 }
 
-export function SectionHeading({ index, overline, title, style }: { index: string; overline: string; title: string; style?: ViewStyle }) {
+export function SectionHeading({ overline, title, style }: { overline: string; title: string; style?: ViewStyle }) {
   return (
     <View style={[styles.sectionHeading, style]}>
       <Reveal>
-        <View style={styles.sectionTopRow}>
-          <Text style={styles.sectionIndex}>{index}</Text>
-          <View style={styles.sectionRule} />
-        </View>
-      </Reveal>
-      <Reveal delay={staggerDelay(1)}>
         <Text style={styles.overline}>{overline}</Text>
       </Reveal>
-      <Reveal delay={staggerDelay(2)}>
+      <Reveal delay={staggerDelay(1)}>
         <Text style={styles.sectionTitle}>{title}</Text>
       </Reveal>
     </View>
@@ -170,11 +159,7 @@ const styles = StyleSheet.create({
   pageHeader: { alignItems: "flex-start", flexDirection: "row", gap: Design.space.md, justifyContent: "space-between", marginBottom: Design.space.xl },
   pageHeaderCopy: { flex: 1 },
   pageTitle: { color: Design.color.ink, fontFamily: Design.font.display, fontSize: 40, letterSpacing: -1.2, lineHeight: 41 },
-  pageIndex: { color: Design.color.accent, fontFamily: Design.font.monoBold, fontSize: 12, letterSpacing: 1, marginBottom: 8 },
   sectionHeading: { gap: 8, marginBottom: Design.space.lg },
-  sectionTopRow: { alignItems: "center", flexDirection: "row", gap: 12 },
-  sectionIndex: { color: Design.color.accent, fontFamily: Design.font.monoBold, fontSize: 11, letterSpacing: 1 },
-  sectionRule: { backgroundColor: Design.color.accent, flex: 1, height: 1, opacity: 0.55 },
   sectionTitle: { color: Design.color.ink, fontFamily: Design.font.display, fontSize: 28, letterSpacing: -0.9, lineHeight: 30 },
   pageSubtitle: { color: Design.color.inkSoft, fontFamily: Design.font.body, fontSize: 13, lineHeight: 21, marginTop: 6, maxWidth: 460 },
   primaryButton: { alignItems: "center", backgroundColor: Design.color.ink, borderRadius: Design.radius.small, justifyContent: "center", minHeight: 52, paddingHorizontal: 20 },

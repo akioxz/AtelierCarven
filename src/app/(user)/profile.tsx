@@ -147,7 +147,7 @@ export default function UserProfile() {
         <ContentFrame>
         <View style={styles.headerRow}>
           <View style={styles.headerCopy}>
-            <PageHeader index="07" title="Profile" subtitle="Your details, orders, and gallery wall." />
+            <PageHeader title="Profile" subtitle="Your details, orders, and gallery wall." />
           </View>
           <PressScale onPress={() => goBackOr(router, "/(user)/home")} accessibilityLabel="Go back" style={styles.backButton}>
             <Feather name="arrow-left" size={19} color={Design.color.ink} />

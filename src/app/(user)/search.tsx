@@ -131,7 +131,7 @@ export default function Search() {
           ) : null}
 
           <View style={styles.sortBlock}>
-            <SectionHeading index="03" overline="Search the collection" title={trimmed ? `Results for “${trimmed}”` : "Browse everything"} />
+            <SectionHeading overline="Search the collection" title={trimmed ? `Results for “${trimmed}”` : "Browse everything"} />
             <View style={styles.sortRow}>
               <Text style={styles.resultCount}>{loading ? "" : `${furniture.length} piece${furniture.length === 1 ? "" : "s"} found`}</Text>
               <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.sortScroll}>

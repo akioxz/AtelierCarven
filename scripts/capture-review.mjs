@@ -25,7 +25,7 @@ try {
 
   // Desktop customer flow → home (the brief's first viewport).
   {
-    const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+    const ctx = await browser.newContext({ viewport: { width: 1920, height: 1080 } });
     const p = await ctx.newPage();
     await p.goto(BASE, { waitUntil: "domcontentloaded" });
     await p.getByText(/A considered home begins/i).first().waitFor({ state: "visible", timeout: 15000 });

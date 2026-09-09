@@ -72,7 +72,7 @@ export default function OrderSuccess() {
         <View style={styles.infoRow}>
           <Feather name="truck" size={14} color={Design.color.inkSoft} />
           <Text style={styles.infoText}>
-            Estimated delivery: 3–5 business days
+            Estimated delivery: 3-5 business days
           </Text>
         </View>
         <View style={styles.infoRow}>

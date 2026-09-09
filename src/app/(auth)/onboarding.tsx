@@ -82,7 +82,7 @@ export default function Onboarding() {
 const styles = StyleSheet.create({
   screen: { backgroundColor: Design.color.canvas, flex: 1 },
   shell: { flex: 1, justifyContent: "space-between", paddingHorizontal: 24 },
-  shellDesktop: { alignSelf: "center", flexDirection: "row", gap: 0, maxWidth: 1180, paddingHorizontal: 0, width: "100%" },
+  shellDesktop: { alignSelf: "center", flexDirection: "row", gap: 0, maxWidth: layout.pageMaxWidth, paddingHorizontal: 0, width: "100%" },
   brandPanel: { backgroundColor: Design.color.surfaceMuted, borderRadius: Design.radius.sheet, flex: 1, justifyContent: "center", marginBottom: 24, padding: 28 },
   brandPanelDesktop: { borderBottomRightRadius: 0, borderTopRightRadius: 0, marginBottom: 0, minHeight: 640, padding: 68 },
   brandRule: { backgroundColor: Design.color.accent, height: 1, marginTop: 28, width: 46 },

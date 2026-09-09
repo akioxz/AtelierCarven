@@ -5,7 +5,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Platform, ScrollView, StatusBar, StyleSheet, Text, useWindowDimensions, View } from "react-native";
 import Animated, { ZoomIn } from "react-native-reanimated";
 import { CategoryTiles } from "../../components/category-tiles";
-import { ContentFrame, CustomerNavigation, Overline, SectionHeading } from "../../components/app-ui";
+import { ContentFrame, CustomerNavigation, SectionHeading } from "../../components/app-ui";
 import { PressScale, Reveal, staggerDelay } from "../../components/motion";
 import { ProductCard } from "../../components/product-card";
 import { CardSkeleton } from "../../components/skeleton";
@@ -88,15 +88,12 @@ export default function Home() {
                 <Text style={styles.greeting}>Welcome back{username ? `, ${username}` : ""}.</Text>
               </Reveal>
               <Reveal delay={staggerDelay(1)}>
-                <Overline label="N°01 — The Gallery" />
-              </Reveal>
-              <Reveal delay={staggerDelay(2)}>
                 <Text style={styles.title}>Pieces with presence, chosen for everyday living.</Text>
               </Reveal>
-              <Reveal delay={staggerDelay(3)}>
+              <Reveal delay={staggerDelay(2)}>
                 <Text style={styles.subtitle}>Discover the latest furniture in the Atelier Carvén collection.</Text>
               </Reveal>
-              <Reveal delay={staggerDelay(4)}>
+              <Reveal delay={staggerDelay(3)}>
                 <View style={styles.heroActions}>
                   <PressScale accessibilityLabel="View saved furniture" onPress={() => router.push("/(user)/favorites")} style={styles.iconAction}>
                     <Feather name="heart" size={18} color={Design.color.ink} />
@@ -143,7 +140,6 @@ export default function Home() {
 
           <View style={styles.collectionWrap}>
             <SectionHeading
-              index="02"
               overline={selectedCategory === "All" ? "The Collection" : selectedCategory}
               title={selectedCategory === "All" ? "Handpicked for you" : `${selectedCategory} pieces`}
             />

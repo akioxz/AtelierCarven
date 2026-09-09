@@ -94,7 +94,7 @@ export default function AdminProfile() {
           <PressScale onPress={() => goBackOr(router, "/(admin)/dashboard")} style={styles.backButton} accessibilityLabel="Go back">
             <Feather name="arrow-left" size={19} color={Design.color.ink} />
           </PressScale>
-          <PageHeader index="07" title="Profile" subtitle={`Signed in as ${profile?.username || "Administrator"}.`} style={styles.headerPage} />
+          <PageHeader title="Profile" subtitle={`Signed in as ${profile?.username || "Administrator"}.`} style={styles.headerPage} />
         </View>
 
         {/* Avatar */}

@@ -47,7 +47,7 @@ export default function ActivityLogs() {
               <Feather name="arrow-left" size={19} color={Design.color.ink} />
             </PressScale>
           )}
-          <PageHeader index="04" title="Activity Logs" subtitle="A record of every action taken across the store." />
+          <PageHeader title="Activity Logs" subtitle="A record of every action taken across the store." />
         </View>
 
         {loading ? (

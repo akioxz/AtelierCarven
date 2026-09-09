@@ -113,7 +113,6 @@ export default function Favorites() {
         <View style={styles.headerRow}>
           <View style={styles.headerCopy}>
             <PageHeader
-              index="04"
               title="Saved pieces"
               subtitle={loading || favorites.length === 0 ? "Your personal gallery wall." : `${favorites.length} piece${favorites.length === 1 ? "" : "s"} in your collection.`}
             />

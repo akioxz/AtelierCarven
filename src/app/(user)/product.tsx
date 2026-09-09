@@ -139,7 +139,7 @@ export default function Product() {
           <View style={styles.metaLinks}>{sizeGuide ? <PressScale accessibilityLabel="View size guide" onPress={() => setSizeGuideOpen(true)} style={styles.metaLink}><Feather name="maximize" size={14} color={Design.color.accent} /><Text style={styles.metaLinkText}>SIZE GUIDE</Text></PressScale> : null}<PressScale accessibilityLabel="Write a review" onPress={() => setReviewSheetOpen(true)} style={styles.metaLink}><Feather name="edit-3" size={14} color={Design.color.accent} /><Text style={styles.metaLinkText}>WRITE A REVIEW</Text></PressScale></View>
           <View style={styles.reviewsSection}>
             <View style={styles.reviewsHeader}><Text style={styles.reviewsTitle}>Reviews</Text>{item.rating != null ? <Text style={styles.reviewsCount}>{Number(item.rating).toFixed(1)} · {item.review_count ?? 0} review{item.review_count === 1 ? "" : "s"}</Text> : null}</View>
-            {reviews.length === 0 ? <Text style={styles.noReviews}>No reviews yet — be the first to share your thoughts.</Text> : null}
+            {reviews.length === 0 ? <Text style={styles.noReviews}>No reviews yet. Be the first to share your thoughts.</Text> : null}
           </View>
 {wide ? <View style={styles.desktopActions}><PressScale accessibilityLabel="Add to cart" onPress={() => openSelection("cart")} style={styles.secondaryAction}><Text style={styles.secondaryActionText}>ADD TO CART</Text></PressScale><PrimaryButton label="BUY NOW" onPress={() => openSelection("buy")} style={styles.primaryAction} /></View> : null}
         </View>

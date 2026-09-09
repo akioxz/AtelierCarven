@@ -213,7 +213,7 @@ export default function ManageOrders() {
         <PressScale onPress={() => goBackOr(router, "/(admin)/dashboard")} style={styles.backButton} accessibilityLabel="Go back">
           <Feather name="arrow-left" size={19} color={Design.color.ink} />
         </PressScale>
-        <PageHeader index="03" title="Orders" subtitle="Review deliveries and update statuses." />
+        <PageHeader title="Orders" subtitle="Review deliveries and update statuses." />
       </View>
 
       {/* Filters */}

@@ -155,7 +155,7 @@ export default function ImagePlacement() {
         {/* Header */}
         <View style={styles.headerRow}>
           <View style={styles.headerCopy}>
-            <PageHeader index="06" title="Place" subtitle="Visualize furniture in your space." />
+            <PageHeader title="Place" subtitle="Visualize furniture in your space." />
           </View>
           <PressScale onPress={() => goBackOr(router, "/(user)/home")} accessibilityLabel="Go back" style={styles.backButton}>
             <Feather name="arrow-left" size={19} color={Design.color.ink} />
@@ -299,7 +299,7 @@ export default function ImagePlacement() {
         {/* Controls */}
         {selectedImage && selectedFurniture && (
           <View style={styles.section}>
-            <Text style={styles.sectionLabel}>CONTROLS — {selectedFurniture.name}</Text>
+            <Text style={styles.sectionLabel}>CONTROLS: {selectedFurniture.name}</Text>
             <View style={styles.controlsCard}>
               {/* Scale */}
               <View style={styles.controlRow}>
