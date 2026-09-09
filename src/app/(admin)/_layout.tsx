@@ -1,8 +1,9 @@
 import { Stack, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
-import { ActivityIndicator, View } from "react-native";
+import { View } from "react-native";
 import { Design } from "../../constants/design";
 import { supabase } from "../../lib/supabase";
+import { ShimmerBlock } from "../../components/skeleton";
 
 export default function AdminLayout() {
   const router = useRouter();
@@ -42,8 +43,9 @@ export default function AdminLayout() {
 
   if (checking) {
     return (
-      <View style={{ flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: Design.color.surface }}>
-        <ActivityIndicator color={Design.color.gold} />
+      <View style={{ flex: 1, justifyContent: "center", alignItems: "center", gap: 14, backgroundColor: Design.color.surface }}>
+        <ShimmerBlock height={26} radius={12} width={150} />
+        <ShimmerBlock height={12} radius={6} width={90} />
       </View>
     );
   }

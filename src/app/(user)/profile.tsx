@@ -1,23 +1,24 @@
 import { Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
+import { Image } from "expo-image";
 import { useCallback, useEffect, useState } from "react";
 import {
-  ActivityIndicator,
-  Image,
   Modal,
   ScrollView,
   StatusBar,
   StyleSheet,
   Text,
   TextInput,
-  TouchableOpacity,
   View,
 } from "react-native";
 import { pickAndUploadImage } from "../../lib/imageUpload";
 import { supabase } from "../../lib/supabase";
+import { goBackOr } from "../../lib/navigation";
 import { Design } from "../../constants/design";
 import { getStatusBadge } from "../../constants/statuses";
-import { ContentFrame, CustomerNavigation } from "../../components/app-ui";
+import { ContentFrame, CustomerNavigation, PageHeader } from "../../components/app-ui";
+import { PressScale, Reveal, staggerDelay } from "../../components/motion";
+import { ShimmerBlock } from "../../components/skeleton";
 import ConfirmModal from "../../components/confirm-modal";
 
 export default function UserProfile() {
@@ -29,6 +30,7 @@ export default function UserProfile() {
   const [address, setAddress] = useState("");
   const [mobile, setMobile] = useState("");
   const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState("");
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [logoutModalVisible, setLogoutModalVisible] = useState(false);
 
@@ -98,12 +100,18 @@ export default function UserProfile() {
 
   const handleSave = async () => {
     setSaving(true);
+    setSaveError("");
     const { data: { user } } = await supabase.auth.getUser();
-    await supabase
+    const { error } = await supabase
       .from("profiles")
       .update({ username, address, mobile_number: mobile })
       .eq("id", user!.id);
     setSaving(false);
+    if (error) {
+      console.error("Error saving profile:", error);
+      setSaveError("Couldn't save your changes. Please try again.");
+      return;
+    }
     setEditing(false);
     fetchProfile();
   };
@@ -126,7 +134,9 @@ export default function UserProfile() {
   if (loading)
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator color={Design.color.gold} />
+        <ShimmerBlock width={88} height={88} radius={44} />
+        <ShimmerBlock width="50%" height={14} />
+        <ShimmerBlock width="70%" height={120} radius={Design.radius.card} />
       </View>
     );
 
@@ -136,26 +146,26 @@ export default function UserProfile() {
       <CustomerNavigation active="profile" />
       <ScrollView showsVerticalScrollIndicator={false}>
         <ContentFrame>
-        <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.back()}>
-            <Feather name="arrow-left" size={22} color={Design.color.ink} />
-          </TouchableOpacity>
-          <View style={{ marginTop: 20 }}>
-            <Text style={styles.headerSmall}>YOUR</Text>
-            <Text style={styles.headerLarge}>Profile</Text>
-            <View style={styles.goldDivider} />
+        <View style={styles.headerRow}>
+          <View style={styles.headerCopy}>
+            <PageHeader index="07" title="Profile" subtitle="Your details, orders, and gallery wall." />
           </View>
+          <PressScale onPress={() => goBackOr(router, "/(user)/home")} accessibilityLabel="Go back" style={styles.backButton}>
+            <Feather name="arrow-left" size={19} color={Design.color.ink} />
+          </PressScale>
         </View>
 
         {/* Avatar */}
+        <Reveal>
         <View style={styles.avatarSection}>
-          <TouchableOpacity
+          <PressScale
             style={styles.avatarWrapper}
             onPress={handleAvatarUpload}
             disabled={uploadingAvatar}
+            accessibilityLabel="Change profile photo"
           >
             {profile?.avatar_url ? (
-              <Image source={{ uri: profile.avatar_url }} style={styles.avatarImage} />
+              <Image source={{ uri: profile.avatar_url }} style={styles.avatarImage} contentFit="cover" transition={200} />
             ) : (
               <View style={styles.avatar}>
                 <Text style={styles.avatarText}>
@@ -164,36 +174,35 @@ export default function UserProfile() {
               </View>
             )}
             <View style={styles.avatarEditBadge}>
-              {uploadingAvatar ? (
-                <ActivityIndicator size="small" color={Design.color.surface} />
-              ) : (
-                <Feather name="camera" size={12} color={Design.color.surface} />
-              )}
+              <Feather name="camera" size={12} color={Design.color.surface} />
             </View>
-          </TouchableOpacity>
+          </PressScale>
           <Text style={styles.avatarHint}>Tap to change photo</Text>
           <Text style={styles.avatarName}>{profile?.username || "User"}</Text>
           <Text style={styles.avatarEmail}>{profile?.email}</Text>
         </View>
+        </Reveal>
 
         {/* MY ORDERS */}
+        <Reveal delay={staggerDelay(1)}>
         <View style={styles.section}>
           <Text style={styles.sectionLabel}>MY ORDERS</Text>
           {loadingOrders ? (
-            <ActivityIndicator color={Design.color.gold} style={{ marginTop: 12 }} />
+            <View style={styles.orderSkeleton}><ShimmerBlock width="100%" height={76} radius={Design.radius.card} /><ShimmerBlock width="100%" height={76} radius={Design.radius.card} /></View>
           ) : orders.length === 0 ? (
             <View style={styles.emptyOrders}>
               <Feather name="shopping-bag" size={32} color={Design.color.line} />
               <Text style={styles.emptyOrdersText}>No orders yet</Text>
             </View>
           ) : (
-            orders.map((order) => {
+            orders.map((order, orderIndex) => {
               const badge = getStatusBadge(order.status);
               return (
-                <TouchableOpacity
-                  key={order.id}
+                <Reveal key={order.id} delay={staggerDelay(orderIndex, 60, 4)}>
+                <PressScale
                   style={styles.orderCard}
                   onPress={() => openOrder(order)}
+                  accessibilityLabel={`View order ${order.id.substring(0, 8).toUpperCase()}`}
                 >
                   <View style={styles.orderCardLeft}>
                     <Text style={styles.orderId}>
@@ -214,22 +223,25 @@ export default function UserProfile() {
                         {badge.label}
                       </Text>
                     </View>
-                    <Feather name="chevron-right" size={14} color={Design.color.gold} style={{ marginTop: 8 }} />
+                    <Feather name="chevron-right" size={14} color={Design.color.accent} style={{ marginTop: 8 }} />
                   </View>
-                </TouchableOpacity>
+                </PressScale>
+                </Reveal>
               );
             })
           )}
         </View>
+        </Reveal>
 
         {/* Personal Info */}
+        <Reveal delay={staggerDelay(2)}>
         <View style={styles.section}>
           <View style={styles.infoHeader}>
             <Text style={styles.sectionLabel}>PERSONAL INFO</Text>
-            <TouchableOpacity style={styles.editToggle} onPress={() => setEditing(!editing)}>
-              <Feather name={editing ? "x" : "edit-2"} size={13} color={Design.color.gold} />
+            <PressScale style={styles.editToggle} onPress={() => setEditing(!editing)} accessibilityLabel={editing ? "Cancel editing" : "Edit profile"}>
+              <Feather name={editing ? "x" : "edit-2"} size={13} color={Design.color.accent} />
               <Text style={styles.editBtn}>{editing ? "CANCEL" : "EDIT"}</Text>
-            </TouchableOpacity>
+            </PressScale>
           </View>
 
           <View style={styles.infoCard}>
@@ -279,25 +291,33 @@ export default function UserProfile() {
           </View>
 
           {editing && (
-            <TouchableOpacity style={styles.saveBtn} onPress={handleSave} disabled={saving}>
-              <Feather name="check" size={15} color={Design.color.surface} />
-              <Text style={styles.saveBtnText}>{saving ? "SAVING..." : "SAVE CHANGES"}</Text>
-            </TouchableOpacity>
+            <>
+              {saveError ? (
+                <Text style={styles.saveError}>{saveError}</Text>
+              ) : null}
+              <PressScale style={styles.saveBtn} onPress={handleSave} disabled={saving} accessibilityLabel="Save changes">
+                <Feather name="check" size={15} color={Design.color.surface} />
+                <Text style={styles.saveBtnText}>{saving ? "SAVING..." : "SAVE CHANGES"}</Text>
+              </PressScale>
+            </>
           )}
         </View>
+        </Reveal>
 
+        <Reveal delay={staggerDelay(3)}>
         <View style={styles.logoutSection}>
-          <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout}>
+          <PressScale style={styles.logoutBtn} onPress={handleLogout} accessibilityLabel="Sign out">
             <Feather name="log-out" size={14} color={Design.color.inkMuted} />
             <Text style={styles.logoutText}>SIGN OUT</Text>
-          </TouchableOpacity>
+          </PressScale>
         </View>
+        </Reveal>
         <View style={{ height: 120 }} />
         </ContentFrame>
       </ScrollView>
 
       {/* Order Detail Modal */}
-      <Modal visible={selectedOrder !== null} animationType="slide" transparent>
+      <Modal visible={selectedOrder !== null} animationType="slide" transparent onRequestClose={() => setSelectedOrder(null)}>
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             {selectedOrder && (() => {
@@ -311,11 +331,11 @@ export default function UserProfile() {
                         #{selectedOrder.id.substring(0, 8).toUpperCase()}
                       </Text>
                     </View>
-                    <TouchableOpacity style={styles.closeBtn} onPress={() => setSelectedOrder(null)}>
+                    <PressScale style={styles.closeBtn} onPress={() => setSelectedOrder(null)} accessibilityLabel="Close order details">
                       <Feather name="x" size={18} color={Design.color.inkSoft} />
-                    </TouchableOpacity>
+                    </PressScale>
                   </View>
-                  <View style={styles.goldDivider} />
+                  <View style={styles.accentDivider} />
 
                   <View style={styles.modalInfoRow}>
                     <View style={[styles.statusBadge, { backgroundColor: badge.bg }]}>
@@ -331,7 +351,7 @@ export default function UserProfile() {
                   <Text style={styles.modalSectionLabel}>ITEMS ORDERED</Text>
                   <View style={styles.modalCard}>
                     {loadingItems ? (
-                      <ActivityIndicator color={Design.color.gold} style={{ paddingVertical: 12 }} />
+                      <View style={styles.orderSkeleton}><ShimmerBlock width="100%" height={64} radius={Design.radius.card} /></View>
                     ) : orderItems.length === 0 ? (
                       <Text style={styles.noItemsText}>No items found.</Text>
                     ) : (
@@ -341,7 +361,7 @@ export default function UserProfile() {
                           <View style={styles.itemRow}>
                             <View style={styles.itemImageWrap}>
                               {item.furniture?.image_url ? (
-                                <Image source={{ uri: item.furniture.image_url }} style={styles.itemImage} resizeMode="cover" />
+                                <Image source={{ uri: item.furniture.image_url }} style={styles.itemImage} contentFit="cover" transition={200} />
                               ) : (
                                 <Feather name="box" size={20} color={Design.color.inkSoft} />
                               )}
@@ -388,15 +408,19 @@ export default function UserProfile() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Design.color.canvas },
-  loadingContainer: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: Design.color.canvas },
+  loadingContainer: { alignItems: "center", backgroundColor: Design.color.canvas, flex: 1, gap: 14, justifyContent: "center", padding: 32 },
+  headerRow: { alignItems: "flex-start", flexDirection: "row", gap: 12, justifyContent: "space-between", paddingHorizontal: 24, paddingTop: 20 },
+  headerCopy: { flex: 1 },
+  backButton: { alignItems: "center", backgroundColor: Design.color.surface, borderColor: Design.color.line, borderRadius: Design.radius.small, borderWidth: StyleSheet.hairlineWidth, height: 44, justifyContent: "center", width: 44 },
+  orderSkeleton: { gap: 10 },
   header: { backgroundColor: Design.color.surfaceMuted, padding: 28, paddingTop: 56, paddingBottom: 28 },
   headerSmall: { fontSize: 10, letterSpacing: 4, color: Design.color.inkSoft },
   headerLarge: { fontFamily: Design.font.display, fontSize: 34, letterSpacing: -0.8, lineHeight: 34, color: Design.color.ink, marginBottom: 16 },
-  goldDivider: { width: 42, height: 1, backgroundColor: Design.color.gold, marginBottom: 8 },
+  accentDivider: { width: 42, height: 1, backgroundColor: Design.color.accent, marginBottom: 8 },
   avatarSection: { alignItems: "center", paddingVertical: 28 },
   avatarWrapper: { position: "relative", marginBottom: 8 },
-  avatarImage: { width: 88, height: 88, borderRadius: 44, borderWidth: 2, borderColor: Design.color.gold },
-  avatar: { width: 88, height: 88, borderRadius: 44, backgroundColor: Design.color.surfaceMuted, justifyContent: "center", alignItems: "center", borderWidth: 2, borderColor: Design.color.gold },
+  avatarImage: { width: 88, height: 88, borderRadius: 44, borderWidth: 2, borderColor: Design.color.accent },
+  avatar: { width: 88, height: 88, borderRadius: 44, backgroundColor: Design.color.surfaceMuted, justifyContent: "center", alignItems: "center", borderWidth: 2, borderColor: Design.color.accent },
   avatarText: { fontFamily: Design.font.display, fontSize: 34, letterSpacing: -0.8, color: Design.color.ink },
   avatarEditBadge: { position: "absolute", bottom: 0, right: 0, width: 28, height: 28, borderRadius: 14, backgroundColor: Design.color.ink, justifyContent: "center", alignItems: "center", borderWidth: 2, borderColor: Design.color.surface },
   avatarHint: { fontSize: 10, color: Design.color.inkMuted, letterSpacing: 1, marginBottom: 10 },
@@ -414,21 +438,22 @@ const styles = StyleSheet.create({
   orderCardRight: { alignItems: "flex-end" },
   orderId: { fontFamily: Design.font.bodySemibold, fontSize: 11, color: Design.color.ink, letterSpacing: 1, marginBottom: 4 },
   orderDate: { fontFamily: Design.font.body, fontSize: 11, color: Design.color.inkMuted, marginBottom: 6 },
-  orderTotal: { fontFamily: Design.font.display, fontSize: 17, color: Design.color.gold },
+  orderTotal: { fontFamily: Design.font.display, fontSize: 17, color: Design.color.accent },
   statusBadge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 6 },
   statusText: { fontFamily: Design.font.bodySemibold, fontSize: 9, letterSpacing: 1 },
 
   infoHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 12 },
   editToggle: { flexDirection: "row", alignItems: "center", gap: 5 },
-  editBtn: { fontFamily: Design.font.bodyBold, fontSize: 10, letterSpacing: 1.5, color: Design.color.gold },
+  editBtn: { fontFamily: Design.font.bodyBold, fontSize: 10, letterSpacing: 1.5, color: Design.color.accent },
   infoCard: { backgroundColor: Design.color.surfaceMuted, borderRadius: Design.radius.card, padding: 16, borderWidth: StyleSheet.hairlineWidth, borderColor: Design.color.line },
   infoRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingVertical: 10 },
   infoLabelRow: { flexDirection: "row", alignItems: "center", gap: 6 },
   infoLabel: { fontFamily: Design.font.bodySemibold, fontSize: 10, letterSpacing: 1.5, color: Design.color.inkSoft },
   infoValue: { fontFamily: Design.font.body, fontSize: 13, color: Design.color.ink },
-  infoInput: { fontFamily: Design.font.body, fontSize: 13, color: Design.color.ink, borderBottomWidth: 1, borderBottomColor: Design.color.gold, paddingVertical: 4, minWidth: 160, textAlign: "right" },
+  infoInput: { fontFamily: Design.font.body, fontSize: 13, color: Design.color.ink, borderBottomWidth: 1, borderBottomColor: Design.color.accent, paddingVertical: 4, minWidth: 160, textAlign: "right" },
   infoDivider: { height: StyleSheet.hairlineWidth, backgroundColor: Design.color.line },
   saveBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, backgroundColor: Design.color.ink, borderRadius: Design.radius.small, padding: 16, marginTop: 16 },
+  saveError: { color: Design.color.danger, fontSize: 12, lineHeight: 18, marginTop: 16 },
   saveBtnText: { color: Design.color.surface, fontFamily: Design.font.bodyBold, fontSize: 11, letterSpacing: 1.5 },
 
   logoutSection: { paddingHorizontal: 24 },
@@ -436,7 +461,7 @@ const styles = StyleSheet.create({
   logoutText: { fontFamily: Design.font.bodySemibold, fontSize: 11, letterSpacing: 1.5, color: Design.color.inkMuted },
 
   // Order detail modal
-  modalOverlay: { flex: 1, backgroundColor: "rgba(33,26,22,0.45)", justifyContent: "flex-end" },
+  modalOverlay: { flex: 1, backgroundColor: "rgba(29,27,23,0.5)", justifyContent: "flex-end" },
   modalContent: { backgroundColor: Design.color.surface, borderTopLeftRadius: Design.radius.sheet, borderTopRightRadius: Design.radius.sheet, padding: 24, paddingBottom: 40, maxHeight: "85%" },
   modalHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 12 },
   modalTitle: { fontFamily: Design.font.bodySemibold, fontSize: 10, letterSpacing: 2, color: Design.color.inkSoft },
@@ -452,18 +477,18 @@ const styles = StyleSheet.create({
   itemImage: { width: 48, height: 48 },
   itemName: { fontFamily: Design.font.bodySemibold, fontSize: 13, color: Design.color.ink, marginBottom: 2 },
   itemMeta: { fontFamily: Design.font.body, fontSize: 11, color: Design.color.inkMuted },
-  itemPrice: { fontFamily: Design.font.bodySemibold, fontSize: 13, color: Design.color.gold },
+  itemPrice: { fontFamily: Design.font.bodySemibold, fontSize: 13, color: Design.color.accent },
   noItemsText: { fontFamily: Design.font.body, fontSize: 12, color: Design.color.inkMuted, textAlign: "center" },
   modalTotalRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingHorizontal: 4 },
   modalTotalLabel: { fontFamily: Design.font.bodySemibold, fontSize: 10, letterSpacing: 2, color: Design.color.inkSoft },
-  modalTotalAmt: { fontFamily: Design.font.display, fontSize: 22, color: Design.color.gold },
+  modalTotalAmt: { fontFamily: Design.font.display, fontSize: 22, color: Design.color.accent },
 
   // Logout modal
-  logoutModalOverlay: { flex: 1, backgroundColor: "rgba(33,26,22,0.45)", justifyContent: "center", alignItems: "center", padding: 32 },
+  logoutModalOverlay: { flex: 1, backgroundColor: "rgba(29,27,23,0.5)", justifyContent: "center", alignItems: "center", padding: 32 },
   logoutModalBox: { backgroundColor: Design.color.surface, borderRadius: 20, padding: 28, width: "100%", alignItems: "center", borderWidth: StyleSheet.hairlineWidth, borderColor: Design.color.line },
-  logoutModalIcon: { width: 56, height: 56, borderRadius: 28, backgroundColor: Design.color.surfaceMuted, justifyContent: "center", alignItems: "center", marginBottom: 16, borderWidth: StyleSheet.hairlineWidth, borderColor: Design.color.gold },
+  logoutModalIcon: { width: 56, height: 56, borderRadius: 28, backgroundColor: Design.color.surfaceMuted, justifyContent: "center", alignItems: "center", marginBottom: 16, borderWidth: StyleSheet.hairlineWidth, borderColor: Design.color.accent },
   logoutModalTitle: { fontFamily: Design.font.bodySemibold, fontSize: 15, color: Design.color.ink, marginBottom: 12, letterSpacing: 1 },
-  logoutModalDivider: { width: 32, height: 1.5, backgroundColor: Design.color.gold, marginBottom: 12 },
+  logoutModalDivider: { width: 32, height: 1.5, backgroundColor: Design.color.accent, marginBottom: 12 },
   logoutModalMessage: { fontFamily: Design.font.body, fontSize: 13, color: Design.color.inkSoft, textAlign: "center", lineHeight: 20, marginBottom: 24 },
   logoutModalButtons: { flexDirection: "row", gap: 12, width: "100%" },
   logoutModalCancelBtn: { flex: 1, borderWidth: 1, borderColor: Design.color.line, borderRadius: Design.radius.small, paddingVertical: 14, alignItems: "center" },

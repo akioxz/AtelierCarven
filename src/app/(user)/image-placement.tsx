@@ -1,15 +1,13 @@
 import { Feather } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
+import { Image } from "expo-image";
 import { useRouter } from "expo-router";
 import { useEffect, useRef, useState } from "react";
 import {
-  ActivityIndicator,
-  Image,
   ScrollView,
   StatusBar,
   StyleSheet,
   Text,
-  TouchableOpacity,
   View,
 } from "react-native";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
@@ -17,7 +15,10 @@ import Animated, { useAnimatedStyle, useSharedValue } from "react-native-reanima
 import { scheduleOnRN } from "react-native-worklets";
 import { Design } from "../../constants/design";
 import { supabase } from "../../lib/supabase";
-import { CustomerNavigation } from "../../components/app-ui";
+import { goBackOr } from "../../lib/navigation";
+import { CustomerNavigation, PageHeader } from "../../components/app-ui";
+import { PressScale, Reveal } from "../../components/motion";
+import { ShimmerBlock } from "../../components/skeleton";
 
 export default function ImagePlacement() {
   const router = useRouter();
@@ -152,19 +153,17 @@ export default function ImagePlacement() {
         scrollEnabled={!isDragging}
       >
         {/* Header */}
-        <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.back()}>
-            <Feather name="arrow-left" size={22} color={Design.color.ink} />
-          </TouchableOpacity>
-          <View style={{ marginTop: 20 }}>
-            <Text style={styles.headerSmall}>PLACE</Text>
-            <Text style={styles.headerLarge}>Your Image</Text>
-            <View style={styles.goldDivider} />
-            <Text style={styles.headerSubtext}>Visualize furniture in your space</Text>
+        <View style={styles.headerRow}>
+          <View style={styles.headerCopy}>
+            <PageHeader index="06" title="Place" subtitle="Visualize furniture in your space." />
           </View>
+          <PressScale onPress={() => goBackOr(router, "/(user)/home")} accessibilityLabel="Go back" style={styles.backButton}>
+            <Feather name="arrow-left" size={19} color={Design.color.ink} />
+          </PressScale>
         </View>
 
         {/* Canvas */}
+        <Reveal>
         <View style={styles.section}>
           <Text style={styles.sectionLabel}>PREVIEW CANVAS</Text>
           <View style={styles.previewContainer}>
@@ -173,7 +172,8 @@ export default function ImagePlacement() {
                 <Image
                   source={{ uri: selectedImage }}
                   style={styles.previewImage}
-                  resizeMode="cover"
+                  contentFit="cover"
+                  transition={200}
                 />
                 {selectedFurniture && (
                   <GestureDetector gesture={panGesture}>
@@ -187,7 +187,8 @@ export default function ImagePlacement() {
                         <Image
                           source={{ uri: selectedFurniture.image_url }}
                           style={styles.furnitureImage}
-                          resizeMode="contain"
+                          contentFit="contain"
+                          transition={200}
                         />
                       ) : (
                         <View style={styles.furniturePlaceholder}>
@@ -227,13 +228,19 @@ export default function ImagePlacement() {
             )}
           </View>
         </View>
+        </Reveal>
 
         {/* Furniture Catalog */}
         {selectedImage && (
+          <Reveal>
           <View style={styles.section}>
             <Text style={styles.sectionLabel}>SELECT FURNITURE</Text>
             {fetchingFurniture ? (
-              <ActivityIndicator color={Design.color.gold} style={{ marginVertical: 20 }} />
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.catalogScroll}>
+                <ShimmerBlock width={110} height={140} radius={Design.radius.card} />
+                <ShimmerBlock width={110} height={140} radius={Design.radius.card} />
+                <ShimmerBlock width={110} height={140} radius={Design.radius.card} />
+              </ScrollView>
             ) : furnitureList.length === 0 ? (
               <Text style={styles.emptyCatalogText}>No furniture pieces available.</Text>
             ) : (
@@ -245,17 +252,19 @@ export default function ImagePlacement() {
                 {furnitureList.map((item) => {
                   const isSelected = selectedFurniture?.id === item.id;
                   return (
-                    <TouchableOpacity
+                    <PressScale
                       key={item.id}
                       style={[styles.catalogCard, isSelected && styles.catalogCardActive]}
                       onPress={() => handleSelectFurniture(item)}
+                      accessibilityLabel={`Select ${item.name}`}
                     >
                       <View style={styles.catalogCardImage}>
                         {item.image_url ? (
                           <Image
                             source={{ uri: item.image_url }}
                             style={styles.catalogCardImg}
-                            resizeMode="cover"
+                            contentFit="cover"
+                            transition={200}
                           />
                         ) : (
                           <Feather
@@ -278,12 +287,13 @@ export default function ImagePlacement() {
                           ₱{Number(item.price).toLocaleString()}
                         </Text>
                       </View>
-                    </TouchableOpacity>
+                    </PressScale>
                   );
                 })}
               </ScrollView>
             )}
           </View>
+          </Reveal>
         )}
 
         {/* Controls */}
@@ -299,15 +309,15 @@ export default function ImagePlacement() {
                   <Text style={styles.controlValue}>{Math.round(scaleValue * 100)}%</Text>
                 </View>
                 <View style={styles.controlButtons}>
-                  <TouchableOpacity style={styles.adjustButton} onPress={decreaseScale}>
+                  <PressScale style={styles.adjustButton} onPress={decreaseScale} accessibilityLabel="Decrease scale">
                     <Feather name="minus" size={14} color={Design.color.inkSoft} />
-                  </TouchableOpacity>
-                  <TouchableOpacity style={styles.adjustButtonReset} onPress={resetScale}>
+                  </PressScale>
+                  <PressScale style={styles.adjustButtonReset} onPress={resetScale} accessibilityLabel="Reset scale">
                     <Text style={styles.resetButtonText}>Reset</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity style={styles.adjustButton} onPress={increaseScale}>
+                  </PressScale>
+                  <PressScale style={styles.adjustButton} onPress={increaseScale} accessibilityLabel="Increase scale">
                     <Feather name="plus" size={14} color={Design.color.inkSoft} />
-                  </TouchableOpacity>
+                  </PressScale>
                 </View>
               </View>
 
@@ -321,21 +331,21 @@ export default function ImagePlacement() {
                   <Text style={styles.controlValue}>{rotationValue}°</Text>
                 </View>
                 <View style={styles.controlButtons}>
-                  <TouchableOpacity style={styles.adjustButton} onPress={rotateLeft}>
+                  <PressScale style={styles.adjustButton} onPress={rotateLeft} accessibilityLabel="Rotate left">
                     <Feather name="chevron-left" size={14} color={Design.color.inkSoft} />
-                  </TouchableOpacity>
-                  <TouchableOpacity style={styles.adjustButton} onPress={rotate90Left}>
+                  </PressScale>
+                  <PressScale style={styles.adjustButton} onPress={rotate90Left} accessibilityLabel="Rotate 90 degrees left">
                     <Text style={styles.quickRotationText}>-90°</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity style={styles.adjustButtonReset} onPress={resetRotation}>
+                  </PressScale>
+                  <PressScale style={styles.adjustButtonReset} onPress={resetRotation} accessibilityLabel="Reset rotation">
                     <Text style={styles.resetButtonText}>Reset</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity style={styles.adjustButton} onPress={rotate90Right}>
+                  </PressScale>
+                  <PressScale style={styles.adjustButton} onPress={rotate90Right} accessibilityLabel="Rotate 90 degrees right">
                     <Text style={styles.quickRotationText}>+90°</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity style={styles.adjustButton} onPress={rotateRight}>
+                  </PressScale>
+                  <PressScale style={styles.adjustButton} onPress={rotateRight} accessibilityLabel="Rotate right">
                     <Feather name="chevron-right" size={14} color={Design.color.inkSoft} />
-                  </TouchableOpacity>
+                  </PressScale>
                 </View>
               </View>
 
@@ -343,19 +353,20 @@ export default function ImagePlacement() {
 
               {/* Flip & Remove */}
               <View style={styles.extrasRow}>
-                <TouchableOpacity
+                <PressScale
                   style={[styles.flipButton, isFlipped && styles.flipButtonActive]}
                   onPress={toggleFlip}
+                  accessibilityLabel="Flip furniture"
                 >
                   <Feather name="repeat" size={14} color={isFlipped ? Design.color.surface : Design.color.inkSoft} />
                   <Text style={[styles.flipButtonText, { color: isFlipped ? Design.color.surface : Design.color.inkSoft }]}>
                     FLIP
                   </Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.deleteButton} onPress={handleRemoveFurniture}>
+                </PressScale>
+                <PressScale style={styles.deleteButton} onPress={handleRemoveFurniture} accessibilityLabel="Remove furniture">
                   <Feather name="trash-2" size={14} color={Design.color.surface} />
                   <Text style={styles.deleteButtonText}>REMOVE</Text>
-                </TouchableOpacity>
+                </PressScale>
               </View>
             </View>
           </View>
@@ -363,6 +374,7 @@ export default function ImagePlacement() {
 
         {/* How it works */}
         {!selectedImage && (
+          <Reveal>
           <View style={styles.section}>
             <Text style={styles.sectionLabel}>HOW IT WORKS</Text>
             <View style={styles.stepCard}>
@@ -386,44 +398,51 @@ export default function ImagePlacement() {
               ))}
             </View>
           </View>
+          </Reveal>
         )}
 
         {/* Image Picker */}
+        <Reveal>
         <View style={styles.section}>
           <Text style={styles.sectionLabel}>
             {selectedImage ? "CHANGE ROOM IMAGE" : "SELECT ROOM IMAGE"}
           </Text>
-          <TouchableOpacity style={styles.primaryButton} onPress={pickImage}>
+          <PressScale style={styles.primaryButton} onPress={pickImage} accessibilityLabel="Choose from gallery">
             <Feather name="image" size={16} color={Design.color.surface} />
             <Text style={styles.primaryButtonText}>CHOOSE FROM GALLERY</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.secondaryButton} onPress={takePhoto}>
+          </PressScale>
+          <PressScale style={styles.secondaryButton} onPress={takePhoto} accessibilityLabel="Take a photo">
             <Feather name="camera" size={16} color={Design.color.inkSoft} />
             <Text style={styles.secondaryButtonText}>TAKE A PHOTO</Text>
-          </TouchableOpacity>
+          </PressScale>
           {selectedImage && (
-            <TouchableOpacity
+            <PressScale
               style={styles.clearButton}
               onPress={() => {
                 setSelectedImage(null);
                 setSelectedFurniture(null);
               }}
+              accessibilityLabel="Clear canvas"
             >
               <Text style={styles.clearButtonText}>CLEAR CANVAS</Text>
-            </TouchableOpacity>
+            </PressScale>
           )}
         </View>
+        </Reveal>
 
+        <Reveal>
         <View style={styles.browseSection}>
           <View style={styles.browseDivider} />
           <Text style={styles.browseText}>Ready to find the perfect piece?</Text>
-          <TouchableOpacity
+          <PressScale
             style={styles.browseButton}
             onPress={() => router.push("/(user)/home")}
+            accessibilityLabel="Browse collection"
           >
             <Text style={styles.browseButtonText}>BROWSE COLLECTION</Text>
-          </TouchableOpacity>
+          </PressScale>
         </View>
+        </Reveal>
       </ScrollView>
 
 
@@ -433,11 +452,9 @@ export default function ImagePlacement() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Design.color.surface },
-  header: { backgroundColor: Design.color.surfaceMuted, padding: 28, paddingTop: 56, paddingBottom: 28 },
-  headerSmall: { fontSize: 10, letterSpacing: 4, color: Design.color.inkSoft },
-  headerLarge: { fontFamily: Design.font.display, fontSize: 34, letterSpacing: -0.8, lineHeight: 34, color: Design.color.ink, marginBottom: 16 },
-  goldDivider: { width: 40, height: 1.5, backgroundColor: Design.color.gold, marginBottom: 12 },
-  headerSubtext: { fontSize: 13, color: Design.color.inkMuted },
+  headerRow: { alignItems: "flex-start", flexDirection: "row", gap: 12, justifyContent: "space-between", paddingHorizontal: 24, paddingTop: 20 },
+  headerCopy: { flex: 1 },
+  backButton: { alignItems: "center", backgroundColor: Design.color.surface, borderColor: Design.color.line, borderRadius: Design.radius.small, borderWidth: StyleSheet.hairlineWidth, height: 44, justifyContent: "center", width: 44 },
   section: { padding: 24, paddingBottom: 0 },
   sectionLabel: { fontSize: 10, letterSpacing: 2, color: Design.color.inkSoft, marginBottom: 12 },
 
@@ -449,24 +466,24 @@ const styles = StyleSheet.create({
 
   canvasContainer: { flex: 1, position: "relative" },
   furnitureOverlay: { position: "absolute", width: 140, height: 140, justifyContent: "center", alignItems: "center", top: 90, left: 100, zIndex: 10 },
-  dragHandle: { position: "absolute", top: -10, right: -10, width: 22, height: 22, borderRadius: 11, backgroundColor: "rgba(28,28,26,0.7)", justifyContent: "center", alignItems: "center", zIndex: 11 },
+  dragHandle: { position: "absolute", top: -10, right: -10, width: 22, height: 22, borderRadius: 11, backgroundColor: "rgba(29,27,23,0.7)", justifyContent: "center", alignItems: "center", zIndex: 11 },
   furnitureImage: { width: 130, height: 130 },
-  furniturePlaceholder: { width: 130, height: 130, backgroundColor: Design.color.surfaceMuted, borderRadius: Design.radius.card, justifyContent: "center", alignItems: "center", borderWidth: 1, borderColor: Design.color.gold },
+  furniturePlaceholder: { width: 130, height: 130, backgroundColor: Design.color.surfaceMuted, borderRadius: Design.radius.card, justifyContent: "center", alignItems: "center", borderWidth: 1, borderColor: Design.color.accent },
   placeholderLabel: { fontSize: 9, color: Design.color.inkSoft, marginTop: 4, textAlign: "center", paddingHorizontal: 6 },
-  canvasOverlayHint: { position: "absolute", bottom: 12, left: 12, right: 12, backgroundColor: "rgba(28,28,26,0.75)", paddingVertical: 8, paddingHorizontal: 12, borderRadius: 20, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6 },
+  canvasOverlayHint: { position: "absolute", bottom: 12, left: 12, right: 12, backgroundColor: "rgba(29,27,23,0.75)", paddingVertical: 8, paddingHorizontal: 12, borderRadius: Design.radius.small, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6 },
   canvasOverlayHintText: { color: Design.color.surface, fontSize: 10, letterSpacing: 1 },
-  draggingBadge: { position: "absolute", top: 10, right: 10, backgroundColor: Design.color.gold, borderRadius: Design.radius.small, paddingHorizontal: 10, paddingVertical: 4 },
+  draggingBadge: { position: "absolute", top: 10, right: 10, backgroundColor: Design.color.accent, borderRadius: Design.radius.small, paddingHorizontal: 10, paddingVertical: 4 },
   draggingBadgeText: { fontSize: 9, letterSpacing: 1.5, color: Design.color.ink, fontWeight: "600" },
 
   catalogScroll: { gap: 12, paddingBottom: 8 },
   catalogCard: { width: 110, backgroundColor: Design.color.surfaceMuted, borderRadius: Design.radius.card, padding: 8, borderWidth: 0.5, borderColor: Design.color.line, alignItems: "center", position: "relative" },
-  catalogCardActive: { borderColor: Design.color.gold, borderWidth: 1.5, backgroundColor: Design.color.surfaceMuted },
+  catalogCardActive: { borderColor: Design.color.accent, borderWidth: 1.5, backgroundColor: Design.color.surfaceMuted },
   catalogCardImage: { width: 94, height: 74, backgroundColor: Design.color.surfaceMuted, borderRadius: 8, justifyContent: "center", alignItems: "center", overflow: "hidden", marginBottom: 6 },
   catalogCardImg: { width: "100%", height: "100%" },
-  selectedCheck: { position: "absolute", top: 6, right: 6, width: 18, height: 18, borderRadius: 9, backgroundColor: Design.color.gold, justifyContent: "center", alignItems: "center" },
+  selectedCheck: { position: "absolute", top: 6, right: 6, width: 18, height: 18, borderRadius: 9, backgroundColor: Design.color.accent, justifyContent: "center", alignItems: "center" },
   catalogCardInfo: { width: "100%", alignItems: "center" },
   catalogCardName: { fontSize: 11, fontWeight: "500", color: Design.color.ink, marginBottom: 2, textAlign: "center" },
-  catalogCardPrice: { fontSize: 10, color: Design.color.gold, fontWeight: "500" },
+  catalogCardPrice: { fontSize: 10, color: Design.color.accent, fontWeight: "500" },
   emptyCatalogText: { fontSize: 12, color: Design.color.inkMuted, paddingVertical: 12 },
 
   controlsCard: { backgroundColor: Design.color.surfaceMuted, borderRadius: Design.radius.card, padding: 16, borderWidth: 0.5, borderColor: Design.color.line },
@@ -481,7 +498,7 @@ const styles = StyleSheet.create({
   quickRotationText: { fontSize: 10, color: Design.color.inkSoft, fontWeight: "500" },
   controlDivider: { height: 0.5, backgroundColor: Design.color.line, marginVertical: 4 },
   extrasRow: { flexDirection: "row", gap: 12, marginTop: 12 },
-  flipButton: { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, borderWidth: 1, borderColor: Design.color.gold, borderRadius: Design.radius.small, paddingVertical: 12 },
+  flipButton: { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, borderWidth: 1, borderColor: Design.color.accent, borderRadius: Design.radius.small, paddingVertical: 12 },
   flipButtonActive: { backgroundColor: Design.color.inkSoft, borderColor: Design.color.inkSoft },
   flipButtonText: { fontSize: 10, letterSpacing: 1, fontWeight: "600" },
   deleteButton: { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, backgroundColor: Design.color.danger, borderRadius: Design.radius.small, paddingVertical: 12 },
@@ -489,7 +506,7 @@ const styles = StyleSheet.create({
 
   stepCard: { backgroundColor: Design.color.surfaceMuted, borderRadius: Design.radius.card, padding: 16, borderWidth: 0.5, borderColor: Design.color.line },
   step: { flexDirection: "row", alignItems: "flex-start", gap: 12 },
-  stepNumber: { width: 28, height: 28, borderRadius: 14, backgroundColor: Design.color.gold, justifyContent: "center", alignItems: "center" },
+  stepNumber: { width: 28, height: 28, borderRadius: 14, backgroundColor: Design.color.accent, justifyContent: "center", alignItems: "center" },
   stepNumberText: { fontSize: 12, fontWeight: "500", color: Design.color.surface },
   stepContent: { flex: 1, paddingTop: 4 },
   stepTitle: { fontSize: 13, fontWeight: "500", color: Design.color.ink, marginBottom: 2 },
@@ -498,13 +515,13 @@ const styles = StyleSheet.create({
 
   primaryButton: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, backgroundColor: Design.color.ink, borderRadius: Design.radius.small, padding: 16, marginBottom: 12 },
   primaryButtonText: { color: Design.color.surface, fontSize: 11, letterSpacing: 2 },
-  secondaryButton: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, borderWidth: 1, borderColor: Design.color.gold, borderRadius: Design.radius.small, padding: 16, marginBottom: 12 },
+  secondaryButton: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, borderWidth: 1, borderColor: Design.color.accent, borderRadius: Design.radius.small, padding: 16, marginBottom: 12 },
   secondaryButtonText: { color: Design.color.inkSoft, fontSize: 11, letterSpacing: 2 },
   clearButton: { borderWidth: 1, borderColor: Design.color.line, borderRadius: Design.radius.small, padding: 16, alignItems: "center" },
   clearButtonText: { color: Design.color.inkMuted, fontSize: 11, letterSpacing: 2 },
 
   browseSection: { padding: 24, alignItems: "center" },
-  browseDivider: { width: 40, height: 1.5, backgroundColor: Design.color.gold, marginBottom: 16 },
+  browseDivider: { width: 40, height: 1.5, backgroundColor: Design.color.accent, marginBottom: 16 },
   browseText: { fontSize: 13, color: Design.color.inkMuted, marginBottom: 16 },
   browseButton: { backgroundColor: Design.color.surfaceMuted, borderRadius: Design.radius.small, paddingHorizontal: 24, paddingVertical: 14, borderWidth: 0.5, borderColor: Design.color.line },
   browseButtonText: { fontSize: 11, letterSpacing: 2, color: Design.color.inkSoft },

@@ -9,12 +9,13 @@ import {
   StyleSheet,
   Text,
   TextInput,
-  TouchableOpacity,
   useWindowDimensions,
   View,
 } from "react-native";
+import { PressScale, Reveal } from "../../components/motion";
 import { Design, layout } from "../../constants/design";
 import { supabase } from "../../lib/supabase";
+import { goBackOr } from "../../lib/navigation";
 
 export default function Login() {
   const router = useRouter();
@@ -75,9 +76,10 @@ export default function Login() {
             <View style={styles.webBrand}>
               <Text style={styles.brandSmall}>Atelier</Text>
               <Text style={styles.brandLarge}>Carvén</Text>
-              <View style={styles.goldDivider} />
+              <View style={styles.accentDivider} />
             </View>
             <View style={styles.form}>
+              <Reveal>
               <Text style={styles.title}>Welcome back.</Text>
               <Text style={styles.subtitle}>Sign in to continue your journey.</Text>
               {error ? (
@@ -85,6 +87,8 @@ export default function Login() {
                   <Text style={styles.errorText}>{error}</Text>
                 </View>
               ) : null}
+              </Reveal>
+              <Reveal delay={80}>
               <View style={styles.inputGroup}>
                 <Text style={styles.label}>EMAIL ADDRESS</Text>
                 <TextInput
@@ -113,40 +117,46 @@ value={password}
                     autoComplete="password"
                     textContentType="password"
                   />
-                  <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.eyeBtn}>
+                  <PressScale onPress={() => setShowPassword(!showPassword)} style={styles.eyeBtn} accessibilityLabel={showPassword ? "Hide password" : "Show password"}>
                     <Text style={styles.eyeText}>{showPassword ? "HIDE" : "SHOW"}</Text>
-                  </TouchableOpacity>
+                  </PressScale>
 </View>
               </View>
-              <TouchableOpacity onPress={() => router.push("/(auth)/forgot-password")} style={styles.forgotLink} hitSlop={8}>
+              <PressScale onPress={() => router.push("/(auth)/forgot-password")} style={styles.forgotLink} hitSlop={8}>
                 <Text style={styles.forgotLinkText}>Forgot password?</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.primaryButton} onPress={handleLogin} disabled={loading}>
+              </PressScale>
+              </Reveal>
+              <Reveal delay={160}>
+              <PressScale style={styles.primaryButton} onPress={handleLogin} disabled={loading} accessibilityLabel="Sign in">
                 <Text style={styles.primaryButtonText}>{loading ? "SIGNING IN..." : "SIGN IN"}</Text>
-              </TouchableOpacity>
+              </PressScale>
               <View style={styles.dividerRow}>
                 <View style={styles.line} />
                 <Text style={styles.dividerText}>or</Text>
                 <View style={styles.line} />
               </View>
-              <TouchableOpacity style={styles.secondaryButton} onPress={() => router.push("/(auth)/signup")}>
+              <PressScale style={styles.secondaryButton} onPress={() => router.push("/(auth)/signup")} accessibilityLabel="Create an account">
                 <Text style={styles.secondaryButtonText}>Create an account</Text>
-              </TouchableOpacity>
+              </PressScale>
+              </Reveal>
             </View>
           </View>
         ) : (
           <>
             <View style={styles.header}>
-              <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+              <PressScale onPress={() => goBackOr(router, "/(auth)/onboarding")} style={styles.backBtn} accessibilityLabel="Go back">
                 <Feather name="arrow-left" size={18} color={Design.color.ink} />
-              </TouchableOpacity>
+              </PressScale>
+              <Reveal>
               <View style={styles.brandRow}>
                 <Text style={styles.brandSmall}>Atelier</Text>
                 <Text style={styles.brandLarge}>Carvén</Text>
               </View>
-              <View style={styles.goldDivider} />
+              <View style={styles.accentDivider} />
+              </Reveal>
             </View>
             <View style={styles.form}>
+              <Reveal>
               <Text style={styles.title}>Welcome back.</Text>
               <Text style={styles.subtitle}>Sign in to continue your journey.</Text>
               {error ? (
@@ -154,6 +164,8 @@ value={password}
                   <Text style={styles.errorText}>{error}</Text>
                 </View>
               ) : null}
+              </Reveal>
+              <Reveal delay={80}>
               <View style={styles.inputGroup}>
                 <Text style={styles.label}>EMAIL ADDRESS</Text>
                 <TextInput
@@ -182,25 +194,28 @@ value={password}
                     autoComplete="password"
                     textContentType="password"
                   />
-                  <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.eyeBtn}>
+                  <PressScale onPress={() => setShowPassword(!showPassword)} style={styles.eyeBtn} accessibilityLabel={showPassword ? "Hide password" : "Show password"}>
                     <Text style={styles.eyeText}>{showPassword ? "HIDE" : "SHOW"}</Text>
-                  </TouchableOpacity>
+                  </PressScale>
 </View>
               </View>
-              <TouchableOpacity onPress={() => router.push("/(auth)/forgot-password")} style={styles.forgotLink} hitSlop={8}>
+              <PressScale onPress={() => router.push("/(auth)/forgot-password")} style={styles.forgotLink} hitSlop={8}>
                 <Text style={styles.forgotLinkText}>Forgot password?</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.primaryButton} onPress={handleLogin} disabled={loading}>
+              </PressScale>
+              </Reveal>
+              <Reveal delay={160}>
+              <PressScale style={styles.primaryButton} onPress={handleLogin} disabled={loading} accessibilityLabel="Sign in">
                 <Text style={styles.primaryButtonText}>{loading ? "SIGNING IN..." : "SIGN IN"}</Text>
-              </TouchableOpacity>
+              </PressScale>
               <View style={styles.dividerRow}>
                 <View style={styles.line} />
                 <Text style={styles.dividerText}>or</Text>
                 <View style={styles.line} />
               </View>
-              <TouchableOpacity style={styles.secondaryButton} onPress={() => router.push("/(auth)/signup")}>
+              <PressScale style={styles.secondaryButton} onPress={() => router.push("/(auth)/signup")} accessibilityLabel="Create an account">
                 <Text style={styles.secondaryButtonText}>Create an account</Text>
-              </TouchableOpacity>
+              </PressScale>
+              </Reveal>
             </View>
           </>
         )}
@@ -220,7 +235,7 @@ const styles = StyleSheet.create({
     backgroundColor: Design.color.surface,
     borderRadius: Design.radius.card,
     overflow: "hidden",
-    shadowColor: "#000",
+    shadowColor: "#1D1B17",
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.1,
     shadowRadius: 24,
@@ -236,25 +251,25 @@ const styles = StyleSheet.create({
   brandRow: { marginBottom: 16 },
   brandSmall: { fontSize: 12, letterSpacing: 4, color: Design.color.inkSoft },
   brandLarge: { fontFamily: Design.font.display, fontSize: 36, letterSpacing: -1.0, lineHeight: 36, color: Design.color.ink, marginBottom: 8 },
-  goldDivider: { width: 40, height: 1.5, backgroundColor: Design.color.gold },
+  accentDivider: { width: 40, height: 1.5, backgroundColor: Design.color.accent },
   form: { flex: 1, padding: 32, paddingTop: 36 },
   title: { fontSize: 26, fontWeight: "500", color: Design.color.ink, marginBottom: 8 },
   subtitle: { fontSize: 13, color: Design.color.inkMuted, marginBottom: 32 },
-  errorBox: { backgroundColor: "#FDF0F0", borderLeftWidth: 3, borderLeftColor: Design.color.danger, padding: 12, marginBottom: 20 },
+  errorBox: { backgroundColor: "#F2DBD7", borderLeftWidth: 3, borderLeftColor: Design.color.danger, padding: 12, marginBottom: 20 },
   errorText: { fontSize: 13, color: Design.color.danger },
   inputGroup: { marginBottom: 20 },
   forgotLink: { alignItems: "flex-end", marginBottom: 18, marginTop: -10 },
-  forgotLinkText: { color: Design.color.gold, fontSize: 13, fontWeight: "500" },
+  forgotLinkText: { color: Design.color.accent, fontSize: 13, fontWeight: "500" },
   label: { fontSize: 10, letterSpacing: 2, color: Design.color.inkSoft, marginBottom: 8 },
   input: { borderBottomWidth: 1, borderBottomColor: Design.color.line, paddingVertical: 12, fontSize: 15, color: Design.color.ink, backgroundColor: "transparent" },
   passwordRow: { flexDirection: "row", alignItems: "center" },
   eyeBtn: { paddingLeft: 12, paddingVertical: 12 },
-  eyeText: { fontSize: 10, letterSpacing: 1, color: Design.color.gold },
+  eyeText: { fontSize: 10, letterSpacing: 1, color: Design.color.accent },
   primaryButton: { backgroundColor: Design.color.ink, borderRadius: Design.radius.small, padding: 18, alignItems: "center", marginTop: 12, marginBottom: 24 },
   primaryButtonText: { color: Design.color.surface, fontSize: 11, letterSpacing: 2 },
   dividerRow: { flexDirection: "row", alignItems: "center", marginBottom: 24, gap: 12 },
   line: { flex: 1, height: 1, backgroundColor: Design.color.line },
   dividerText: { fontSize: 12, color: Design.color.inkMuted },
-  secondaryButton: { borderWidth: 1, borderColor: Design.color.gold, borderRadius: Design.radius.small, padding: 17, alignItems: "center" },
+  secondaryButton: { borderWidth: 1, borderColor: Design.color.accent, borderRadius: Design.radius.small, padding: 17, alignItems: "center" },
   secondaryButtonText: { color: Design.color.inkSoft, fontSize: 13, letterSpacing: 1 },
 });

@@ -1,4 +1,5 @@
 import { Feather } from "@expo/vector-icons";
+import * as Linking from "expo-linking";
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import {
@@ -9,12 +10,13 @@ import {
   StyleSheet,
   Text,
   TextInput,
-  TouchableOpacity,
   View,
 } from "react-native";
 import { ContentFrame, TextLink } from "../../components/app-ui";
+import { PressScale, Reveal } from "../../components/motion";
 import { Design } from "../../constants/design";
 import { supabase } from "../../lib/supabase";
+import { goBackOr } from "../../lib/navigation";
 
 export default function ForgotPassword() {
   const router = useRouter();
@@ -31,7 +33,7 @@ export default function ForgotPassword() {
     setLoading(true);
     setError("");
     const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
-      redirectTo: "ateliercarven://reset-password",
+      redirectTo: Linking.createURL("reset-password"),
     });
     setLoading(false);
     if (error) {
@@ -47,16 +49,17 @@ export default function ForgotPassword() {
       <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
         <ContentFrame>
           <View style={styles.card}>
-            <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} hitSlop={8}>
+            <PressScale onPress={() => goBackOr(router, "/(auth)/login")} style={styles.backBtn} hitSlop={8} accessibilityLabel="Go back">
               <Feather name="arrow-left" size={18} color={Design.color.ink} />
-            </TouchableOpacity>
+            </PressScale>
             <View style={styles.brand}>
               <Text style={styles.brandSmall}>ATELIER</Text>
               <Text style={styles.brandLarge}>Carvén</Text>
-              <View style={styles.goldDivider} />
+              <View style={styles.accentDivider} />
             </View>
             <View style={styles.form}>
               {sent ? (
+                <Reveal>
                 <View style={styles.success}>
                   <View style={styles.successIcon}>
                     <Feather name="check" size={22} color={Design.color.success} />
@@ -66,12 +69,14 @@ export default function ForgotPassword() {
                     We sent a reset link to {email.trim()}. Open it to choose a new password. If it doesn&apos;t
                     arrive in a few minutes, check your spam folder.
                   </Text>
-                  <TouchableOpacity style={styles.primaryButton} onPress={() => router.replace("/(auth)/login")}>
+                  <PressScale style={styles.primaryButton} onPress={() => router.replace("/(auth)/login")} accessibilityLabel="Back to sign in">
                     <Text style={styles.primaryButtonText}>BACK TO SIGN IN</Text>
-                  </TouchableOpacity>
+                  </PressScale>
                 </View>
+                </Reveal>
               ) : (
                 <>
+                  <Reveal>
                   <Text style={styles.title}>Reset your password.</Text>
                   <Text style={styles.subtitle}>
                     Enter the email linked to your account and we&apos;ll send you a secure reset link.
@@ -81,6 +86,8 @@ export default function ForgotPassword() {
                       <Text style={styles.errorText}>{error}</Text>
                     </View>
                   ) : null}
+                  </Reveal>
+                  <Reveal delay={80}>
                   <View style={styles.inputGroup}>
                     <Text style={styles.label}>EMAIL ADDRESS</Text>
                     <TextInput
@@ -95,10 +102,13 @@ export default function ForgotPassword() {
                       textContentType="emailAddress"
                     />
                   </View>
-                  <TouchableOpacity style={styles.primaryButton} onPress={handleSubmit} disabled={loading}>
+                  </Reveal>
+                  <Reveal delay={160}>
+                  <PressScale style={styles.primaryButton} onPress={handleSubmit} disabled={loading} accessibilityLabel="Send reset link">
                     <Text style={styles.primaryButtonText}>{loading ? "SENDING..." : "SEND RESET LINK"}</Text>
-                  </TouchableOpacity>
-                  <TextLink label="Return to sign in" onPress={() => router.back()} style={styles.backLink} />
+                  </PressScale>
+                  <TextLink label="Return to sign in" onPress={() => goBackOr(router, "/(auth)/login")} style={styles.backLink} />
+                  </Reveal>
                 </>
               )}
             </View>
@@ -118,7 +128,7 @@ const styles = StyleSheet.create({
     backgroundColor: Design.color.surface,
     borderRadius: Design.radius.card,
     overflow: "hidden",
-    shadowColor: "#000",
+    shadowColor: "#1D1B17",
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.1,
     shadowRadius: 24,
@@ -128,11 +138,11 @@ const styles = StyleSheet.create({
   brand: { backgroundColor: Design.color.surfaceMuted, padding: 36, paddingTop: 64, paddingBottom: 28 },
   brandSmall: { fontSize: 11, letterSpacing: 4, color: Design.color.inkSoft, fontFamily: Design.font.bodySemibold },
   brandLarge: { fontFamily: Design.font.display, fontSize: 36, letterSpacing: -1.0, lineHeight: 36, color: Design.color.ink, marginBottom: 8, marginTop: 4 },
-  goldDivider: { width: 40, height: 1.5, backgroundColor: Design.color.gold },
+  accentDivider: { width: 40, height: 1.5, backgroundColor: Design.color.accent },
   form: { flex: 1, padding: 32, paddingTop: 36 },
   title: { fontSize: 26, fontFamily: Design.font.display, letterSpacing: -0.5, color: Design.color.ink, marginBottom: 8 },
   subtitle: { fontSize: 13, color: Design.color.inkMuted, lineHeight: 21, marginBottom: 32 },
-  errorBox: { backgroundColor: "#FDF0F0", borderLeftWidth: 3, borderLeftColor: Design.color.danger, padding: 12, marginBottom: 20 },
+  errorBox: { backgroundColor: "#F2DBD7", borderLeftWidth: 3, borderLeftColor: Design.color.danger, padding: 12, marginBottom: 20 },
   errorText: { fontSize: 13, color: Design.color.danger },
   inputGroup: { marginBottom: 24 },
   label: { fontSize: 11, letterSpacing: 2, color: Design.color.inkSoft, marginBottom: 8, fontFamily: Design.font.bodySemibold },
@@ -141,5 +151,5 @@ const styles = StyleSheet.create({
   primaryButtonText: { color: Design.color.surface, fontSize: 11, letterSpacing: 2, fontFamily: Design.font.bodyBold },
   backLink: { alignSelf: "center", marginTop: 20 },
   success: { alignItems: "flex-start" },
-  successIcon: { backgroundColor: "#EAF3DE", borderRadius: 26, height: 52, justifyContent: "center", alignItems: "center", marginBottom: 18, width: 52 },
+  successIcon: { backgroundColor: "#E2EAD9", borderRadius: Design.radius.small, height: 52, justifyContent: "center", alignItems: "center", marginBottom: 18, width: 52 },
 });

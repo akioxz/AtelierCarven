@@ -1,9 +1,8 @@
 import { Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
+import { Image } from "expo-image";
 import { useCallback, useEffect, useState } from "react";
 import {
-  ActivityIndicator,
-  Image,
   Modal,
   Platform,
   ScrollView,
@@ -11,13 +10,15 @@ import {
   StyleSheet,
   Text,
   TextInput,
-  TouchableOpacity,
   View,
 } from "react-native";
 import { Design } from "../../constants/design";
 import { pickAndUploadImage } from "../../lib/imageUpload";
 import { supabase } from "../../lib/supabase";
-import { AdminNavigation, ContentFrame } from "../../components/app-ui";
+import { goBackOr } from "../../lib/navigation";
+import { AdminNavigation, ContentFrame, PageHeader } from "../../components/app-ui";
+import { PressScale, Reveal, staggerDelay } from "../../components/motion";
+import { ShimmerBlock } from "../../components/skeleton";
 import ConfirmModal from "../../components/confirm-modal";
 
 const isWeb = Platform.OS === "web";
@@ -56,6 +57,8 @@ export default function ManageFurniture() {
   const [depth, setDepth] = useState("");
   const [weight, setWeight] = useState("");
   const [sizeGuides, setSizeGuides] = useState<Record<string, any>>({});
+  const [galleryImages, setGalleryImages] = useState<any[]>([]);
+  const [uploadingGallery, setUploadingGallery] = useState(false);
 
   const fetchFurniture = useCallback(async () => {
     setLoading(true);
@@ -98,10 +101,11 @@ export default function ManageFurniture() {
     setName(""); setPrice(""); setCategory("Sofa");
     setDescription(""); setImageUrl(""); setErrorMsg("");
     setWidth(""); setHeight(""); setDepth(""); setWeight("");
+    setGalleryImages([]);
     setModalVisible(true);
   };
 
-  const openEdit = (item: any) => {
+  const openEdit = async (item: any) => {
     setEditing(item);
     setName(item.name);
     setPrice(String(item.price));
@@ -115,13 +119,19 @@ export default function ManageFurniture() {
     setWeight(guide?.weight_kg != null ? String(guide.weight_kg) : "");
     setErrorMsg("");
     setModalVisible(true);
+    // Fetch gallery images for this item
+    const { data: gi } = await supabase.from("furniture_images").select("*").eq("furniture_id", item.id).order("display_order");
+    setGalleryImages(gi || []);
   };
 
   const handlePickImage = async () => {
     setUploading(true);
-    const url = await pickAndUploadImage("furniture-images", "items");
-    if (url) setImageUrl(url);
-    setUploading(false);
+    try {
+      const url = await pickAndUploadImage("furniture-images", "items");
+      if (url) setImageUrl(url);
+    } finally {
+      setUploading(false);
+    }
   };
 
   const handleSave = async () => {
@@ -192,11 +202,12 @@ export default function ManageFurniture() {
           <Image
             source={{ uri: item.image_url }}
             style={styles.cardImage}
-            resizeMode="cover"
+            contentFit="cover"
+            transition={200}
           />
         ) : (
           <View style={styles.imagePlaceholder}>
-            <Feather name={getCategoryIcon(item.category) as any} size={36} color={Design.color.gold} />
+            <Feather name={getCategoryIcon(item.category) as any} size={36} color={Design.color.accent} />
           </View>
         )}
         <View style={styles.badge}>
@@ -207,14 +218,14 @@ export default function ManageFurniture() {
         <Text style={styles.cardName} numberOfLines={2}>{item.name}</Text>
         <Text style={styles.cardPrice}>₱{Number(item.price).toLocaleString()}</Text>
         <View style={styles.cardActions}>
-          <TouchableOpacity style={styles.editBtn} onPress={() => openEdit(item)}>
+          <PressScale style={styles.editBtn} onPress={() => openEdit(item)} accessibilityLabel={`Edit ${item.name}`}>
             <Feather name="edit-2" size={12} color={Design.color.inkSoft} />
             <Text style={styles.editBtnText}>EDIT</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.deleteBtn} onPress={() => handleDelete(item)}>
+          </PressScale>
+          <PressScale style={styles.deleteBtn} onPress={() => handleDelete(item)} accessibilityLabel={`Delete ${item.name}`}>
             <Feather name="trash-2" size={12} color={Design.color.danger} />
             <Text style={styles.deleteBtnText}>DEL</Text>
-          </TouchableOpacity>
+          </PressScale>
         </View>
       </View>
     </View>
@@ -227,17 +238,10 @@ export default function ManageFurniture() {
 
       <ContentFrame>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()}>
-          <Feather name="arrow-left" size={22} color={Design.color.ink} />
-        </TouchableOpacity>
-        <View style={{ marginTop: 20 }}>
-          <Text style={styles.headerSmall}>MANAGE</Text>
-          <Text style={styles.headerLarge}>Furniture</Text>
-          <View style={styles.goldDivider} />
-          <Text style={styles.itemCount}>
-            {filteredFurniture.length} {activeFilter === "All" ? "items" : activeFilter.toLowerCase() + "s"}
-          </Text>
-        </View>
+        <PressScale onPress={() => goBackOr(router, "/(admin)/dashboard")} style={styles.backButton} accessibilityLabel="Go back">
+          <Feather name="arrow-left" size={19} color={Design.color.ink} />
+        </PressScale>
+        <PageHeader index="02" title="Furniture" subtitle={`${filteredFurniture.length} ${activeFilter === "All" ? "items" : activeFilter.toLowerCase() + "s"} in the collection.`} style={styles.headerPage} />
       </View>
 
       {/* Filter tabs */}
@@ -252,10 +256,11 @@ export default function ManageFurniture() {
             ? furniture.length
             : furniture.filter((i) => i.category === f).length;
           return (
-            <TouchableOpacity
+            <PressScale
               key={f}
               style={[styles.filterPill, activeFilter === f && styles.filterPillActive]}
               onPress={() => setActiveFilter(f)}
+              accessibilityLabel={`Filter by ${f}`}
             >
               <Text style={[styles.filterText, activeFilter === f && styles.filterTextActive]}>
                 {f}
@@ -265,13 +270,13 @@ export default function ManageFurniture() {
                   {count}
                 </Text>
               </View>
-            </TouchableOpacity>
+            </PressScale>
           );
         })}
       </ScrollView>
 
       {loading ? (
-        <ActivityIndicator color={Design.color.gold} style={{ marginTop: 40 }} />
+        <View style={styles.loadingGrid}><ShimmerBlock height={240} radius={Design.radius.card} width="47.5%" /><ShimmerBlock height={240} radius={Design.radius.card} width="47.5%" /></View>
       ) : (
         <ScrollView
           style={styles.scroll}
@@ -284,16 +289,16 @@ export default function ManageFurniture() {
               <Text style={styles.emptyText}>No {activeFilter === "All" ? "furniture" : activeFilter} yet.</Text>
             </View>
           ) : (
-            filteredFurniture.map(renderCard)
+            filteredFurniture.map((item, i) => <Reveal key={item.id} delay={staggerDelay(i, 50, 6)}>{renderCard(item)}</Reveal>)
           )}
           <View style={{ height: 100 }} />
         </ScrollView>
       )}
 
-      <TouchableOpacity style={styles.addBtn} onPress={openAdd}>
+      <PressScale style={styles.addBtn} onPress={openAdd} accessibilityLabel="Add furniture">
         <Feather name="plus" size={16} color={Design.color.surface} />
         <Text style={styles.addBtnText}>ADD FURNITURE</Text>
-      </TouchableOpacity>
+      </PressScale>
       </ContentFrame>
 
       <ConfirmModal
@@ -308,7 +313,7 @@ export default function ManageFurniture() {
         onCancel={() => { setDeleteModalVisible(false); setItemToDelete(null); }}
       />
 
-      <Modal visible={modalVisible} animationType="slide" transparent>
+      <Modal visible={modalVisible} animationType="slide" transparent onRequestClose={() => setModalVisible(false)}>
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <ScrollView showsVerticalScrollIndicator={false}>
@@ -316,20 +321,21 @@ export default function ManageFurniture() {
                 <Text style={styles.modalTitle}>
                   {editing ? "EDIT FURNITURE" : "ADD FURNITURE"}
                 </Text>
-                <TouchableOpacity onPress={() => setModalVisible(false)}>
+                <PressScale onPress={() => setModalVisible(false)} accessibilityLabel="Close">
                   <Feather name="x" size={20} color={Design.color.inkSoft} />
-                </TouchableOpacity>
+                </PressScale>
               </View>
-              <View style={styles.goldDivider} />
+              <View style={styles.accentDivider} />
 
               <Text style={styles.inputLabel}>FURNITURE IMAGE</Text>
-              <TouchableOpacity
+              <PressScale
                 style={styles.imageUploadBtn}
                 onPress={handlePickImage}
                 disabled={uploading}
+                accessibilityLabel="Upload furniture image"
               >
                 {imageUrl ? (
-                  <Image source={{ uri: imageUrl }} style={styles.uploadedImage} resizeMode="cover" />
+                  <Image source={{ uri: imageUrl }} style={styles.uploadedImage} contentFit="cover" transition={200} />
                 ) : (
                   <View style={styles.uploadPlaceholder}>
                     <Feather name="camera" size={28} color={Design.color.inkSoft} />
@@ -338,7 +344,7 @@ export default function ManageFurniture() {
                     </Text>
                   </View>
                 )}
-              </TouchableOpacity>
+              </PressScale>
 
               <Text style={styles.inputLabel}>OR PASTE IMAGE URL</Text>
               <TextInput
@@ -373,15 +379,16 @@ export default function ManageFurniture() {
               <Text style={styles.inputLabel}>CATEGORY</Text>
               <View style={styles.categoryRow}>
                 {CATEGORIES.map((cat) => (
-                  <TouchableOpacity
+                  <PressScale
                     key={cat}
                     style={[styles.categoryPill, category === cat && styles.categoryPillActive]}
                     onPress={() => setCategory(cat)}
+                    accessibilityLabel={`Set category to ${cat}`}
                   >
                     <Text style={[styles.categoryText, category === cat && styles.categoryTextActive]}>
                       {cat}
                     </Text>
-                  </TouchableOpacity>
+                  </PressScale>
                 ))}
               </View>
 
@@ -417,17 +424,53 @@ export default function ManageFurniture() {
                 </View>
               </View>
 
+              {editing ? (
+                <>
+                  <Text style={styles.inputLabel}>GALLERY IMAGES</Text>
+                  <Text style={styles.dimHint}>Additional images shown on the product page. Save the item first before adding gallery images.</Text>
+                  <View style={styles.galleryGrid}>
+                    {galleryImages.map((gi: any) => (
+                      <View key={gi.id} style={styles.galleryThumb}>
+                        <Image source={{ uri: gi.image_url }} style={styles.galleryThumbImage} contentFit="cover" transition={200} />
+                        <PressScale style={styles.galleryDelete} onPress={async () => {
+                          await supabase.from("furniture_images").delete().eq("id", gi.id);
+                          setGalleryImages((prev) => prev.filter((g: any) => g.id !== gi.id));
+                        }} accessibilityLabel="Remove gallery image">
+                          <Feather name="x" size={12} color={Design.color.surface} />
+                        </PressScale>
+                      </View>
+                    ))}
+                    <PressScale style={styles.galleryAddBtn} disabled={uploadingGallery} onPress={async () => {
+                      setUploadingGallery(true);
+                      try {
+                        const url = await pickAndUploadImage("furniture-images", "gallery");
+                        if (url && editing?.id) {
+                          const nextOrder = galleryImages.length;
+                          const { data } = await supabase.from("furniture_images").insert({ furniture_id: editing.id, image_url: url, display_order: nextOrder }).select("*").single();
+                          if (data) setGalleryImages((prev) => [...prev, data]);
+                        }
+                      } finally {
+                        setUploadingGallery(false);
+                      }
+                    }} accessibilityLabel="Add gallery image">
+                      <Feather name={uploadingGallery ? "loader" : "plus"} size={22} color={Design.color.inkSoft} />
+                      <Text style={styles.uploadText}>{uploadingGallery ? "UPLOADING..." : "ADD"}</Text>
+                    </PressScale>
+                  </View>
+                </>
+              ) : null}
+
               {errorMsg ? (
                 <Text style={styles.errorText}>{errorMsg}</Text>
               ) : null}
 
               <View style={styles.modalButtons}>
-                <TouchableOpacity style={styles.cancelBtn} onPress={() => setModalVisible(false)}>
+                <PressScale style={styles.cancelBtn} onPress={() => setModalVisible(false)} accessibilityLabel="Cancel">
                   <Text style={styles.cancelBtnText}>CANCEL</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.saveBtn} onPress={handleSave} disabled={saving}>
+                </PressScale>
+                <PressScale style={styles.saveBtn} onPress={handleSave} disabled={saving} accessibilityLabel="Save furniture">
                   <Text style={styles.saveBtnText}>{saving ? "SAVING..." : "SAVE"}</Text>
-                </TouchableOpacity>
+                </PressScale>
               </View>
               <View style={{ height: 40 }} />
             </ScrollView>
@@ -442,31 +485,20 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Design.color.surface },
 
   header: {
-    backgroundColor: Design.color.surfaceMuted,
-    padding: 28,
-    paddingTop: 56,
-    paddingBottom: 20,
+    alignItems: "center",
+    flexDirection: "row",
+    gap: 16,
+    paddingHorizontal: 2,
   },
-  headerSmall: { fontSize: 10, letterSpacing: 4, color: Design.color.inkSoft },
-  headerLarge: {
-    fontFamily: Design.font.display,
-    fontSize: 34,
-    letterSpacing: -0.8,
-    lineHeight: 34,
-    color: Design.color.ink,
-    marginBottom: 12,
-  },
-  goldDivider: {
+  headerPage: { flex: 1 },
+  backButton: { alignItems: "center", backgroundColor: Design.color.surface, borderColor: Design.color.line, borderRadius: Design.radius.small, borderWidth: StyleSheet.hairlineWidth, height: 44, justifyContent: "center", width: 44 },
+  accentDivider: {
     width: 40,
     height: 1.5,
-    backgroundColor: Design.color.gold,
+    backgroundColor: Design.color.accent,
     marginBottom: 8,
   },
-  itemCount: {
-    fontSize: 11,
-    color: Design.color.inkMuted,
-    letterSpacing: 1,
-  },
+  loadingGrid: { flexDirection: "row", flexWrap: "wrap", gap: 14, padding: 16 },
 
   filterScroll: {
     backgroundColor: Design.color.surfaceMuted,
@@ -486,7 +518,7 @@ const styles = StyleSheet.create({
     gap: 5,
     paddingHorizontal: 12,
     paddingVertical: 5,
-    borderRadius: 20,
+    borderRadius: Design.radius.small,
     borderWidth: 0.5,
     borderColor: Design.color.line,
     backgroundColor: Design.color.surface,
@@ -568,7 +600,7 @@ const styles = StyleSheet.create({
     top: 10,
     left: 10,
     backgroundColor: "rgba(28,28,26,0.68)",
-    borderRadius: 20,
+    borderRadius: Design.radius.small,
     paddingHorizontal: 9,
     paddingVertical: 4,
   },
@@ -588,7 +620,7 @@ const styles = StyleSheet.create({
   },
   cardPrice: {
     fontSize: 15,
-    color: Design.color.gold,
+    color: Design.color.accent,
     marginBottom: 12,
   },
   cardActions: { flexDirection: "row", gap: 8 },
@@ -599,7 +631,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     gap: 5,
     backgroundColor: Design.color.surfaceMuted,
-    borderRadius: 8,
+    borderRadius: Design.radius.small,
     paddingVertical: 8,
   },
   editBtnText: { fontSize: 10, letterSpacing: 1, color: Design.color.inkSoft, fontWeight: "500" },
@@ -609,8 +641,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     gap: 5,
-    backgroundColor: "#FCEBEB",
-    borderRadius: 8,
+    backgroundColor: "#F2DBD7",
+    borderRadius: Design.radius.small,
     paddingVertical: 8,
   },
   deleteBtnText: { fontSize: 10, letterSpacing: 1, color: Design.color.danger, fontWeight: "500" },
@@ -670,7 +702,7 @@ const styles = StyleSheet.create({
   textArea: {
     borderWidth: 1,
     borderColor: Design.color.line,
-    borderRadius: 8,
+    borderRadius: Design.radius.small,
     padding: 10,
     marginTop: 4,
     height: 80,
@@ -679,7 +711,7 @@ const styles = StyleSheet.create({
   categoryRow: { flexDirection: "row", gap: 8, flexWrap: "wrap" },
   categoryPill: {
     backgroundColor: Design.color.surfaceMuted,
-    borderRadius: 20,
+    borderRadius: Design.radius.small,
     paddingHorizontal: 14,
     paddingVertical: 6,
     borderWidth: 0.5,
@@ -734,4 +766,9 @@ const styles = StyleSheet.create({
   dimField: { flex: 1, minWidth: 140 },
   dimCaption: { fontSize: 9, letterSpacing: 1.2, color: Design.color.inkSoft, marginBottom: 6 },
   dimHint: { fontSize: 10, color: Design.color.inkMuted, marginBottom: 12 },
+  galleryGrid: { flexDirection: "row", flexWrap: "wrap", gap: 10, marginBottom: 16 },
+  galleryThumb: { width: 72, height: 72, borderRadius: Design.radius.small, overflow: "hidden", position: "relative" },
+  galleryThumbImage: { width: "100%", height: "100%" },
+  galleryDelete: { position: "absolute", top: 4, right: 4, width: 20, height: 20, borderRadius: Design.radius.small, backgroundColor: "rgba(33,26,22,0.7)", alignItems: "center", justifyContent: "center" },
+  galleryAddBtn: { width: 72, height: 72, borderRadius: Design.radius.small, borderWidth: 1, borderColor: Design.color.line, borderStyle: "dashed", alignItems: "center", justifyContent: "center", gap: 4 },
 });

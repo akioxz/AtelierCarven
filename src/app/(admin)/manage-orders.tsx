@@ -2,19 +2,20 @@ import { Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
 import {
-  ActivityIndicator,
   FlatList,
   Modal,
   ScrollView,
   StatusBar,
   StyleSheet,
   Text,
-  TouchableOpacity,
   View,
 } from "react-native";
 import { Design } from "../../constants/design";
 import { supabase } from "../../lib/supabase";
-import { AdminNavigation, ContentFrame } from "../../components/app-ui";
+import { goBackOr } from "../../lib/navigation";
+import { AdminNavigation, ContentFrame, PageHeader } from "../../components/app-ui";
+import { PressScale, Reveal } from "../../components/motion";
+import { ShimmerBlock } from "../../components/skeleton";
 import { getStatusBadge } from "../../constants/statuses";
 import ConfirmModal from "../../components/confirm-modal";
 
@@ -45,6 +46,7 @@ export default function ManageOrders() {
   const [modalStatus, setModalStatus] = useState("");
   const [updating, setUpdating] = useState(false);
   const [confirmUpdateOpen, setConfirmUpdateOpen] = useState(false);
+  const [updateError, setUpdateError] = useState("");
 
   const fetchOrders = useCallback(async () => {
     let query = supabase
@@ -94,6 +96,7 @@ export default function ManageOrders() {
   const openOrderDetails = (order: any) => {
     setSelectedOrder(order);
     setModalStatus(order.status);
+    setUpdateError("");
     fetchOrderItems(order.id);
   };
 
@@ -120,6 +123,7 @@ export default function ManageOrders() {
 
     if (error) {
       console.error("Error updating status:", error);
+      setUpdateError("Couldn't update the status. Please try again.");
       setUpdating(false);
       return;
     }
@@ -162,7 +166,7 @@ export default function ManageOrders() {
     const shippingInfo = parseAddress(item.address);
     const badge = getStatusBadge(item.status);
     return (
-      <TouchableOpacity style={styles.orderCard} onPress={() => openOrderDetails(item)}>
+      <PressScale style={styles.orderCard} onPress={() => openOrderDetails(item)} accessibilityLabel={`View order ${item.id.substring(0, 8).toUpperCase()}`}>
         <View style={styles.orderCardHeader}>
           <View>
             <Text style={styles.orderId}>ORDER #{item.id.substring(0, 8).toUpperCase()}</Text>
@@ -194,7 +198,7 @@ export default function ManageOrders() {
           <Text style={styles.totalLabel}>TOTAL AMOUNT</Text>
           <Text style={styles.totalAmount}>₱{Number(item.total).toLocaleString()}</Text>
         </View>
-      </TouchableOpacity>
+      </PressScale>
     );
   };
 
@@ -206,21 +210,17 @@ export default function ManageOrders() {
       {/* Header */}
       <ContentFrame>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()}>
-          <Feather name="arrow-left" size={22} color={Design.color.ink} />
-        </TouchableOpacity>
-        <View style={{ marginTop: 20 }}>
-          <Text style={styles.headerSmall}>MANAGEMENT</Text>
-          <Text style={styles.headerLarge}>Orders</Text>
-          <View style={styles.goldDivider} />
-        </View>
+        <PressScale onPress={() => goBackOr(router, "/(admin)/dashboard")} style={styles.backButton} accessibilityLabel="Go back">
+          <Feather name="arrow-left" size={19} color={Design.color.ink} />
+        </PressScale>
+        <PageHeader index="03" title="Orders" subtitle="Review deliveries and update statuses." />
       </View>
 
       {/* Filters */}
       <View style={styles.filterSection}>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterScroll}>
           {STATUS_OPTIONS.map((status) => (
-            <TouchableOpacity
+            <PressScale
               key={status}
               style={[
                 styles.filterPill,
@@ -230,6 +230,7 @@ export default function ManageOrders() {
                 setSelectedStatus(status);
                 setLoading(true);
               }}
+              accessibilityLabel={`Filter by ${status}`}
             >
               <Text
                 style={[
@@ -239,7 +240,7 @@ export default function ManageOrders() {
               >
                 {status.toUpperCase()}
               </Text>
-            </TouchableOpacity>
+            </PressScale>
           ))}
         </ScrollView>
       </View>
@@ -247,7 +248,9 @@ export default function ManageOrders() {
       {/* Main List */}
       {loading ? (
         <View style={styles.loadingContainer}>
-          <ActivityIndicator color={Design.color.gold} size="large" />
+          <ShimmerBlock height={150} radius={Design.radius.card} width="100%" />
+          <ShimmerBlock height={150} radius={Design.radius.card} width="100%" />
+          <ShimmerBlock height={150} radius={Design.radius.card} width="100%" />
         </View>
       ) : orders.length === 0 ? (
         <View style={styles.emptyContainer}>
@@ -255,6 +258,7 @@ export default function ManageOrders() {
           <Text style={styles.emptyText}>No orders found under &quot;{selectedStatus}&quot; status.</Text>
         </View>
       ) : (
+        <Reveal key={`orders-${selectedStatus}`}>
         <FlatList
           data={orders}
           renderItem={renderOrderItem}
@@ -264,25 +268,26 @@ export default function ManageOrders() {
           refreshing={refreshing}
           onRefresh={handleRefresh}
         />
+        </Reveal>
       )}
       </ContentFrame>
 
       {/* Order Detail Modal */}
-      <Modal visible={selectedOrder !== null} animationType="slide" transparent>
+      <Modal visible={selectedOrder !== null} animationType="slide" transparent onRequestClose={() => setSelectedOrder(null)}>
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             {selectedOrder && (
               <ScrollView showsVerticalScrollIndicator={false}>
                 <View style={styles.modalHeader}>
-                  <View>
-                    <Text style={styles.modalTitle}>ORDER DETAILS</Text>
-                    <Text style={styles.modalSub}>#{selectedOrder.id.substring(0, 8).toUpperCase()}</Text>
+                    <View>
+                      <Text style={styles.modalTitle}>ORDER DETAILS</Text>
+                      <Text style={styles.modalSub}>#{selectedOrder.id.substring(0, 8).toUpperCase()}</Text>
+                    </View>
+                    <PressScale style={styles.closeBtn} onPress={() => setSelectedOrder(null)} accessibilityLabel="Close order details">
+                      <Feather name="x" size={18} color={Design.color.inkSoft} />
+                    </PressScale>
                   </View>
-                  <TouchableOpacity style={styles.closeBtn} onPress={() => setSelectedOrder(null)}>
-                    <Feather name="x" size={18} color={Design.color.inkSoft} />
-                  </TouchableOpacity>
-                </View>
-                <View style={styles.goldDivider} />
+                <View style={styles.accentDivider} />
 
                 {/* Customer Address Details */}
                 <View style={styles.section}>
@@ -325,7 +330,7 @@ export default function ManageOrders() {
                   <Text style={styles.sectionLabel}>ITEMS ORDERED</Text>
                   <View style={styles.detailsCard}>
                     {loadingItems ? (
-                      <ActivityIndicator color={Design.color.gold} style={{ paddingVertical: 12 }} />
+                      <View style={styles.itemSkeleton}><ShimmerBlock width="100%" height={56} radius={Design.radius.card} /></View>
                     ) : orderItems.length === 0 ? (
                       <Text style={styles.noItemsText}>No items found for this order.</Text>
                     ) : (
@@ -350,13 +355,14 @@ export default function ManageOrders() {
                   <Text style={styles.sectionLabel}>UPDATE STATUS</Text>
                   <View style={styles.statusSelectRow}>
                     {MUTABLE_STATUSES.map((status) => (
-                      <TouchableOpacity
+                      <PressScale
                         key={status}
                         style={[
                           styles.statusSelectPill,
                           modalStatus === status && styles.statusSelectPillActive,
                         ]}
                         onPress={() => setModalStatus(status)}
+                        accessibilityLabel={`Set status to ${status}`}
                       >
                         <Text
                           style={[
@@ -366,25 +372,29 @@ export default function ManageOrders() {
                         >
                           {status}
                         </Text>
-                      </TouchableOpacity>
+                      </PressScale>
                     ))}
                   </View>
+                  {updateError ? (
+                    <Text style={{ color: Design.color.danger, fontSize: 12, marginTop: 10, lineHeight: 18 }}>{updateError}</Text>
+                  ) : null}
                 </View>
 
                 {/* Modal Buttons */}
                 <View style={styles.modalButtons}>
-                  <TouchableOpacity style={styles.cancelBtn} onPress={() => setSelectedOrder(null)}>
+                  <PressScale style={styles.cancelBtn} onPress={() => setSelectedOrder(null)} accessibilityLabel="Cancel">
                     <Text style={styles.cancelBtnText}>CANCEL</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
+                  </PressScale>
+                  <PressScale
                     style={[styles.saveBtn, selectedOrder.status === modalStatus && styles.saveBtnDisabled]}
                     onPress={() => setConfirmUpdateOpen(true)}
                     disabled={updating || selectedOrder.status === modalStatus}
+                    accessibilityLabel="Update order status"
                   >
                     <Text style={styles.saveBtnText}>
                       {updating ? "UPDATING..." : "UPDATE ORDER"}
                     </Text>
-                  </TouchableOpacity>
+                  </PressScale>
                 </View>
               </ScrollView>
             )}
@@ -408,14 +418,14 @@ export default function ManageOrders() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Design.color.surface },
-  loadingContainer: { flex: 1, justifyContent: "center", alignItems: "center" },
-  header: { backgroundColor: Design.color.surfaceMuted, padding: 28, paddingTop: 56, paddingBottom: 28 },
-  headerSmall: { fontSize: 10, letterSpacing: 4, color: Design.color.inkSoft },
-  headerLarge: { fontFamily: Design.font.display, fontSize: 34, letterSpacing: -0.8, lineHeight: 34, color: Design.color.ink, marginBottom: 16 },
-  goldDivider: { width: 40, height: 1.5, backgroundColor: Design.color.gold, marginBottom: 16 },
+  loadingContainer: { alignItems: "center", flex: 1, gap: 14, padding: 24 },
+  header: { alignItems: "center", flexDirection: "row", gap: 16, paddingHorizontal: 2 },
+  backButton: { alignItems: "center", backgroundColor: Design.color.surface, borderColor: Design.color.line, borderRadius: Design.radius.small, borderWidth: StyleSheet.hairlineWidth, height: 44, justifyContent: "center", width: 44 },
+  accentDivider: { height: 1.5, marginBottom: 8, marginTop: 8, width: 40, backgroundColor: Design.color.accent },
+  itemSkeleton: { paddingVertical: 8 },
   filterSection: { paddingVertical: 16, backgroundColor: Design.color.surface, borderBottomWidth: 0.5, borderBottomColor: Design.color.line },
   filterScroll: { paddingHorizontal: 24, gap: 8 },
-  filterPill: { backgroundColor: Design.color.surfaceMuted, borderRadius: Design.radius.pill, paddingHorizontal: 16, paddingVertical: 8, borderWidth: 0.5, borderColor: Design.color.line },
+  filterPill: { backgroundColor: Design.color.surfaceMuted, borderRadius: Design.radius.small, paddingHorizontal: 16, paddingVertical: 8, borderWidth: 0.5, borderColor: Design.color.line },
   filterPillActive: { backgroundColor: Design.color.ink, borderColor: Design.color.ink },
   filterText: { fontSize: 10, color: Design.color.inkSoft, letterSpacing: 1, fontWeight: "500" },
   filterTextActive: { color: Design.color.surface },
@@ -426,7 +436,7 @@ const styles = StyleSheet.create({
   orderCardHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" },
   orderId: { fontSize: 12, fontWeight: "600", color: Design.color.ink, letterSpacing: 1 },
   orderDate: { fontSize: 10, color: Design.color.inkMuted, marginTop: 2 },
-  statusBadge: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6 },
+  statusBadge: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: Design.radius.small },
   statusBadgeText: { fontSize: 9, fontWeight: "600", letterSpacing: 1 },
   cardDivider: { height: 0.5, backgroundColor: Design.color.line, marginVertical: 12 },
   orderCardBody: { gap: 8 },
@@ -437,11 +447,11 @@ const styles = StyleSheet.create({
   totalLabel: { fontSize: 9, color: Design.color.inkSoft, letterSpacing: 1 },
   totalAmount: { fontSize: 15, fontWeight: "600", color: Design.color.ink },
   modalOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.4)", justifyContent: "flex-end" },
-  modalContent: { backgroundColor: Design.color.surface, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, paddingBottom: 40, maxHeight: "90%" },
+  modalContent: { backgroundColor: Design.color.surface, borderTopLeftRadius: Design.radius.sheet, borderTopRightRadius: Design.radius.sheet, padding: 24, paddingBottom: 40, maxHeight: "90%" },
   modalHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 12 },
   modalTitle: { fontSize: 11, letterSpacing: 3, color: Design.color.inkSoft },
   modalSub: { fontSize: 18, fontWeight: "500", color: Design.color.ink, marginTop: 2 },
-  closeBtn: { width: 30, height: 30, borderRadius: 15, backgroundColor: Design.color.surfaceMuted, justifyContent: "center", alignItems: "center" },
+  closeBtn: { width: 30, height: 30, borderRadius: Design.radius.small, backgroundColor: Design.color.surfaceMuted, justifyContent: "center", alignItems: "center" },
   section: { marginTop: 20 },
   sectionLabel: { fontSize: 9, letterSpacing: 2, color: Design.color.inkSoft, marginBottom: 10 },
   detailsCard: { backgroundColor: Design.color.surfaceMuted, borderRadius: Design.radius.card, padding: 16, borderWidth: 0.5, borderColor: Design.color.line, gap: 10 },
@@ -453,9 +463,9 @@ const styles = StyleSheet.create({
   itemRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
   itemName: { fontSize: 12, fontWeight: "500", color: Design.color.ink },
   itemCategory: { fontSize: 10, color: Design.color.inkMuted, marginTop: 2 },
-  itemPrice: { fontSize: 12, fontWeight: "500", color: Design.color.gold },
+  itemPrice: { fontSize: 12, fontWeight: "500", color: Design.color.accent },
   statusSelectRow: { flexDirection: "row", gap: 8, flexWrap: "wrap" },
-  statusSelectPill: { backgroundColor: Design.color.surfaceMuted, borderRadius: Design.radius.pill, paddingHorizontal: 14, paddingVertical: 8, borderWidth: 0.5, borderColor: Design.color.line },
+  statusSelectPill: { backgroundColor: Design.color.surfaceMuted, borderRadius: Design.radius.small, paddingHorizontal: 14, paddingVertical: 8, borderWidth: 0.5, borderColor: Design.color.line },
   statusSelectPillActive: { backgroundColor: Design.color.ink, borderColor: Design.color.ink },
   statusSelectText: { fontSize: 11, color: Design.color.inkSoft },
   statusSelectTextActive: { color: Design.color.surface, fontWeight: "500" },

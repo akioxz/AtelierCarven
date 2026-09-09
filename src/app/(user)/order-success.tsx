@@ -5,7 +5,6 @@ import { useEffect } from "react";
 import {
     StyleSheet,
     Text,
-    TouchableOpacity,
     View,
 } from "react-native";
 import Animated, {
@@ -18,6 +17,7 @@ import Animated, {
   withSpring,
   withTiming,
 } from "react-native-reanimated";
+import { PressScale } from "../../components/motion";
 import { Design } from "../../constants/design";
 
 const EASE_OUT = Easing.bezier(0.23, 1, 0.32, 1);
@@ -62,8 +62,9 @@ export default function OrderSuccess() {
 
       {/* Text */}
       <Animated.View style={[styles.textBlock, textStyle]}>
+        <Text style={styles.stamp}>DISPATCH STAMP · THE CRATE GOES OUT</Text>
         <Text style={styles.title}>Order Placed!</Text>
-        <View style={styles.goldDivider} />
+        <View style={styles.accentDivider} />
         <Text style={styles.subtitle}>
           Thank you for your purchase.{"\n"}Your order is being processed.
         </Text>
@@ -84,13 +85,10 @@ export default function OrderSuccess() {
 
       {/* Buttons */}
       <Animated.View style={[styles.buttons, buttonsStyle]}>
-        <TouchableOpacity
-          style={styles.homeBtn}
-          onPress={() => router.replace("/(user)/home")}
-        >
+        <PressScale onPress={() => router.replace("/(user)/home")} accessibilityLabel="Back to home" style={styles.homeBtn}>
           <Feather name="home" size={15} color={Design.color.surface} />
           <Text style={styles.homeBtnText}>BACK TO HOME</Text>
-        </TouchableOpacity>
+        </PressScale>
       </Animated.View>
     </View>
   );
@@ -112,7 +110,7 @@ const styles = StyleSheet.create({
     height: 400,
     borderRadius: 200,
     borderWidth: 1,
-    borderColor: Design.color.gold,
+    borderColor: Design.color.accent,
     opacity: 0.15,
   },
   circleInner: {
@@ -123,7 +121,7 @@ const styles = StyleSheet.create({
     height: 200,
     borderRadius: 100,
     borderWidth: 1,
-    borderColor: Design.color.gold,
+    borderColor: Design.color.accent,
     opacity: 0.1,
   },
   iconWrapper: { marginBottom: 32 },
@@ -135,7 +133,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     borderWidth: 4,
-    borderColor: Design.color.gold,
+    borderColor: Design.color.accent,
   },
   textBlock: { alignItems: "center", marginBottom: 40 },
   title: {
@@ -145,10 +143,10 @@ const styles = StyleSheet.create({
     letterSpacing: -0.8,
     marginBottom: 16,
   },
-  goldDivider: {
+  accentDivider: {
     width: 40,
     height: 1.5,
-    backgroundColor: Design.color.gold,
+    backgroundColor: Design.color.accent,
     marginBottom: 16,
   },
   subtitle: {
@@ -177,4 +175,5 @@ const styles = StyleSheet.create({
     padding: 18,
   },
   homeBtnText: { color: Design.color.surface, fontSize: 11, fontFamily: Design.font.bodyBold, letterSpacing: 2 },
+  stamp: { color: Design.color.inkMuted, fontFamily: Design.font.mono, fontSize: 10, letterSpacing: 2.5, marginBottom: 14 },
 });

@@ -1,20 +1,21 @@
-import { AntDesign, Feather } from "@expo/vector-icons";
+import { Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
 import {
-  ActivityIndicator,
   FlatList,
-  Image,
   RefreshControl,
   StatusBar,
   StyleSheet,
   Text,
-  TouchableOpacity,
   View,
 } from "react-native";
 import { Design } from "../../constants/design";
+import { goBackOr } from "../../lib/navigation";
 import { supabase } from "../../lib/supabase";
-import { ContentFrame, CustomerNavigation } from "../../components/app-ui";
+import { ContentFrame, CustomerNavigation, PageHeader, PrimaryButton } from "../../components/app-ui";
+import { PressScale, Reveal } from "../../components/motion";
+import { ProductCard } from "../../components/product-card";
+import { CardSkeleton } from "../../components/skeleton";
 
 export default function Favorites() {
   const router = useRouter();
@@ -61,7 +62,10 @@ export default function Favorites() {
     const {
       data: { user },
     } = await supabase.auth.getUser();
-    if (!user) return;
+    if (!user) {
+      router.replace("/(auth)/onboarding");
+      return;
+    }
 
     // Optimistically update the UI
     setFavorites((prev) => prev.filter((item) => item.furniture_id !== furnitureId));
@@ -78,55 +82,26 @@ export default function Favorites() {
     }
   };
 
-  const getCategoryIcon = (category: string) => {
-    switch (category) {
-      case "Sofa": return "airplay";
-      case "Chair": return "sidebar";
-      case "Table": return "minus-square";
-      case "Bed": return "moon";
-      default: return "box";
-    }
-  };
-
-  const renderItem = ({ item }: { item: any }) => {
+  const renderItem = ({ item, index }: { item: any; index: number }) => {
     const product = item.furniture;
     if (!product) return null;
 
     return (
-      <TouchableOpacity
-        style={styles.card}
-        onPress={() =>
-          router.push({
-            pathname: "/(user)/product",
-            params: { id: product.id },
-          })
-        }
-      >
-        <View style={styles.imageWrapper}>
-          {product.image_url ? (
-            <Image source={{ uri: product.image_url }} style={styles.cardImage} resizeMode="cover" />
-          ) : (
-            <View style={styles.placeholderImage}>
-              <Feather name={getCategoryIcon(product.category) as any} size={36} color={Design.color.inkSoft} />
-            </View>
-          )}
-          <TouchableOpacity
-            style={styles.favBadge}
-            onPress={() => removeFavorite(product.id)}
-          >
-            <AntDesign name="heart" size={14} color={Design.color.gold} />
-          </TouchableOpacity>
-        </View>
-        <View style={styles.cardContent}>
-          <Text style={styles.cardName} numberOfLines={1}>
-            {product.name}
-          </Text>
-          <Text style={styles.cardCategory}>{product.category}</Text>
-          <Text style={styles.cardPrice}>
-            ₱{Number(product.price).toLocaleString()}
-          </Text>
-        </View>
-      </TouchableOpacity>
+      <View style={styles.cell}>
+        <ProductCard
+          item={product}
+          index={index}
+          onPress={() =>
+            router.push({
+              pathname: "/(user)/product",
+              params: { id: product.id },
+            })
+          }
+          isFavorite
+          onToggleFavorite={() => removeFavorite(product.id)}
+          tag={product.category}
+        />
+      </View>
     );
   };
 
@@ -134,151 +109,74 @@ export default function Favorites() {
     <View style={styles.container}>
       <StatusBar barStyle="dark-content" />
       <CustomerNavigation active="favorites" />
-      <ContentFrame>
-
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()}>
-          <Feather name="arrow-left" size={22} color={Design.color.ink} />
-        </TouchableOpacity>
-        <View style={{ marginTop: 20 }}>
-          <Text style={styles.headerSmall}>YOUR</Text>
-          <Text style={styles.headerLarge}>Favorites</Text>
-          <View style={styles.goldDivider} />
-        </View>
-      </View>
-
-      {/* Main Content */}
-      {loading ? (
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator color={Design.color.gold} size="large" />
-        </View>
-      ) : favorites.length === 0 ? (
-        <View style={styles.emptyContainer}>
-          <Feather name="heart" size={48} color={Design.color.line} style={{ marginBottom: 16 }} />
-          <Text style={styles.emptyTitle}>No Favorites Yet</Text>
-          <Text style={styles.emptySubtext}>
-            Tap the heart icon on any piece of furniture to save it to your wishlist.
-          </Text>
-          <TouchableOpacity style={styles.browseBtn} onPress={() => router.push("/(user)/home")}>
-            <Text style={styles.browseBtnText}>EXPLORE PIECES</Text>
-          </TouchableOpacity>
-        </View>
-      ) : (
-        <FlatList
-          data={favorites}
-          renderItem={renderItem}
-          keyExtractor={(item) => item.id}
-          numColumns={2}
-          contentContainerStyle={styles.list}
-          columnWrapperStyle={styles.row}
-          showsVerticalScrollIndicator={false}
-          refreshControl={
-            <RefreshControl
-              refreshing={refreshing}
-              onRefresh={handleRefresh}
-              tintColor={Design.color.gold}
-              colors={[Design.color.gold]}
+      <ContentFrame style={styles.frame}>
+        <View style={styles.headerRow}>
+          <View style={styles.headerCopy}>
+            <PageHeader
+              index="04"
+              title="Saved pieces"
+              subtitle={loading || favorites.length === 0 ? "Your personal gallery wall." : `${favorites.length} piece${favorites.length === 1 ? "" : "s"} in your collection.`}
             />
-          }
-        />
-      )}
+          </View>
+          <PressScale accessibilityLabel="Go back" onPress={() => goBackOr(router, "/(user)/home")} style={styles.backButton}>
+            <Feather name="arrow-left" size={19} color={Design.color.ink} />
+          </PressScale>
+        </View>
 
+        {loading ? (
+          <View style={styles.grid}>
+            {[0, 1, 2, 3].map((skeleton) => (
+              <View key={skeleton} style={styles.cell}>
+                <CardSkeleton />
+              </View>
+            ))}
+          </View>
+        ) : favorites.length === 0 ? (
+          <Reveal>
+            <View style={styles.emptyContainer}>
+              <Feather name="heart" size={40} color={Design.color.accent} />
+              <Text style={styles.emptyTitle}>No saved pieces yet</Text>
+              <Text style={styles.emptySubtext}>
+                Tap the heart on any piece to start your gallery wall.
+              </Text>
+              <PrimaryButton label="BROWSE THE COLLECTION" onPress={() => router.push("/(user)/home")} />
+            </View>
+          </Reveal>
+        ) : (
+          <FlatList
+            data={favorites}
+            renderItem={renderItem}
+            keyExtractor={(item) => item.id}
+            numColumns={2}
+            contentContainerStyle={styles.list}
+            columnWrapperStyle={styles.row}
+            showsVerticalScrollIndicator={false}
+            refreshControl={
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={handleRefresh}
+                tintColor={Design.color.accent}
+                colors={[Design.color.accent]}
+              />
+            }
+          />
+        )}
       </ContentFrame>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Design.color.surface },
-  header: {
-    backgroundColor: Design.color.surfaceMuted,
-    padding: 28,
-    paddingTop: 56,
-    paddingBottom: 28,
-  },
-  headerSmall: { fontSize: 10, letterSpacing: 4, color: Design.color.inkSoft },
-  headerLarge: {
-    fontFamily: Design.font.display,
-    fontSize: 34,
-    letterSpacing: -0.8,
-    lineHeight: 34,
-    color: Design.color.ink,
-    marginBottom: 16,
-  },
-  goldDivider: { width: 40, height: 1.5, backgroundColor: Design.color.gold },
-  loadingContainer: { flex: 1, justifyContent: "center", alignItems: "center" },
-  list: { padding: 16, paddingBottom: 100 },
-  row: { justifyContent: "space-between", marginBottom: 16 },
-  card: {
-    width: "48%",
-    backgroundColor: Design.color.surfaceMuted,
-    borderRadius: Design.radius.card,
-    overflow: "hidden",
-    borderWidth: 0.5,
-    borderColor: Design.color.line,
-  },
-  imageWrapper: {
-    height: 120,
-    backgroundColor: Design.color.surfaceMuted,
-    position: "relative",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  cardImage: { width: "100%", height: "100%" },
-  placeholderImage: { justifyContent: "center", alignItems: "center" },
-  favBadge: {
-    position: "absolute",
-    top: 8,
-    right: 8,
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: Design.color.surface,
-    justifyContent: "center",
-    alignItems: "center",
-    borderWidth: 0.5,
-    borderColor: Design.color.line,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 1,
-    elevation: 2,
-  },
-  cardContent: { padding: 12 },
-  cardName: {
-    fontSize: 13,
-    fontWeight: "500",
-    color: Design.color.ink,
-    marginBottom: 2,
-  },
-  cardCategory: { fontSize: 10, color: Design.color.inkMuted, marginBottom: 6 },
-  cardPrice: { fontSize: 13, color: Design.color.gold, fontWeight: "500" },
-  emptyContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    padding: 32,
-  },
-  emptyTitle: {
-    fontSize: 20,
-    fontWeight: "500",
-    color: Design.color.ink,
-    marginBottom: 8,
-  },
-  emptySubtext: {
-    fontSize: 13,
-    color: Design.color.inkMuted,
-    textAlign: "center",
-    lineHeight: 20,
-    marginBottom: 24,
-  },
-  browseBtn: {
-    backgroundColor: Design.color.ink,
-    borderRadius: Design.radius.small,
-    paddingHorizontal: 24,
-    paddingVertical: 14,
-  },
-  browseBtnText: { color: Design.color.surface, fontSize: 11, letterSpacing: 2, fontWeight: "500" },
-
+  container: { flex: 1, backgroundColor: Design.color.canvas },
+  frame: { paddingHorizontal: 20, paddingTop: 20 },
+  headerRow: { alignItems: "flex-start", flexDirection: "row", justifyContent: "space-between", gap: 12 },
+  headerCopy: { flex: 1 },
+  backButton: { alignItems: "center", backgroundColor: Design.color.surface, borderColor: Design.color.line, borderRadius: Design.radius.small, borderWidth: StyleSheet.hairlineWidth, height: 44, justifyContent: "center", width: 44 },
+  grid: { flexDirection: "row", flexWrap: "wrap", gap: 14, marginTop: 8 },
+  list: { paddingBottom: 100 },
+  row: { justifyContent: "space-between", marginBottom: 14 },
+  cell: { width: "47.8%" },
+  emptyContainer: { alignItems: "center", backgroundColor: Design.color.surface, borderRadius: Design.radius.card, gap: 10, justifyContent: "center", marginTop: 8, padding: 40, ...Design.shadow.card },
+  emptyTitle: { color: Design.color.ink, fontFamily: Design.font.display, fontSize: 28, letterSpacing: -0.6, marginTop: 8, textAlign: "center" },
+  emptySubtext: { color: Design.color.inkSoft, fontFamily: Design.font.body, fontSize: 13, lineHeight: 20, marginBottom: 12, textAlign: "center" },
 });

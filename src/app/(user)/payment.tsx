@@ -8,7 +8,6 @@ import {
   StyleSheet,
   Text,
   TextInput,
-  TouchableOpacity,
   View,
 } from "react-native";
 import Animated, {
@@ -19,8 +18,10 @@ import Animated, {
   withRepeat,
   withTiming,
 } from "react-native-reanimated";
-import { ContentFrame, CustomerNavigation } from "../../components/app-ui";
+import { ContentFrame, CustomerNavigation, PageHeader } from "../../components/app-ui";
+import { PressScale, Reveal } from "../../components/motion";
 import { Design } from "../../constants/design";
+import { goBackOr } from "../../lib/navigation";
 import { supabase } from "../../lib/supabase";
 
 export default function Payment() {
@@ -104,7 +105,7 @@ export default function Payment() {
 
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) { router.replace("/(auth)/onboarding"); return; }
+      if (!user) { showAlert("Sign in required", "You need to be signed in to place an order."); cancelAnimation(spin); setProcessing(false); return; }
 
       // Retrieve user's current cart items
       const { data: cartItems, error: cartFetchErr } = await supabase
@@ -184,19 +185,18 @@ export default function Payment() {
       <CustomerNavigation active="cart" />
       <ScrollView showsVerticalScrollIndicator={false} style={styles.scrollContainer} contentContainerStyle={{ paddingBottom: 24 }}>
         <ContentFrame>
-        <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.back()} disabled={processing}>
-            <Feather name="arrow-left" size={22} color={Design.color.ink} />
-          </TouchableOpacity>
-          <View style={{ marginTop: 20 }}>
-            <Text style={styles.headerSmall}>FINAL STEP</Text>
-            <Text style={styles.headerLarge}>Payment</Text>
-            <View style={styles.goldDivider} />
+        <View style={styles.headerRow}>
+          <View style={styles.headerCopy}>
+            <PageHeader index="04" title="Payment" subtitle="Choose how you'd like to pay." />
           </View>
+          <PressScale onPress={() => goBackOr(router, "/(user)/checkout")} disabled={processing} accessibilityLabel="Go back" style={styles.backButton}>
+            <Feather name="arrow-left" size={19} color={Design.color.ink} />
+          </PressScale>
         </View>
 
         {/* GCash Instructions */}
         {paymentMethod === "gcash" && (
+          <Reveal>
           <View style={styles.section}>
             <Text style={styles.sectionLabel}>PAYMENT INSTRUCTIONS</Text>
             <View style={styles.card}>
@@ -237,10 +237,12 @@ export default function Payment() {
               </View>
             </View>
           </View>
+          </Reveal>
         )}
 
         {/* Maya Instructions */}
         {paymentMethod === "maya" && (
+          <Reveal>
           <View style={styles.section}>
             <Text style={styles.sectionLabel}>PAYMENT INSTRUCTIONS</Text>
             <View style={styles.card}>
@@ -281,10 +283,12 @@ export default function Payment() {
               </View>
             </View>
           </View>
+          </Reveal>
         )}
 
         {/* COD Note */}
         {paymentMethod === "cod" && (
+          <Reveal>
           <View style={styles.section}>
             <Text style={styles.sectionLabel}>CASH ON DELIVERY</Text>
             <View style={styles.card}>
@@ -301,10 +305,12 @@ export default function Payment() {
               </View>
             </View>
           </View>
+          </Reveal>
         )}
 
         {/* Credit/Debit Card Form */}
         {paymentMethod === "card" && (
+          <Reveal>
           <View style={styles.section}>
             <Text style={styles.sectionLabel}>CREDIT / DEBIT CARD (DEMO)</Text>
 
@@ -398,9 +404,11 @@ export default function Payment() {
               </View>
             </View>
           </View>
+          </Reveal>
         )}
 
         {/* Security Note */}
+        <Reveal>
         <View style={styles.section}>
           <View style={styles.securityRow}>
             <Feather name="shield" size={13} color={Design.color.inkSoft} />
@@ -409,46 +417,43 @@ export default function Payment() {
             </Text>
           </View>
         </View>
+        </Reveal>
 
       </ContentFrame>
       </ScrollView>
 
       {/* Confirm Button */}
       <View style={styles.footer}>
-        <TouchableOpacity
-          style={[styles.confirmBtn, processing && styles.confirmBtnDisabled]}
-          onPress={handleConfirmPayment}
-          disabled={processing}
-        >
+        <PressScale style={[styles.confirmBtn, processing && styles.confirmBtnDisabled]} onPress={handleConfirmPayment} disabled={processing} accessibilityLabel={processing ? "Processing payment" : "Confirm order"}>
           {processing ? (
             <Animated.View style={spinStyle}>
-              <Feather name="loader" size={18} color={Design.color.gold} />
+              <Feather name="loader" size={18} color={Design.color.accent} />
             </Animated.View>
           ) : (
-            <Feather name="check-circle" size={18} color={Design.color.gold} />
+            <Feather name="check-circle" size={18} color={Design.color.accent} />
           )}
           <Text style={styles.confirmBtnText}>
             {processing ? "PROCESSING..." : "CONFIRM ORDER"}
           </Text>
-        </TouchableOpacity>
+        </PressScale>
         <Text style={styles.footerNote}>
           By confirming, you agree to our terms and return policy.
         </Text>
       </View>
 
       {/* Custom Alert Modal */}
-      <Modal visible={alertVisible} animationType="fade" transparent>
+      <Modal visible={alertVisible} animationType="fade" transparent onRequestClose={() => setAlertVisible(false)}>
         <View style={styles.alertOverlay}>
           <View style={styles.alertContent}>
             <View style={styles.alertIconWrap}>
-              <Feather name="alert-circle" size={28} color={Design.color.gold} />
+              <Feather name="alert-circle" size={28} color={Design.color.accent} />
             </View>
             <Text style={styles.alertTitle}>{alertTitle.toUpperCase()}</Text>
             <View style={styles.alertDivider} />
             <Text style={styles.alertMessage}>{alertMessage}</Text>
-            <TouchableOpacity style={styles.alertBtn} onPress={() => setAlertVisible(false)}>
+            <PressScale style={styles.alertBtn} onPress={() => setAlertVisible(false)} accessibilityLabel="Dismiss alert">
               <Text style={styles.alertBtnText}>GOT IT</Text>
-            </TouchableOpacity>
+            </PressScale>
           </View>
         </View>
       </Modal>
@@ -458,10 +463,9 @@ export default function Payment() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Design.color.surface },
-  header: { backgroundColor: Design.color.surfaceMuted, padding: 28, paddingTop: 56, paddingBottom: 28 },
-  headerSmall: { fontSize: 10, letterSpacing: 4, color: Design.color.inkSoft },
-  headerLarge: { fontFamily: Design.font.display, fontSize: 34, letterSpacing: -0.8, lineHeight: 34, color: Design.color.ink, marginBottom: 16 },
-  goldDivider: { width: 40, height: 1.5, backgroundColor: Design.color.gold },
+  headerRow: { alignItems: "flex-start", flexDirection: "row", gap: 12, justifyContent: "space-between", paddingHorizontal: 24, paddingTop: 20 },
+  headerCopy: { flex: 1 },
+  backButton: { alignItems: "center", backgroundColor: Design.color.surface, borderColor: Design.color.line, borderRadius: Design.radius.small, borderWidth: StyleSheet.hairlineWidth, height: 44, justifyContent: "center", width: 44 },
   section: { paddingHorizontal: 24, paddingTop: 24 },
   sectionLabel: { fontSize: 10, letterSpacing: 2, color: Design.color.inkSoft, marginBottom: 12 },
   card: { backgroundColor: Design.color.surfaceMuted, borderRadius: Design.radius.card, padding: 16, borderWidth: 0.5, borderColor: Design.color.line },
@@ -472,14 +476,14 @@ const styles = StyleSheet.create({
   gcashDivider: { height: 0.5, backgroundColor: Design.color.line, marginBottom: 16 },
   gcashDetail: { backgroundColor: Design.color.surfaceMuted, borderRadius: Design.radius.small, padding: 16, alignItems: "center", marginBottom: 20 },
   mayaIconBox: { width: 44, height: 44, borderRadius: Design.radius.card, backgroundColor: "#E6F7F0", justifyContent: "center", alignItems: "center" },
-  creditCardContainer: { backgroundColor: Design.color.ink, borderRadius: 16, padding: 24, borderWidth: 1, borderColor: Design.color.gold, shadowColor: "#000", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 5, marginBottom: 24 },
-  creditCardTitle: { fontSize: 9, letterSpacing: 3, color: Design.color.gold, fontWeight: "600", marginBottom: 16 },
+  creditCardContainer: { backgroundColor: Design.color.ink, borderRadius: Design.radius.card, padding: 24, borderWidth: 1, borderColor: Design.color.accent, shadowColor: "#1D1B17", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 5, marginBottom: 24 },
+  creditCardTitle: { fontSize: 9, letterSpacing: 3, color: Design.color.accent, fontWeight: "600", marginBottom: 16 },
   creditCardChip: { width: 40, height: 30, borderRadius: 6, backgroundColor: "#E6C587", opacity: 0.8, marginBottom: 20 },
   creditCardNumber: { fontSize: 20, letterSpacing: 2, color: Design.color.surface, fontFamily: "Courier", marginBottom: 24 },
   creditCardBottom: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-end" },
   creditCardLabel: { fontSize: 8, letterSpacing: 1, color: Design.color.inkSoft, marginBottom: 4 },
   creditCardValue: { fontSize: 12, color: Design.color.surface, fontWeight: "500", letterSpacing: 1 },
-  creditCardBrand: { fontSize: 16, fontStyle: "italic", fontWeight: "bold", color: Design.color.gold },
+  creditCardBrand: { fontSize: 16, fontStyle: "italic", fontWeight: "bold", color: Design.color.accent },
   inputGroup: { marginBottom: 16 },
   inputLabel: { fontSize: 10, letterSpacing: 2, color: Design.color.inkSoft, marginBottom: 6 },
   input: { borderBottomWidth: 1, borderBottomColor: Design.color.line, paddingVertical: 10, fontSize: 14, color: Design.color.ink },
@@ -492,7 +496,7 @@ const styles = StyleSheet.create({
   demoNoticeText: { flex: 1, fontSize: 12, color: Design.color.inkMuted, lineHeight: 18 },
   stepList: { gap: 12 },
   stepRow: { flexDirection: "row", alignItems: "flex-start", gap: 10 },
-  stepBadge: { width: 22, height: 22, borderRadius: 11, backgroundColor: Design.color.gold, justifyContent: "center", alignItems: "center", marginTop: 1 },
+  stepBadge: { width: 22, height: 22, borderRadius: 11, backgroundColor: Design.color.accent, justifyContent: "center", alignItems: "center", marginTop: 1 },
   stepBadgeText: { fontSize: 11, fontWeight: "500", color: Design.color.surface },
   stepText: { flex: 1, fontSize: 13, color: Design.color.ink, lineHeight: 22 },
   codRow: { flexDirection: "row", gap: 10, alignItems: "flex-start" },
@@ -508,7 +512,7 @@ const styles = StyleSheet.create({
 
   alertOverlay: {
     flex: 1,
-    backgroundColor: "rgba(0,0,0,0.4)",
+    backgroundColor: "rgba(29,27,23,0.5)",
     justifyContent: "center",
     alignItems: "center",
   },
@@ -539,7 +543,7 @@ const styles = StyleSheet.create({
   alertDivider: {
     width: 40,
     height: 1.5,
-    backgroundColor: Design.color.gold,
+    backgroundColor: Design.color.accent,
     marginBottom: 12,
   },
   alertMessage: {

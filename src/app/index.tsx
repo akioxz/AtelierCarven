@@ -85,7 +85,7 @@ export default function Index() {
         <Text style={styles.atelierText}>Atelier</Text>
         <Text style={styles.carvenText}>Carvén</Text>
 
-        <Animated.View style={[styles.goldLine, lineStyle]} />
+        <Animated.View style={[styles.accentLine, lineStyle]} />
 
         <Text style={styles.tagline}>
           Handcrafted furniture for the discerning home.
@@ -114,7 +114,7 @@ const styles = StyleSheet.create({
     height: 300,
     borderRadius: 150,
     borderWidth: 1,
-    borderColor: Design.color.gold,
+    borderColor: Design.color.accent,
     opacity: 0.2,
   },
   circleInner: {
@@ -125,7 +125,7 @@ const styles = StyleSheet.create({
     height: 180,
     borderRadius: 90,
     borderWidth: 1,
-    borderColor: Design.color.gold,
+    borderColor: Design.color.accent,
     opacity: 0.15,
   },
   logoContainer: {
@@ -151,9 +151,9 @@ const styles = StyleSheet.create({
     letterSpacing: 4,
     marginBottom: 8,
   },
-  goldLine: {
+  accentLine: {
     height: 1.5,
-    backgroundColor: Design.color.gold,
+    backgroundColor: Design.color.accent,
     alignSelf: "center",
     marginBottom: 16,
   },
@@ -172,6 +172,6 @@ const styles = StyleSheet.create({
   bottomText: {
     fontSize: 9,
     letterSpacing: 3,
-    color: Design.color.gold,
+    color: Design.color.accent,
   },
 });

@@ -1,5 +1,5 @@
 import { Feather } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
+import { useRouter, useLocalSearchParams } from "expo-router";
 import { useState } from "react";
 import {
     KeyboardAvoidingView,
@@ -9,16 +9,18 @@ import {
     StyleSheet,
     Text,
     TextInput,
-    TouchableOpacity,
     useWindowDimensions,
     View,
 } from "react-native";
+import { PressScale, Reveal } from "../../components/motion";
 import { Design, layout } from "../../constants/design";
 import { supabase } from "../../lib/supabase";
+import { goBackOr } from "../../lib/navigation";
 import { ContentFrame } from "../../components/app-ui";
 
 export default function Signup() {
   const router = useRouter();
+  const { styles: stylesParam } = useLocalSearchParams<{ styles?: string }>();
   const { width } = useWindowDimensions();
   const isWeb = Platform.OS === "web" && width >= layout.desktopBreakpoint;
   const [username, setUsername] = useState("");
@@ -49,7 +51,11 @@ export default function Signup() {
       email,
       password,
       options: {
-        data: { username, role: "user" },
+        data: {
+          username,
+          role: "user",
+          style_preferences: stylesParam ? stylesParam.split(",") : [],
+        },
       },
     });
 
@@ -75,21 +81,25 @@ export default function Signup() {
         <ContentFrame>
         {/* Header */}
         <View style={styles.header}>
-          <TouchableOpacity
-            onPress={() => router.back()}
+          <PressScale
+            onPress={() => goBackOr(router, "/(auth)/onboarding")}
             style={styles.backBtn}
+            accessibilityLabel="Go back"
           >
             <Feather name="arrow-left" size={18} color={Design.color.ink} />
-          </TouchableOpacity>
+          </PressScale>
+          <Reveal>
           <View style={styles.brandRow}>
             <Text style={styles.brandSmall}>Atelier</Text>
             <Text style={styles.brandLarge}>Carvén</Text>
           </View>
-          <View style={styles.goldDivider} />
+          <View style={styles.accentDivider} />
+          </Reveal>
         </View>
 
         {/* Form */}
         <View style={[styles.form, isWeb && styles.formWeb]}>
+          <Reveal>
           <Text style={styles.title}>Create account.</Text>
           <Text style={styles.subtitle}>
             Join us and discover luxury furniture.
@@ -100,7 +110,9 @@ export default function Signup() {
               <Text style={styles.errorText}>{error}</Text>
             </View>
           ) : null}
+          </Reveal>
 
+          <Reveal delay={80}>
           <View style={styles.inputGroup}>
             <Text style={styles.label}>USERNAME</Text>
             <TextInput
@@ -144,14 +156,15 @@ export default function Signup() {
                 autoComplete="new-password"
                 textContentType="newPassword"
               />
-              <TouchableOpacity
+              <PressScale
                 onPress={() => setShowPassword(!showPassword)}
                 style={styles.eyeBtn}
+                accessibilityLabel={showPassword ? "Hide password" : "Show password"}
               >
                 <Text style={styles.eyeText}>
                   {showPassword ? "HIDE" : "SHOW"}
                 </Text>
-              </TouchableOpacity>
+              </PressScale>
             </View>
           </View>
 
@@ -169,16 +182,19 @@ export default function Signup() {
               textContentType="newPassword"
             />
           </View>
+          </Reveal>
 
-          <TouchableOpacity
+          <Reveal delay={160}>
+          <PressScale
             style={styles.primaryButton}
             onPress={handleSignup}
             disabled={loading}
+            accessibilityLabel="Create account"
           >
             <Text style={styles.primaryButtonText}>
               {loading ? "CREATING ACCOUNT..." : "CREATE ACCOUNT"}
             </Text>
-          </TouchableOpacity>
+          </PressScale>
 
           <View style={styles.dividerRow}>
             <View style={styles.line} />
@@ -186,14 +202,16 @@ export default function Signup() {
             <View style={styles.line} />
           </View>
 
-          <TouchableOpacity
+          <PressScale
             style={styles.secondaryButton}
             onPress={() => router.push("/(auth)/login")}
+            accessibilityLabel="Sign in to existing account"
           >
             <Text style={styles.secondaryButtonText}>
               Sign in to existing account
             </Text>
-          </TouchableOpacity>
+          </PressScale>
+          </Reveal>
         </View>
         </ContentFrame>
       </ScrollView>
@@ -233,10 +251,10 @@ brandLarge: {
     lineHeight: 36,
     color: Design.color.ink,
   },
-  goldDivider: {
+  accentDivider: {
     width: 40,
     height: 1.5,
-    backgroundColor: Design.color.gold,
+    backgroundColor: Design.color.accent,
   },
   form: {
     flex: 1,
@@ -260,7 +278,7 @@ brandLarge: {
     marginBottom: 32,
   },
   errorBox: {
-    backgroundColor: "#FDF0F0",
+    backgroundColor: "#F2DBD7",
     borderLeftWidth: 3,
     borderLeftColor: Design.color.danger,
     padding: 12,
@@ -298,7 +316,7 @@ brandLarge: {
   eyeText: {
     fontSize: 10,
     letterSpacing: 1,
-    color: Design.color.gold,
+    color: Design.color.accent,
   },
   primaryButton: {
     backgroundColor: Design.color.ink,
@@ -330,7 +348,7 @@ brandLarge: {
   },
   secondaryButton: {
     borderWidth: 1,
-    borderColor: Design.color.gold,
+    borderColor: Design.color.accent,
     borderRadius: Design.radius.small,
     padding: 17,
     alignItems: "center",
