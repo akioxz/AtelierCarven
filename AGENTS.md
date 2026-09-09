@@ -54,7 +54,7 @@ src/
 │   ├── category-tiles.tsx  # Category tiles (home + search)
 │   └── ...
 ├── constants/
-│   ├── design.ts           # shadow.card, inkMuted (#6B5D52), narrowBreakpoint (500)
+│   ├── design.ts           # Workshop Manifest tokens (canvas#E9E3D6, ink, accent#B5501E), shadow.card, radius, fonts, breakpoints
 │   ├── statuses.ts         # getStatusBadge() for order/furniture statuses
 │   └── colors.ts
 ├── hooks/                  # Platform-specific hooks (use-color-scheme)
@@ -81,10 +81,15 @@ src/
 - Read ADRs before changing related areas; flag conflicts explicitly
 
 ## Key Design Tokens
-- `shadow.card`: `{ shadowColor: "#211A16", shadowOffset: {0,8}, shadowOpacity: 0.08, shadowRadius: 24, elevation: 6 }`
-- `inkMuted`: `#6B5D52` (darkened from default)
-- `layout.narrowBreakpoint`: `500`
-- Overline: `Manrope_600SemiBold 11px`, `letterSpacing: 2.5`, uppercase
+- Direction: **The Workshop Manifest** — maker's-atelier ledger, no gold/ornament (see `DESIGN.md` for the full spec)
+- Canvas `#E9E3D6`, surface `#F5F0E4`, surfaceMuted `#DDD5C4`, ink `#1D1B17`, line `#CFC6B2`, accent `#B5501E` (was "gold"), accentDeep `#8A3A12`, accentSoft `#E3C6A3`, success `#39553A`, danger `#A3312F`
+- `inkMuted`: `#76705F` (tertiary text/metadata)
+- `shadow.card`: `{ shadowColor: "#1D1B17", shadowOffset: {0,2}, shadowOpacity: 0.1, shadowRadius: 10, elevation: 3 }`
+- Radius: `small: 4` / `card: 10` / `sheet: 14` (pills only where intentional, `pill: 999`)
+- Fonts: **Archivo** display/body (`Design.font.display`/`body*`), **IBM Plex Mono** overlines/data/serials/ledgers (`Design.font.mono*`)
+- Overline: `IBM Plex Mono 10px`, `letterSpacing: 2.2`, uppercase (`Design.color.accent`); brand overline `MonoMedium 10px @ 3.4`
+- `layout.narrowBreakpoint`: `500`, `desktopBreakpoint`: `900`, `pageMaxWidth`: `1180`
+- Guards (do not reintroduce): gold, cream-plus-serif, pill buttons, ornamental chrome — the ledger refuses them
 
 ## Common Gotchas
 - **Don't use `Start-Process npx.cmd`** — opens console windows; use `npx expo export --platform web` for compile verification

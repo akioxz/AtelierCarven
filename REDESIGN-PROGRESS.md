@@ -58,7 +58,7 @@ npx expo export --platform web   # full web compile check (takes ~2 min)
 ```
 
 ## Key file locations
-- `src/constants/design.ts` — shadow.card, inkMuted (#6B5D52)
+- `src/constants/design.ts` — Workshop Manifest tokens (canvas, ink, accent), shadow.card, radius, fonts
 - `src/constants/statuses.ts` — shared getStatusBadge
 - `src/components/confirm-modal.tsx` — shared ConfirmModal
 - `src/components/category-tiles.tsx` — new, for home + search
