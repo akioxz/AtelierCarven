@@ -50,7 +50,7 @@ export default function Favorites() {
   }, [router]);
 
   useEffect(() => {
-    fetchFavorites();
+    void (async () => { await fetchFavorites(); })();
   }, [fetchFavorites]);
 
   const handleRefresh = () => {

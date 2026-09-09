@@ -79,8 +79,7 @@ export default function ManageFurniture() {
   }, []);
 
   useEffect(() => {
-    fetchFurniture();
-    fetchSizeGuides();
+    void (async () => { await fetchFurniture(); await fetchSizeGuides(); })();
   }, [fetchFurniture, fetchSizeGuides]);
 
   const filteredFurniture = activeFilter === "All"

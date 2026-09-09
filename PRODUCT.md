@@ -8,7 +8,7 @@ adaptive
 
 ## Stack
 
-Expo SDK 54, React Native 0.81, Expo Router, Supabase (PostgreSQL, Auth, Storage), NativeWind/Expo UI
+Expo SDK 57, React Native 0.86, Expo Router, Supabase (PostgreSQL, Auth, Storage), NativeWind/Expo UI
 
 ## Users
 

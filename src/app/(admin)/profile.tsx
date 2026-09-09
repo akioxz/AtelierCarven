@@ -40,7 +40,7 @@ export default function AdminProfile() {
   }, []);
 
   useEffect(() => {
-    fetchProfile();
+    void (async () => { await fetchProfile(); })();
   }, [fetchProfile]);
 
   const handleAvatarUpload = async () => {

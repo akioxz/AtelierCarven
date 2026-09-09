@@ -69,7 +69,7 @@ export default function ManageOrders() {
   }, [selectedStatus]);
 
   useEffect(() => {
-    fetchOrders();
+    void (async () => { await fetchOrders(); })();
   }, [fetchOrders]);
 
   const handleRefresh = () => {

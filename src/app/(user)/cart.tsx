@@ -13,7 +13,7 @@ import { supabase } from "../../lib/supabase";
 export default function Cart() {
   const router = useRouter(); const [items, setItems] = useState<any[]>([]); const [loading, setLoading] = useState(true);
   const fetchCart = useCallback(async () => { const { data: { user } } = await supabase.auth.getUser(); if (!user) return; const { data } = await supabase.from("cart").select("*, furniture(*)").eq("user_id", user.id); setItems(data || []); setLoading(false); }, []);
-  useEffect(() => { fetchCart(); }, [fetchCart]);
+  useEffect(() => { void (async () => { await fetchCart(); })(); }, [fetchCart]);
   const [actionError, setActionError] = useState("");
   const remove = async (id: string) => { const { error } = await supabase.from("cart").delete().eq("id", id); if (error) setActionError("Couldn't remove this item. Please try again."); else setActionError(""); fetchCart(); };
   const setQuantity = async (id: string, quantity: number) => { if (quantity < 1) return remove(id); const { error } = await supabase.from("cart").update({ quantity }).eq("id", id); if (error) setActionError("Couldn't update the quantity. Please try again."); else setActionError(""); fetchCart(); };

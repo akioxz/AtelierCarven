@@ -1,10 +1,11 @@
 # AtelierCarven — Agent Quick Reference
 
 ## Stack
-- **Expo SDK 54** + React 19 + React Native 0.81 + TypeScript 5.9
-- **Expo Router** (file-based routing, typed routes enabled)
+- **Expo SDK 57** + React 19.2 + React Native 0.86 + TypeScript 6.0
+- **Expo Router** (file-based routing, typed routes enabled) — Router type moved to `ImperativeRouter` in `src/lib/navigation.ts`
 - **Supabase** (PostgreSQL, Auth, Storage) — project ref `hghsiwgxzawivwgsqdvd`
 - **NativeWind/Expo UI** + custom design tokens (`src/constants/design.ts`)
+- `eslint-config-expo@57` enables React Compiler rules (`react-hooks/immutability`, `react-hooks/set-state-in-effect`) — fetch-on-mount effects use `void (async () => { await fetchX(); })();` (see commit notes); Reanimated `scale.value` writes carry targeted disables
 
 ## Essential Commands
 ```bash

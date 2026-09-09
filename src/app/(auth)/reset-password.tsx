@@ -29,20 +29,26 @@ export default function ResetPassword() {
 
   useEffect(() => {
     if (!url || ready) return;
-    const { queryParams } = Linking.parse(url);
-    const accessToken = queryParams?.access_token;
-    const refreshToken = queryParams?.refresh_token;
-    if (typeof accessToken === "string" && typeof refreshToken === "string") {
-      supabase.auth
-        .setSession({ access_token: accessToken, refresh_token: refreshToken })
-        .then(({ error: sessionError }) => {
-          setReady(true);
-          if (sessionError) setError("This reset link is invalid or has expired. Request a new one.");
-        });
-    } else {
-      setReady(true);
-      setError("This reset link is missing its verification tokens. Request a new one.");
+    const currentUrl = url;
+    let cancelled = false;
+    async function resolveLink() {
+      const { queryParams } = Linking.parse(currentUrl);
+      const accessToken = queryParams?.access_token;
+      const refreshToken = queryParams?.refresh_token;
+      if (typeof accessToken === "string" && typeof refreshToken === "string") {
+        const { error: sessionError } = await supabase.auth.setSession({ access_token: accessToken, refresh_token: refreshToken });
+        return sessionError ? "This reset link is invalid or has expired. Request a new one." : "";
+      }
+      return "This reset link is missing its verification tokens. Request a new one.";
     }
+    async function prepare() {
+      const message = await resolveLink();
+      if (cancelled) return;
+      setReady(true);
+      if (message) setError(message);
+    }
+    void prepare();
+    return () => { cancelled = true; };
   }, [url, ready]);
 
   const handleSubmit = async () => {

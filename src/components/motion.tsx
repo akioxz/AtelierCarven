@@ -70,7 +70,10 @@ export function PressScale({
   const animatedStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
 
   useEffect(() => {
-    if (disabled) scale.value = 1;
+    if (disabled) {
+      // eslint-disable-next-line react-hooks/immutability
+      scale.value = 1;
+    }
   }, [disabled, scale]);
 
   return (
@@ -86,11 +89,17 @@ export function PressScale({
         onPress?.(event);
       }}
       onPressIn={() => {
-        if (!reduced) scale.value = withSpring(Design.motion.pressScale, Design.motion.spring);
+        if (!reduced) {
+          // eslint-disable-next-line react-hooks/immutability
+          scale.value = withSpring(Design.motion.pressScale, Design.motion.spring);
+        }
         onPressIn?.();
       }}
       onPressOut={() => {
-        if (!reduced) scale.value = withSpring(1, Design.motion.spring);
+        if (!reduced) {
+          // eslint-disable-next-line react-hooks/immutability
+          scale.value = withSpring(1, Design.motion.spring);
+        }
         onPressOut?.();
       }}
     >

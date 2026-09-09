@@ -18,7 +18,6 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [username, setUsername] = useState("Admin");
 
-  useEffect(() => { fetchData(); }, []);
   const fetchData = async () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (user) { const { data: profile } = await supabase.from("profiles").select("username").eq("id", user.id).single(); setUsername(profile?.username || "Admin"); }
@@ -34,6 +33,8 @@ export default function Dashboard() {
     setStats({ furniture: furniture || 0, users: users || 0, logs: logs || 0, orders: orders || 0, revenue: (totals || []).reduce((sum, order) => sum + Number(order.total || 0), 0), pending: pending || 0 });
     setRecentLogs(recent || []); setLoading(false);
   };
+
+  useEffect(() => { void (async () => { await fetchData(); })(); }, []);
   const badge = (action: string) => action.includes("Deleted") ? { label: "Deleted", color: Design.color.danger } : action.includes("Added") ? { label: "Added", color: Design.color.success } : { label: "Updated", color: Design.color.accent };
   const logRoute = (log: any) => (log.action || "").toLowerCase().includes("furniture") ? "/(admin)/manage-furniture" : "/(admin)/manage-orders";
   const isEmpty = stats.furniture === 0;

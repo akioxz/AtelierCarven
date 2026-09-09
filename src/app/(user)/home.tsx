@@ -51,8 +51,8 @@ export default function Home() {
     const { data } = await supabase.from("favorites").select("furniture_id").eq("user_id", user.id);
     setFavorites((data || []).map((item: any) => item.furniture_id));
   }, []);
-  useEffect(() => { fetchProfile(); fetchCartCount(); fetchFavorites(); }, [fetchCartCount, fetchFavorites, fetchProfile]);
-  useEffect(() => { fetchFurniture(); }, [fetchFurniture]);
+  useEffect(() => { void (async () => { await fetchProfile(); await fetchCartCount(); await fetchFavorites(); })(); }, [fetchCartCount, fetchFavorites, fetchProfile]);
+  useEffect(() => { void (async () => { await fetchFurniture(); })(); }, [fetchFurniture]);
 
   const toggleFavorite = async (furnitureId: string) => {
     const { data: { user } } = await supabase.auth.getUser();

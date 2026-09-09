@@ -19,13 +19,13 @@ export default function ActivityLogs() {
   const [logs, setLogs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => { fetchLogs(); }, []);
-
   const fetchLogs = async () => {
     const { data } = await supabase.from("activity_logs").select("*").order("created_at", { ascending: false });
     setLogs(data || []);
     setLoading(false);
   };
+
+  useEffect(() => { void (async () => { await fetchLogs(); })(); }, []);
 
   const getLogBadge = (action: string) => {
     if (action.includes("Added")) return { color: "#3B6D11", bg: "#E2EAD9", icon: "plus-circle", label: "ADDED" };

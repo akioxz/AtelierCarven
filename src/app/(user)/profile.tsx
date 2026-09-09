@@ -79,9 +79,8 @@ export default function UserProfile() {
   };
 
   useEffect(() => {
-    fetchProfile();
-    fetchOrders();
-  }, [fetchProfile, fetchOrders]);
+    void (async () => { await fetchProfile(); await fetchOrders(); })();
+  }, [fetchOrders, fetchProfile]);
 
   const handleAvatarUpload = async () => {
     setUploadingAvatar(true);

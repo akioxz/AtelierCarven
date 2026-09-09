@@ -43,7 +43,7 @@ export default function Product() {
   const fetchSizeGuide = useCallback(async () => { const { data } = await supabase.from("size_guides").select("*").eq("furniture_id", id).maybeSingle(); setSizeGuide(data || null); }, [id]);
   const fetchFavorite = useCallback(async () => { const { data: { user } } = await supabase.auth.getUser(); if (!user) return; const { data } = await supabase.from("favorites").select("id").eq("user_id", user.id).eq("furniture_id", id).single(); setIsFavorite(Boolean(data)); }, [id]);
   const fetchGallery = useCallback(async () => { const { data } = await supabase.from("furniture_images").select("*").eq("furniture_id", id).order("display_order"); setGalleryImages(data || []); }, [id]);
-  useEffect(() => { fetchItem(); fetchFavorite(); fetchReviews(); fetchSizeGuide(); fetchGallery(); }, [fetchFavorite, fetchItem, fetchReviews, fetchSizeGuide, fetchGallery]);
+  useEffect(() => { void (async () => { await fetchItem(); await fetchFavorite(); await fetchReviews(); await fetchSizeGuide(); await fetchGallery(); })(); }, [fetchFavorite, fetchGallery, fetchItem, fetchReviews, fetchSizeGuide]);
   const toggleFavorite = useCallback(async () => { const { data: { user } } = await supabase.auth.getUser(); if (!user) { router.replace("/(auth)/onboarding"); return; } Haptics.selectionAsync(); setIsFavorite((value) => !value); if (isFavorite) await supabase.from("favorites").delete().eq("user_id", user.id).eq("furniture_id", id); else await supabase.from("favorites").insert({ user_id: user.id, furniture_id: id }); }, [id, isFavorite, router]);
   const openSelection = useCallback((nextIntent: "cart" | "buy") => { setIntent(nextIntent); setQuantity(1); setSheetOpen(true); }, []);
   const submit = useCallback(async () => {
