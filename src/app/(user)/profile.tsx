@@ -335,7 +335,7 @@ export default function UserProfile() {
                       <Feather name="x" size={18} color={Design.color.inkSoft} />
                     </PressScale>
                   </View>
-                  <View style={styles.goldDivider} />
+                  <View style={styles.accentDivider} />
 
                   <View style={styles.modalInfoRow}>
                     <View style={[styles.statusBadge, { backgroundColor: badge.bg }]}>
@@ -416,7 +416,7 @@ const styles = StyleSheet.create({
   header: { backgroundColor: Design.color.surfaceMuted, padding: 28, paddingTop: 56, paddingBottom: 28 },
   headerSmall: { fontSize: 10, letterSpacing: 4, color: Design.color.inkSoft },
   headerLarge: { fontFamily: Design.font.display, fontSize: 34, letterSpacing: -0.8, lineHeight: 34, color: Design.color.ink, marginBottom: 16 },
-  goldDivider: { width: 42, height: 1, backgroundColor: Design.color.accent, marginBottom: 8 },
+  accentDivider: { width: 42, height: 1, backgroundColor: Design.color.accent, marginBottom: 8 },
   avatarSection: { alignItems: "center", paddingVertical: 28 },
   avatarWrapper: { position: "relative", marginBottom: 8 },
   avatarImage: { width: 88, height: 88, borderRadius: 44, borderWidth: 2, borderColor: Design.color.accent },

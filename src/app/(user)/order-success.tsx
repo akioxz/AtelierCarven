@@ -64,7 +64,7 @@ export default function OrderSuccess() {
       <Animated.View style={[styles.textBlock, textStyle]}>
         <Text style={styles.stamp}>DISPATCH STAMP · THE CRATE GOES OUT</Text>
         <Text style={styles.title}>Order Placed!</Text>
-        <View style={styles.goldDivider} />
+        <View style={styles.accentDivider} />
         <Text style={styles.subtitle}>
           Thank you for your purchase.{"\n"}Your order is being processed.
         </Text>
@@ -143,7 +143,7 @@ const styles = StyleSheet.create({
     letterSpacing: -0.8,
     marginBottom: 16,
   },
-  goldDivider: {
+  accentDivider: {
     width: 40,
     height: 1.5,
     backgroundColor: Design.color.accent,

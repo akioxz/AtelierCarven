@@ -4,7 +4,7 @@
 `master` tracking `origin/security-maintenance`  
 Push with: `git push origin master:security-maintenance`
 
-## Re-skin: The Workshop Manifest (in progress, NOT yet committed)
+## Re-skin: The Workshop Manifest (committed + pushed)
 World direction chosen via impeccable: maker's-atelier ledger — kraft/canvas neutrals, graphite ink, one burnt-oxide signal, IBM Plex Mono tabular data, Archivo display, squared corners, no gold/ornament. Scope: customer-facing first; full replacement; "too precious/decorative" is the worst outcome.
 
 ### Verified done this session
@@ -28,6 +28,11 @@ World direction chosen via impeccable: maker's-atelier ledger — kraft/canvas n
 ### NOT done / blocked (next session)
 - Impeccable finish step NOT run: finish review + verdict + `DESIGN.md` update.
 - `.impeccable/surfaces/src-app-user-home.md` holds the surface brief + direction contract.
+
+### Finish step (impeccable) — done
+- Legacy `gold` style names scrubbed from `src` (`goldDivider`→`accentDivider`, `goldLine`→`accentLine`, Overline tone `"gold"`→`"accent"`) — zero `gold` matches remain.
+- `DESIGN.md` rewritten to the shipped Workshop Manifest world (Archivo + IBM Plex Mono, canvas/surface/ink/accent tokens, radii 4/10/14, FINISH line verbatim).
+- Shipping rasters captured to `.impeccable/review/` with provenance + verdict (`desktop.png`, `mobile.png`, route shots; `PROVENANCE.md`, `VERDICT.md`). `scripts/capture-review.mjs` added.
 
 ## Completed
 - `90add6e` — Fix PressScale wrapper collapsing absolutely-positioned buttons on web

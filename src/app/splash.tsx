@@ -60,7 +60,7 @@ export default function Splash() {
         <Text style={styles.atelierText}>Atelier</Text>
         <Text style={styles.carvenText}>Carvén</Text>
 
-        <Animated.View style={[styles.goldLine, lineStyle]} />
+        <Animated.View style={[styles.accentLine, lineStyle]} />
 
         <Text style={styles.tagline}>
           Handcrafted furniture for the discerning home.
@@ -126,7 +126,7 @@ const styles = StyleSheet.create({
     letterSpacing: 4,
     marginBottom: 8,
   },
-  goldLine: {
+  accentLine: {
     height: 1.5,
     backgroundColor: Design.color.accent,
     alignSelf: "center",

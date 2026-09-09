@@ -55,7 +55,7 @@ export default function ForgotPassword() {
             <View style={styles.brand}>
               <Text style={styles.brandSmall}>ATELIER</Text>
               <Text style={styles.brandLarge}>Carvén</Text>
-              <View style={styles.goldDivider} />
+              <View style={styles.accentDivider} />
             </View>
             <View style={styles.form}>
               {sent ? (
@@ -138,7 +138,7 @@ const styles = StyleSheet.create({
   brand: { backgroundColor: Design.color.surfaceMuted, padding: 36, paddingTop: 64, paddingBottom: 28 },
   brandSmall: { fontSize: 11, letterSpacing: 4, color: Design.color.inkSoft, fontFamily: Design.font.bodySemibold },
   brandLarge: { fontFamily: Design.font.display, fontSize: 36, letterSpacing: -1.0, lineHeight: 36, color: Design.color.ink, marginBottom: 8, marginTop: 4 },
-  goldDivider: { width: 40, height: 1.5, backgroundColor: Design.color.accent },
+  accentDivider: { width: 40, height: 1.5, backgroundColor: Design.color.accent },
   form: { flex: 1, padding: 32, paddingTop: 36 },
   title: { fontSize: 26, fontFamily: Design.font.display, letterSpacing: -0.5, color: Design.color.ink, marginBottom: 8 },
   subtitle: { fontSize: 13, color: Design.color.inkMuted, lineHeight: 21, marginBottom: 32 },

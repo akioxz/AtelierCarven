@@ -287,7 +287,7 @@ export default function ManageOrders() {
                       <Feather name="x" size={18} color={Design.color.inkSoft} />
                     </PressScale>
                   </View>
-                <View style={styles.goldDivider} />
+                <View style={styles.accentDivider} />
 
                 {/* Customer Address Details */}
                 <View style={styles.section}>
@@ -421,7 +421,7 @@ const styles = StyleSheet.create({
   loadingContainer: { alignItems: "center", flex: 1, gap: 14, padding: 24 },
   header: { alignItems: "center", flexDirection: "row", gap: 16, paddingHorizontal: 2 },
   backButton: { alignItems: "center", backgroundColor: Design.color.surface, borderColor: Design.color.line, borderRadius: Design.radius.small, borderWidth: StyleSheet.hairlineWidth, height: 44, justifyContent: "center", width: 44 },
-  goldDivider: { height: 1.5, marginBottom: 8, marginTop: 8, width: 40, backgroundColor: Design.color.accent },
+  accentDivider: { height: 1.5, marginBottom: 8, marginTop: 8, width: 40, backgroundColor: Design.color.accent },
   itemSkeleton: { paddingVertical: 8 },
   filterSection: { paddingVertical: 16, backgroundColor: Design.color.surface, borderBottomWidth: 0.5, borderBottomColor: Design.color.line },
   filterScroll: { paddingHorizontal: 24, gap: 8 },

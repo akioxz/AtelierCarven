@@ -76,7 +76,7 @@ export default function Login() {
             <View style={styles.webBrand}>
               <Text style={styles.brandSmall}>Atelier</Text>
               <Text style={styles.brandLarge}>Carvén</Text>
-              <View style={styles.goldDivider} />
+              <View style={styles.accentDivider} />
             </View>
             <View style={styles.form}>
               <Reveal>
@@ -152,7 +152,7 @@ value={password}
                 <Text style={styles.brandSmall}>Atelier</Text>
                 <Text style={styles.brandLarge}>Carvén</Text>
               </View>
-              <View style={styles.goldDivider} />
+              <View style={styles.accentDivider} />
               </Reveal>
             </View>
             <View style={styles.form}>
@@ -251,7 +251,7 @@ const styles = StyleSheet.create({
   brandRow: { marginBottom: 16 },
   brandSmall: { fontSize: 12, letterSpacing: 4, color: Design.color.inkSoft },
   brandLarge: { fontFamily: Design.font.display, fontSize: 36, letterSpacing: -1.0, lineHeight: 36, color: Design.color.ink, marginBottom: 8 },
-  goldDivider: { width: 40, height: 1.5, backgroundColor: Design.color.accent },
+  accentDivider: { width: 40, height: 1.5, backgroundColor: Design.color.accent },
   form: { flex: 1, padding: 32, paddingTop: 36 },
   title: { fontSize: 26, fontWeight: "500", color: Design.color.ink, marginBottom: 8 },
   subtitle: { fontSize: 13, color: Design.color.inkMuted, marginBottom: 32 },

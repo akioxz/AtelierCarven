@@ -93,7 +93,7 @@ export default function Signup() {
             <Text style={styles.brandSmall}>Atelier</Text>
             <Text style={styles.brandLarge}>Carvén</Text>
           </View>
-          <View style={styles.goldDivider} />
+          <View style={styles.accentDivider} />
           </Reveal>
         </View>
 
@@ -251,7 +251,7 @@ brandLarge: {
     lineHeight: 36,
     color: Design.color.ink,
   },
-  goldDivider: {
+  accentDivider: {
     width: 40,
     height: 1.5,
     backgroundColor: Design.color.accent,

@@ -325,7 +325,7 @@ export default function ManageFurniture() {
                   <Feather name="x" size={20} color={Design.color.inkSoft} />
                 </PressScale>
               </View>
-              <View style={styles.goldDivider} />
+              <View style={styles.accentDivider} />
 
               <Text style={styles.inputLabel}>FURNITURE IMAGE</Text>
               <PressScale
@@ -492,7 +492,7 @@ const styles = StyleSheet.create({
   },
   headerPage: { flex: 1 },
   backButton: { alignItems: "center", backgroundColor: Design.color.surface, borderColor: Design.color.line, borderRadius: Design.radius.small, borderWidth: StyleSheet.hairlineWidth, height: 44, justifyContent: "center", width: 44 },
-  goldDivider: {
+  accentDivider: {
     width: 40,
     height: 1.5,
     backgroundColor: Design.color.accent,

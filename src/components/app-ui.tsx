@@ -75,7 +75,7 @@ export function SectionHeading({ index, overline, title, style }: { index: strin
   );
 }
 
-export function Overline({ label, tone = "gold", style }: { label: string; tone?: "gold" | "muted"; style?: TextStyle }) {
+export function Overline({ label, tone = "accent", style }: { label: string; tone?: "accent" | "muted"; style?: TextStyle }) {
   return <Text style={[styles.overline, tone === "muted" && styles.overlineMuted, style]}>{label}</Text>;
 }
 
