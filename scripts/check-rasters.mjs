@@ -3,7 +3,7 @@ import { join } from "node:path";
 import { PNG } from "pngjs";
 
 const REV = "C:\\Users\\User\\Documents\\Personal Projects\\AtelierCarven\\.impeccable\\review";
-const files = ["desktop.png", "mobile.png", "01-onboarding-desktop.png", "02-home-desktop.png", "03-product-desktop.png", "04-home-mobile.png", "05-product-mobile.png"];
+const files = ["desktop.png", "mobile.png", "01-onboarding-desktop.png", "02-home-desktop.png", "03-product-desktop.png", "04-home-mobile.png", "05-product-mobile.png", "04-profile-desktop.png", "05-placement-desktop.png", "06-checkout-delivery-desktop.png", "07-checkout-payment-desktop.png", "08-checkout-review-desktop.png"];
 
 for (const f of files) {
   const buf = await readFile(join(REV, f));

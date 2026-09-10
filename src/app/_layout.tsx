@@ -5,11 +5,12 @@ import { useFonts } from "expo-font";
 import AntDesign from "@expo/vector-icons/AntDesign";
 import Feather from "@expo/vector-icons/Feather";
 import {
-  Archivo_400Regular,
-  Archivo_500Medium,
-  Archivo_600SemiBold,
-  Archivo_700Bold,
-} from "@expo-google-fonts/archivo";
+  IBMPlexSans_300Light,
+  IBMPlexSans_400Regular,
+  IBMPlexSans_500Medium,
+  IBMPlexSans_600SemiBold,
+  IBMPlexSans_700Bold,
+} from "@expo-google-fonts/ibm-plex-sans";
 import {
   IBMPlexMono_400Regular,
   IBMPlexMono_500Medium,
@@ -17,6 +18,7 @@ import {
 } from "@expo-google-fonts/ibm-plex-mono";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
+import { EntryVeil } from "../components/web-motion";
 
 export default function RootLayout() {
   const router = useRouter();
@@ -24,10 +26,11 @@ export default function RootLayout() {
   const [fontsLoaded, fontError] = useFonts({
     ...AntDesign.font,
     ...Feather.font,
-    Archivo_400Regular,
-    Archivo_500Medium,
-    Archivo_600SemiBold,
-    Archivo_700Bold,
+    IBMPlexSans_300Light,
+    IBMPlexSans_400Regular,
+    IBMPlexSans_500Medium,
+    IBMPlexSans_600SemiBold,
+    IBMPlexSans_700Bold,
     IBMPlexMono_400Regular,
     IBMPlexMono_500Medium,
     IBMPlexMono_600SemiBold,
@@ -81,6 +84,7 @@ export default function RootLayout() {
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
         <Stack screenOptions={{ headerShown: false }} />
+        <EntryVeil />
       </SafeAreaProvider>
     </GestureHandlerRootView>
   );

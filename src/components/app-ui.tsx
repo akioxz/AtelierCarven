@@ -135,6 +135,34 @@ function Navigation({ active, items, admin = false }: { active: NavKey; items: t
   );
 }
 
+export function StepIndicator({ currentStep }: { currentStep: 1 | 2 | 3 }) {
+  const steps = [
+    { label: "Delivery", num: "01" },
+    { label: "Payment", num: "02" },
+    { label: "Review", num: "03" },
+  ] as const;
+  return (
+    <View style={styles.stepRow} accessible accessibilityRole="progressbar" accessibilityValue={{ now: currentStep, min: 1, max: 3 }}>
+      {steps.map((step, i) => {
+        const index = i + 1;
+        const done = index < currentStep;
+        const active = index === currentStep;
+        return (
+          <View key={step.label} style={styles.stepFlex}>
+            {i > 0 ? <View style={[styles.stepLine, done && styles.stepLineDone]} /> : null}
+            <View style={styles.stepItem}>
+              <Text style={[styles.stepNum, done && styles.stepNumDone, active && styles.stepNumActive]}>
+                {done ? "✓" : step.num}
+              </Text>
+              <Text style={[styles.stepLabel, active && styles.stepLabelActive]}>{step.label}</Text>
+            </View>
+          </View>
+        );
+      })}
+    </View>
+  );
+}
+
 export function CustomerNavigation({ active }: { active: Extract<NavKey, "home" | "favorites" | "placement" | "cart" | "profile"> }) {
   return <Navigation active={active} items={customerItems} />;
 }
@@ -182,6 +210,16 @@ const styles = StyleSheet.create({
   mobileNavLabel: { color: Design.color.inkMuted, fontFamily: Design.font.bodyMedium, fontSize: 10 },
   mobileNavLabelSelected: { color: Design.color.ink },
   activeDot: { backgroundColor: Design.color.accent, borderRadius: 1, height: 2, marginTop: 1, width: 16 },
+  stepRow: { alignItems: "flex-start", flexDirection: "row", gap: 0, marginBottom: Design.space.xl },
+  stepFlex: { alignItems: "flex-start", flex: 1, flexDirection: "row" },
+  stepItem: { alignItems: "flex-start", flex: 1, gap: 5 },
+  stepNum: { fontFamily: Design.font.mono, fontSize: 10, letterSpacing: 1.6, color: Design.color.inkMuted },
+  stepNumDone: { color: Design.color.accent },
+  stepNumActive: { color: Design.color.ink },
+  stepLabel: { fontFamily: Design.font.mono, fontSize: 9, letterSpacing: 1.2, color: Design.color.inkMuted, textTransform: "uppercase" },
+  stepLabelActive: { color: Design.color.ink },
+  stepLine: { backgroundColor: Design.color.line, flex: 1, height: 1, marginTop: 4, minWidth: 16 },
+  stepLineDone: { backgroundColor: Design.color.accent },
   contentFrame: { flex: 1 },
   contentFrameDesktop: { alignSelf: "center", maxWidth: layout.pageMaxWidth, width: "100%" },
 });

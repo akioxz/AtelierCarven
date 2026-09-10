@@ -1,13 +1,10 @@
 import { chromium } from "playwright";
-import { readFileSync, writeFileSync } from "node:fs";
+import { writeFileSync } from "node:fs";
 import { join } from "node:path";
 
 const REPO = "C:\\Users\\User\\Documents\\Personal Projects\\AtelierCarven";
 const BASE = process.env.BASE_URL || "http://localhost:8721";
 const REV = join(REPO, ".impeccable", "review");
-const staticHtml = (name) => {
-  try { return readFileSync(join(REPO, "dist", name), "utf8"); } catch { return ""; }
-};
 
 const results = [];
 const expect = (id, label, cond, measured = "") => {
@@ -23,28 +20,14 @@ try {
 
   const vis = (p, label) => p.locator(`[role="button"]:visible`).filter({ hasText: label }).first();
   const waitURL = (p, re) => p.waitForURL(re, { timeout: 25000 });
-
-  const dbnd = "—"; // standalone fallback placeholder
   const hasDecorative = (text) => /[A-Za-z0-9)\]]\u2014[A-Za-z0-9([]/.test(text) || /\u2015/.test(text);
 
   // ---------------------------------------------------------------- desktop
   const dctx = await browser.newContext({ viewport: { width: 1920, height: 1080 } });
   const d = await dctx.newPage();
 
-  // Onboarding
+  // Onboarding (entry — splash removed, instant landing)
   await d.goto(BASE, { waitUntil: "domcontentloaded" });
-  const splash = await d.evaluate(() => new Promise((resolve) => {
-    let old = 0, neu = 0, done = false;
-    const finish = () => { if (!done) { done = true; resolve({ old, neu }); } };
-    const tick = () => {
-      const t = document.body ? document.body.innerText : "";
-      if (/LUXURY · CRAFTED · TIMELESS/.test(t)) old++;
-      if (/ATELIER CARVÉN · EST\. 2026/.test(t)) neu++;
-    };
-    tick();
-    const iv = setInterval(() => { tick(); if (old || neu) finish(); }, 80);
-    setTimeout(() => { clearInterval(iv); finish(); }, 2000);
-  }));
   await d.getByText(/A considered home begins/i).first().waitFor({ state: "visible", timeout: 15000 });
   const ob = await d.evaluate(() => {
     const txt = document.body.innerText;
@@ -53,19 +36,21 @@ try {
       const s = getComputedStyle(el);
       return s.backgroundColor === "rgb(233, 227, 214)" && s.display !== "none" && parseFloat(s.width || "0") > 200;
     });
-    const bottom = [...document.querySelectorAll("div,span")].filter((n) => n.children.length === 0 && /EST. 2026/.test((n.textContent || "").trim()));
+    const est = leafMatch("EST. 2026 · CURATED FOR HOME");
     const btnRadii = [...document.querySelectorAll('[role="button"]')].map((b) => getComputedStyle(b).borderRadius);
     const decorative = txt.match(/[A-Za-z0-9)\]]\u2014[A-Za-z0-9([]/g) || [];
     return {
       canvas: canvasBlock ? getComputedStyle(canvasBlock).backgroundColor : null,
-      priorFont: bottom[0] ? getComputedStyle(bottom[0]).fontFamily : null,
-      priorSpacing: bottom[0] ? getComputedStyle(bottom[0]).letterSpacing : null,
+      priorFont: est ? getComputedStyle(est).fontFamily : null,
+      priorSpacing: est ? getComputedStyle(est).letterSpacing : null,
       decorative,
       pillRadii: btnRadii.filter((r) => r.endsWith("px") && parseFloat(r) >= 20),
     };
   });
-  const splashStatic = staticHtml("index.html") + "\n" + staticHtml("splash.html");
-  expect("OB1", "splash strip rebranded (static HTML + old gone in DOM)", (/ATELIER CARV.{0,16}EST\. 2026/.test(splashStatic) || splash.neu > 0) && !/LUXURY/.test(splashStatic) && splash.old === 0, `new=${splash.neu} old=${splash.old}`);
+  expect("OB1", "no splash screen (onboarding lands instantly, no old splash strip)", await d.evaluate(() => {
+    const t = document.body.innerText;
+    return !/ATELIER CARVÉN · EST\. 2026/.test(t) && !/HANDCRAFTED FURNITURE/.test(t);
+  }), "splash removed");
   expect("OB2", "canvas #E9E3D6", ob.canvas === "rgb(233, 227, 214)", ob.canvas);
   expect("OB3", "EST. 2026 overline mono + letter-spaced", !!(ob.priorFont || "").toLowerCase().match(/plex ?mono/) && parseFloat(ob.priorSpacing) >= 1, ob.priorFont);
   expect("OB4", "no decorative em-dash in visible text", ob.decorative.length === 0, `${ob.decorative.length} found`);
@@ -98,6 +83,26 @@ try {
     const leafMatch = (t) => [...document.querySelectorAll("div,span")].find((n) => n.children.length === 0 && (n.textContent || "").trim() === t);
     const ledgerSub = leafMatch("pieces in the ledger");
     const searchBtns = [...document.querySelectorAll('[aria-label="Search the collection"]')];
+    const searchBtn = searchBtns[0] || null;
+    let searchGeom = null;
+    if (searchBtn) {
+      const leaf = (t) => [...searchBtn.querySelectorAll("div,span")].find((n) => n.children.length === 0 && (n.textContent || "").trim() === t);
+      const placeholder = leaf("Search the collection");
+      const glyphs = [...searchBtn.querySelectorAll("div,span")].filter((n) => n.children.length === 0 && /feather/i.test(getComputedStyle(n).fontFamily) && (n.textContent || "").trim().length === 1);
+      const arrow = glyphs[glyphs.length - 1] || null;
+      if (placeholder && arrow) {
+        const pr = placeholder.getBoundingClientRect();
+        const ar = arrow.getBoundingClientRect();
+        const br = searchBtn.getBoundingClientRect();
+        searchGeom = {
+          placeholderFound: true,
+          dy: Math.abs((ar.top + ar.height / 2) - (pr.top + pr.height / 2)),
+          arrowRightMargin: Math.round(br.right - ar.right),
+          arrowClearsPlaceholder: ar.left > pr.right,
+          placeholderSingleLine: pr.height < 24,
+        };
+      } else searchGeom = { placeholderFound: false };
+    }
     const heading = leafMatch("Handpicked for you");
     const overline = heading ? heading.previousElementSibling : null;
     const leading = heroCopy && heroCopy.firstElementChild ? heroCopy.firstElementChild.textContent.trim().slice(0, 40) : null;
@@ -125,6 +130,7 @@ try {
         return s.backgroundColor === "rgb(233, 227, 214)" && parseFloat(el.getBoundingClientRect().width) > 300;
       }) ? "rgb(233,227,214)" : null,
       searchRadius: searchBtns[0] ? getComputedStyle(searchBtns[0]).borderRadius : null,
+      searchGeom,
       hasNNumbered: /(N°\s?\d|No\.\s?\d)/.test(document.body.innerText),
       numberedEyebrows,
       decorative,
@@ -142,6 +148,36 @@ try {
   expect("HM8", "no numbered `N°02` type eyebrow", !home.hasNNumbered && home.numberedEyebrows.length === 0, home.numberedEyebrows.join("|") || "none");
   expect("HM9", "no decorative em-dash", home.decorative.length === 0, `${home.decorative.length} decorative / ${home.falls} standalone fallback`);
   expect("HM10", "no pill buttons (radius >= 20)", home.pillRadii.length === 0, home.pillRadii.join(",") || "none");
+  expect("AL1", "search arrow vertically aligned with placeholder", home.searchGeom?.placeholderFound === true && home.searchGeom.dy <= 8, home.searchGeom?.dy != null ? `${Math.round(home.searchGeom.dy)}px` : "no arrow/placeholder");
+  expect("AL2", "search arrow pinned right, clears placeholder, one line", home.searchGeom?.placeholderFound === true && home.searchGeom.arrowRightMargin >= 4 && home.searchGeom.arrowClearsPlaceholder && home.searchGeom.placeholderSingleLine, home.searchGeom);
+
+  // Profile — sign-out row must be inline, not stacked; update-photo hint is a mono stamp
+  await d.getByRole("tab", { name: "Profile" }).click();
+  await waitURL(d, /\/profile$/);
+  await d.waitForTimeout(1600);
+  const prof = await d.evaluate(() => {
+    const logoutBtn = document.querySelector('[aria-label="Sign out"]');
+    if (!logoutBtn) return { found: false };
+    const label = [...logoutBtn.querySelectorAll("div,span")].find((n) => n.children.length === 0 && (n.textContent || "").trim() === "SIGN OUT");
+    const glyphs = [...logoutBtn.querySelectorAll("div,span")].filter((n) => n.children.length === 0 && /feather/i.test(getComputedStyle(n).fontFamily) && (n.textContent || "").trim().length === 1);
+    const icon = glyphs[glyphs.length - 1] || null;
+    if (!label || !icon) return { found: false };
+    const lr = label.getBoundingClientRect();
+    const ir = icon.getBoundingClientRect();
+    const updateNode = [...document.querySelectorAll("div,span")].find((n) => n.children.length === 0 && (n.textContent || "").trim() === "UPDATE PHOTO");
+    return {
+      found: true,
+      dy: Math.abs((ir.top + ir.height / 2) - (lr.top + lr.height / 2)),
+      labelSingleLine: lr.height < 24,
+      updateHint: !!updateNode,
+      updateHintFont: updateNode ? getComputedStyle(updateNode).fontFamily : null,
+    };
+  });
+  expect("PL1", "sign-out icon inline with SIGN OUT label", prof.found && prof.dy <= 7, prof.found ? `${Math.round(prof.dy)}px` : "not found");
+  expect("PL2", "UPDATE PHOTO mono stamp present", prof.updateHint && /plex ?mono/i.test(prof.updateHintFont || ""), prof.updateHintFont);
+  await d.getByRole("tab", { name: "Home" }).click();
+  await waitURL(d, /\/home$/);
+  await d.waitForTimeout(800);
 
   // Search (SectionHeading) — from home, then back
   await d.locator('[role="button"][aria-label="Search the collection"]').first().click();
@@ -205,7 +241,7 @@ try {
   expect("PR5", "no decorative em-dash", prod.decorative.length === 0, `${prod.decorative.length} decorative / ${prod.falls}`);
   if (!prod.hasSerial || !prod.hasBuyNow) console.log("PRODUCT DEBUG:", JSON.stringify(prod).slice(0, 700));
 
-  // Checkout
+  // Checkout step 1 (delivery)
   await d.locator('a[href*="/product"], [role="button"]').filter({ hasText: /BUY NOW/ }).first().click().catch(() => {});
   await d.waitForTimeout(1200);
   await d.getByText("Ready to add", { exact: true }).first().waitFor({ state: "visible", timeout: 15000 });
@@ -215,18 +251,60 @@ try {
   const ck = await d.evaluate(() => {
     const totalLeaf = [...document.querySelectorAll("div,span")].find((n) => n.children.length === 0 && (n.textContent || "").trim() === "Total");
     const totalNode = totalLeaf ? [...totalLeaf.parentElement.querySelectorAll("div,span")].find((n) => /^₱/.test((n.textContent || "").trim()) && n.children.length === 0) : null;
+    const stepLabels = ["Delivery", "Payment", "Review"].filter((l) => [...document.querySelectorAll("div,span")].some((n) => n.children.length === 0 && (n.textContent || "").trim() === l));
     return {
-      hasDemoCopy: /Simulated only\. Never enter real card details\./.test(document.body.innerText),
       hasPaymentCta: /CONTINUE TO PAYMENT/.test(document.body.innerText),
+      stepCount: stepLabels.length,
       totalFont: totalNode ? getComputedStyle(totalNode).fontFamily : null,
       totalColor: totalNode ? getComputedStyle(totalNode).color : null,
       decorative: document.body.innerText.match(/[A-Za-z0-9)\]]\u2014[A-Za-z0-9([]/g) || [],
     };
   });
-  expect("CK1", "de-dashed card demo copy", ck.hasDemoCopy, ck.hasDemoCopy ? "new copy" : "old copy");
+  expect("CK1", "step indicator shows Delivery / Payment / Review", ck.stepCount === 3, `${ck.stepCount} steps`);
   expect("CK2", "CONTINUE TO PAYMENT present", ck.hasPaymentCta);
-  expect("CK3", "total in Archivo display, accent", /archivo/i.test(ck.totalFont || "") && ck.totalColor === "rgb(181, 80, 30)", ck.totalFont);
+  expect("CK3", "total in IBM Plex Sans display, accent", /plex ?sans/i.test(ck.totalFont || "") && ck.totalColor === "rgb(181, 80, 30)", ck.totalFont);
   expect("CK4", "no decorative em-dash", ck.decorative.length === 0, `${ck.decorative.length} found`);
+
+    // Fill delivery form (index-based, proven approach), then step 2 (payment)
+  const deliveryVals = ["Spec Audit", "+63 917 123 4567", "123 Test St", "Manila"];
+  let dIdx = 0;
+  {
+    const inputs = d.locator('input:visible');
+    const n = await inputs.count();
+    for (let i = 0; i < n; i++) {
+      const ph = await inputs.nth(i).getAttribute("placeholder");
+      if (ph) await inputs.nth(i).fill(deliveryVals[dIdx++] ?? "");
+    }
+  }
+  await d.waitForTimeout(600);
+  await vis(d, "CONTINUE TO PAYMENT").click();
+  await waitURL(d, (u) => u.pathname.endsWith("/checkout-payment"));
+  await d.waitForTimeout(1400);
+  const ck2 = await d.evaluate(() => {
+    const radios = [...document.querySelectorAll('[role="radio"]')].filter((el) => el.offsetParent !== null);
+    return {
+      hasDemoCopy: /Simulated only\. Never enter real card details\./.test(document.body.innerText),
+      hasContinueToReview: /CONTINUE TO REVIEW/.test(document.body.innerText),
+      radioCount: radios.length,
+      decorative: document.body.innerText.match(/[A-Za-z0-9)\]]\u2014[A-Za-z0-9([]/g) || [],
+    };
+  });
+  expect("CK5", "de-dashed card demo copy", ck2.hasDemoCopy, ck2.hasDemoCopy ? "new copy" : "old copy");
+  expect("CK6", "4 payment radios + CONTINUE TO REVIEW", ck2.hasContinueToReview && ck2.radioCount === 4, `${ck2.radioCount} radios`);
+  expect("CK7", "no decorative em-dash", ck2.decorative.length === 0, `${ck2.decorative.length} found`);
+
+
+  // Step 3 (review)
+  await vis(d, "CONTINUE TO REVIEW").click();
+  await waitURL(d, (u) => u.pathname.endsWith("/checkout-review"));
+  await d.waitForTimeout(1400);
+  const ck3 = await d.evaluate(() => ({
+    hasConfirm: /CONFIRM ORDER/.test(document.body.innerText),
+    hasMethod: /Cash on delivery/.test(document.body.innerText),
+    decorative: document.body.innerText.match(/[A-Za-z0-9)\]]\u2014[A-Za-z0-9([]/g) || [],
+  }));
+  expect("CK8", "review shows CONFIRM ORDER + payment method", ck3.hasConfirm && ck3.hasMethod, ck3.hasConfirm ? "confirm present" : "missing");
+  expect("CK9", "no decorative em-dash", ck3.decorative.length === 0, `${ck3.decorative.length} found`);
   await d.close();
 
   // ---------------------------------------------------------------- mobile home
@@ -261,11 +339,14 @@ try {
   const lines = [
     "# Design Spec Audit — computed-style contract",
     "",
-    `Date: 2026-09-10 · Build: \`master\` @ taste-skill pass · Viewport: 1920x1080 (desktop) / 390x844 (mobile)`,
+    `Date: 2026-09-11 · Build: \`master\` @ splash removed + onboarding simplified + 3-step checkout`,
+    `Viewport: 1920x1080 (desktop) / 390x844 (mobile)`,
     `Source: static web export served at \`${BASE}\`; rendered with Playwright + headless Edge.`,
     "",
-    "Contract: Workshop Manifest tokens + taste-skill pass (`9d64eb1`) — 1400px page, no numbered eyebrows,",
-    "no decorative em/en-dashes, hero <= 4 elements, square interactions, mono overlines/serials, brand splash.",
+    "Contract: Workshop Manifest tokens + taste-skill pass — 1400px page, no numbered eyebrows,",
+    "no decorative em/en-dashes, hero <= 4 elements, square interactions, mono overlines/serials,",
+    "IBM Plex Sans display/body, inline icon rows (search / sign-out / capture), no splash screen,",
+    "onboarding as instant landing, checkout as 3-step flow (delivery / payment / review).",
     "",
     "| # | check | measured | status |",
     "|---|-------|----------|--------|",

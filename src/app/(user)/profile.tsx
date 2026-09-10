@@ -176,7 +176,7 @@ export default function UserProfile() {
               <Feather name="camera" size={12} color={Design.color.surface} />
             </View>
           </PressScale>
-          <Text style={styles.avatarHint}>Tap to change photo</Text>
+          <Text style={styles.avatarHint}>UPDATE PHOTO</Text>
           <Text style={styles.avatarName}>{profile?.username || "User"}</Text>
           <Text style={styles.avatarEmail}>{profile?.email}</Text>
         </View>
@@ -237,7 +237,7 @@ export default function UserProfile() {
         <View style={styles.section}>
           <View style={styles.infoHeader}>
             <Text style={styles.sectionLabel}>PERSONAL INFO</Text>
-            <PressScale style={styles.editToggle} onPress={() => setEditing(!editing)} accessibilityLabel={editing ? "Cancel editing" : "Edit profile"}>
+            <PressScale style={styles.editToggle} contentStyle={styles.editToggleContent} onPress={() => setEditing(!editing)} accessibilityLabel={editing ? "Cancel editing" : "Edit profile"}>
               <Feather name={editing ? "x" : "edit-2"} size={13} color={Design.color.accent} />
               <Text style={styles.editBtn}>{editing ? "CANCEL" : "EDIT"}</Text>
             </PressScale>
@@ -294,7 +294,7 @@ export default function UserProfile() {
               {saveError ? (
                 <Text style={styles.saveError}>{saveError}</Text>
               ) : null}
-              <PressScale style={styles.saveBtn} onPress={handleSave} disabled={saving} accessibilityLabel="Save changes">
+              <PressScale style={styles.saveBtn} contentStyle={styles.saveBtnContent} onPress={handleSave} disabled={saving} accessibilityLabel="Save changes">
                 <Feather name="check" size={15} color={Design.color.surface} />
                 <Text style={styles.saveBtnText}>{saving ? "SAVING..." : "SAVE CHANGES"}</Text>
               </PressScale>
@@ -305,7 +305,7 @@ export default function UserProfile() {
 
         <Reveal delay={staggerDelay(3)}>
         <View style={styles.logoutSection}>
-          <PressScale style={styles.logoutBtn} onPress={handleLogout} accessibilityLabel="Sign out">
+          <PressScale style={styles.logoutBtn} contentStyle={styles.logoutContent} onPress={handleLogout} accessibilityLabel="Sign out">
             <Feather name="log-out" size={14} color={Design.color.inkMuted} />
             <Text style={styles.logoutText}>SIGN OUT</Text>
           </PressScale>
@@ -422,7 +422,7 @@ const styles = StyleSheet.create({
   avatar: { width: 88, height: 88, borderRadius: 44, backgroundColor: Design.color.surfaceMuted, justifyContent: "center", alignItems: "center", borderWidth: 2, borderColor: Design.color.accent },
   avatarText: { fontFamily: Design.font.display, fontSize: 34, letterSpacing: -0.8, color: Design.color.ink },
   avatarEditBadge: { position: "absolute", bottom: 0, right: 0, width: 28, height: 28, borderRadius: 14, backgroundColor: Design.color.ink, justifyContent: "center", alignItems: "center", borderWidth: 2, borderColor: Design.color.surface },
-  avatarHint: { fontSize: 10, color: Design.color.inkMuted, letterSpacing: 1, marginBottom: 10 },
+  avatarHint: { fontFamily: Design.font.mono, fontSize: 9, letterSpacing: 2, color: Design.color.inkMuted, marginBottom: 10, textTransform: "uppercase" },
   avatarName: { fontFamily: Design.font.bodySemibold, fontSize: 16, color: Design.color.ink, marginBottom: 4 },
   avatarEmail: { fontFamily: Design.font.body, fontSize: 12, color: Design.color.inkMuted },
 
@@ -442,7 +442,8 @@ const styles = StyleSheet.create({
   statusText: { fontFamily: Design.font.bodySemibold, fontSize: 9, letterSpacing: 1 },
 
   infoHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 12 },
-  editToggle: { flexDirection: "row", alignItems: "center", gap: 5 },
+  editToggle: { },
+  editToggleContent: { flexDirection: "row", alignItems: "center", gap: 5 },
   editBtn: { fontFamily: Design.font.bodyBold, fontSize: 10, letterSpacing: 1.5, color: Design.color.accent },
   infoCard: { backgroundColor: Design.color.surfaceMuted, borderRadius: Design.radius.card, padding: 16, borderWidth: StyleSheet.hairlineWidth, borderColor: Design.color.line },
   infoRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingVertical: 10 },
@@ -451,12 +452,14 @@ const styles = StyleSheet.create({
   infoValue: { fontFamily: Design.font.body, fontSize: 13, color: Design.color.ink },
   infoInput: { fontFamily: Design.font.body, fontSize: 13, color: Design.color.ink, borderBottomWidth: 1, borderBottomColor: Design.color.accent, paddingVertical: 4, minWidth: 160, textAlign: "right" },
   infoDivider: { height: StyleSheet.hairlineWidth, backgroundColor: Design.color.line },
-  saveBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, backgroundColor: Design.color.ink, borderRadius: Design.radius.small, padding: 16, marginTop: 16 },
+  saveBtn: { backgroundColor: Design.color.ink, borderRadius: Design.radius.small, padding: 16, marginTop: 16 },
+  saveBtnContent: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8 },
   saveError: { color: Design.color.danger, fontSize: 12, lineHeight: 18, marginTop: 16 },
   saveBtnText: { color: Design.color.surface, fontFamily: Design.font.bodyBold, fontSize: 11, letterSpacing: 1.5 },
 
   logoutSection: { paddingHorizontal: 24 },
-  logoutBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, borderWidth: 1, borderColor: Design.color.line, borderRadius: Design.radius.small, padding: 16 },
+  logoutBtn: { borderWidth: 1, borderColor: Design.color.line, borderRadius: Design.radius.small, padding: 16 },
+  logoutContent: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8 },
   logoutText: { fontFamily: Design.font.bodySemibold, fontSize: 11, letterSpacing: 1.5, color: Design.color.inkMuted },
 
   // Order detail modal

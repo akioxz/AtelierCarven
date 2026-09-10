@@ -42,9 +42,37 @@ try {
     await waitForURL(p, /\/home$/);
     await p.waitForTimeout(1300);
     await shot(p, "02-home-desktop.png", true);
+    await p.locator('[role="tab"][aria-label="Profile"]').first().click().catch(() => p.getByRole("tab", { name: "Profile" }).click());
+    await waitForURL(p, /\/profile$/);
+    await shot(p, "04-profile-desktop.png", true);
+    await p.locator('[role="tab"][aria-label="Home"]').first().click().catch(() => p.getByRole("tab", { name: "Home" }).click());
+    await waitForURL(p, /\/home$/);
+    await p.locator('[role="tab"][aria-label="Place"]').first().click().catch(() => p.getByRole("tab", { name: "Place" }).click());
+    await waitForURL(p, /\/image-placement$/);
+    await shot(p, "05-placement-desktop.png", true);
+    await p.locator('[role="tab"][aria-label="Home"]').first().click().catch(() => p.getByRole("tab", { name: "Home" }).click());
+    await waitForURL(p, /\/home$/);
     await p.locator('[aria-label^="View "]:not([aria-label="View saved furniture"]):not([aria-label="View cart"])').first().click();
     await p.waitForTimeout(1400);
     await shot(p, "03-product-desktop.png", true);
+
+    // Checkout 3-step flow
+    await p.locator('[role="button"]').filter({ hasText: /BUY NOW/ }).first().click();
+    await p.waitForTimeout(1200);
+    await p.getByText("Ready to add", { exact: true }).first().waitFor({ state: "visible", timeout: 15000 });
+    await visButton(p, "CONTINUE TO CHECKOUT").click();
+    await waitForURL(p, /\/checkout$/);
+    await p.locator('input[placeholder="Your full name"]:visible').fill("Finish QA");
+    await p.locator('input[placeholder="+63 XXX XXX XXXX"]:visible').fill("+63 917 123 4567");
+    await p.locator('input[placeholder="Street, Barangay"]:visible').fill("123 Test St");
+    await p.locator('input[placeholder="City or municipality"]:visible').fill("Manila");
+    await shot(p, "06-checkout-delivery-desktop.png", true);
+    await visButton(p, "CONTINUE TO PAYMENT").click();
+    await waitForURL(p, (u) => u.pathname.endsWith("/checkout-payment"));
+    await shot(p, "07-checkout-payment-desktop.png", true);
+    await visButton(p, "CONTINUE TO REVIEW").click();
+    await waitForURL(p, (u) => u.pathname.endsWith("/checkout-review"));
+    await shot(p, "08-checkout-review-desktop.png", true);
     await p.close();
   }
 
