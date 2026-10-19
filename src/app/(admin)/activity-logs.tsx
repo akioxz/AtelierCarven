@@ -52,7 +52,7 @@ export default function ActivityLogs() {
               <Feather name="arrow-left" size={19} color={Design.color.ink} />
             </PressScale>
           )}
-          <PageHeader title="Activity Logs" subtitle="A record of every action taken across the store." />
+          <PageHeader title="Activity Logs" subtitle="A record of every action taken across the store." style={{ flex: 1, minWidth: 0 }} />
         </View>
 
         {loading ? (
@@ -63,7 +63,7 @@ export default function ActivityLogs() {
             <Text style={styles.emptyText}>No activity logs yet.</Text>
           </View>
         ) : (
-          <ScrollView style={[styles.list, isWeb && styles.listWeb]} showsVerticalScrollIndicator={false}>
+          <ScrollView style={[styles.list, isWeb && styles.listWeb]} contentContainerStyle={{ paddingBottom: 24 }} showsVerticalScrollIndicator={false}>
             {/* Web table header */}
             {isWeb && (
               <View style={styles.tableHeader}>
@@ -107,13 +107,13 @@ export default function ActivityLogs() {
                 </Reveal>
               );
             })}
-            <View style={{ height: 40 }} />
           </ScrollView>
         )}
 
 
       </View>
       </ContentFrame>
+      <AdminNavigation active="logs" placement="footer" />
     </View>
   );
 }
@@ -125,7 +125,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
     flexDirection: "row",
     gap: 16,
-    paddingHorizontal: 2,
+    paddingHorizontal: 16,
+    paddingTop: 16,
   },
   headerWeb: { paddingHorizontal: 0 },
   backButton: { alignItems: "center", backgroundColor: Design.color.surface, borderColor: Design.color.line, borderRadius: Design.radius.small, borderWidth: StyleSheet.hairlineWidth, height: 44, justifyContent: "center", width: 44 },

@@ -120,7 +120,7 @@ function Navigation({ active, items, admin = false }: { active: NavKey; items: t
   }
 
   return (
-    <View style={[styles.mobileNav, { paddingBottom: Math.max(insets.bottom, 10) }]}>
+    <View style={[styles.mobileNav, admin && styles.mobileAdminNav, { paddingBottom: Math.max(insets.bottom, 10) }]}>
       {items.map((item) => {
         const selected = item.key === active;
         return (
@@ -167,7 +167,10 @@ export function CustomerNavigation({ active }: { active: Extract<NavKey, "home" 
   return <Navigation active={active} items={customerItems} />;
 }
 
-export function AdminNavigation({ active }: { active: Extract<NavKey, "dashboard" | "furniture" | "orders" | "logs" | "profile"> }) {
+export function AdminNavigation({ active, placement = "header" }: { active: Extract<NavKey, "dashboard" | "furniture" | "orders" | "logs" | "profile">; placement?: "header" | "footer" }) {
+  const { width } = useWindowDimensions();
+  const desktop = Platform.OS === "web" && width >= layout.desktopBreakpoint;
+  if ((placement === "header") !== desktop) return null;
   return <Navigation active={active} items={adminItems} admin />;
 }
 
@@ -185,7 +188,7 @@ const styles = StyleSheet.create({
   overline: { color: Design.color.accent, fontFamily: Design.font.monoMedium, fontSize: 10, letterSpacing: 2.2, textTransform: "uppercase" },
   overlineMuted: { color: Design.color.inkSoft },
   pageHeader: { alignItems: "flex-start", flexDirection: "row", gap: Design.space.md, justifyContent: "space-between", marginBottom: Design.space.xl },
-  pageHeaderCopy: { flex: 1 },
+  pageHeaderCopy: { flex: 1, minWidth: 0 },
   pageTitle: { color: Design.color.ink, fontFamily: Design.font.display, fontSize: 40, letterSpacing: -1.2, lineHeight: 41 },
   sectionHeading: { gap: 8, marginBottom: Design.space.lg },
   sectionTitle: { color: Design.color.ink, fontFamily: Design.font.display, fontSize: 28, letterSpacing: -0.9, lineHeight: 30 },
@@ -206,6 +209,7 @@ const styles = StyleSheet.create({
   desktopNavLabel: { color: Design.color.inkSoft, fontFamily: Design.font.bodyMedium, fontSize: 12 },
   desktopNavLabelSelected: { color: Design.color.surface },
   mobileNav: { alignItems: "flex-start", backgroundColor: Design.color.surface, borderTopColor: Design.color.line, borderTopWidth: StyleSheet.hairlineWidth, bottom: 0, flexDirection: "row", justifyContent: "space-around", left: 0, paddingTop: 10, position: "absolute", right: 0 },
+  mobileAdminNav: { position: "relative", flexShrink: 0 },
   mobileNavItem: { alignItems: "center", flex: 1, gap: 4, minHeight: 46 },
   mobileNavLabel: { color: Design.color.inkMuted, fontFamily: Design.font.bodyMedium, fontSize: 10 },
   mobileNavLabelSelected: { color: Design.color.ink },

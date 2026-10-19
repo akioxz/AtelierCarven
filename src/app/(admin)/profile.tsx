@@ -87,7 +87,7 @@ export default function AdminProfile() {
     <View style={styles.container}>
       <StatusBar barStyle="dark-content" />
       <AdminNavigation active="profile" />
-      <ScrollView showsVerticalScrollIndicator={false}>
+      <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false}>
         <ContentFrame>
         {/* Header */}
         <View style={styles.header}>
@@ -193,10 +193,11 @@ export default function AdminProfile() {
         </View>
         </Reveal>
 
-        <View style={{ height: 100 }} />
+        <View style={{ height: 24 }} />
         </ContentFrame>
       </ScrollView>
 
+      <AdminNavigation active="profile" placement="footer" />
 <ConfirmModal
         visible={logoutModalVisible}
         title="Sign out?"
@@ -224,7 +225,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
     flexDirection: "row",
     gap: 16,
-    paddingHorizontal: 2,
+    paddingHorizontal: 16,
+    paddingTop: 16,
   },
   headerPage: { flex: 1 },
   backButton: { alignItems: "center", backgroundColor: Design.color.surface, borderColor: Design.color.line, borderRadius: Design.radius.small, borderWidth: StyleSheet.hairlineWidth, height: 44, justifyContent: "center", width: 44 },

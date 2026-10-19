@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { Pressable, type GestureResponderEvent, type StyleProp, type ViewStyle } from "react-native";
+import { Pressable, View, type GestureResponderEvent, type StyleProp, type ViewStyle } from "react-native";
 import Animated, {
   FadeIn,
   FadeInUp,
@@ -10,6 +10,8 @@ import Animated, {
 } from "react-native-reanimated";
 import * as Haptics from "expo-haptics";
 import { Design } from "../constants/design";
+
+const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
 /** Cap stagger delays so long lists don't cascade forever. */
 export function staggerDelay(index: number, step: number = Design.motion.stagger, cap: number = 6): number {
@@ -79,8 +81,8 @@ export function PressScale({
   }, [disabled, scale]);
 
   return (
-    <Pressable
-      style={style}
+    <AnimatedPressable
+      style={[style, animatedStyle]}
       accessibilityRole={accessibilityRole}
       accessibilityLabel={accessibilityLabel}
       accessibilityState={accessibilityState}
@@ -105,7 +107,7 @@ export function PressScale({
         onPressOut?.();
       }}
     >
-      <Animated.View style={[animatedStyle, contentStyle]}>{children}</Animated.View>
-    </Pressable>
+      {contentStyle ? <View style={contentStyle}>{children}</View> : children}
+    </AnimatedPressable>
   );
 }

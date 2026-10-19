@@ -10,6 +10,7 @@ import {
   StyleSheet,
   Text,
   TextInput,
+  useWindowDimensions,
   View,
 } from "react-native";
 import { Design } from "../../constants/design";
@@ -38,6 +39,7 @@ const getCategoryIcon = (category: string) => {
 
 export default function ManageFurniture() {
   const router = useRouter();
+  const { width: screenWidth } = useWindowDimensions();
   const [furniture, setFurniture] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeFilter, setActiveFilter] = useState("All");
@@ -309,9 +311,8 @@ export default function ManageFurniture() {
               <Text style={styles.emptyText}>No {activeFilter === "All" ? "furniture" : activeFilter} yet.</Text>
             </View>
           ) : (
-            filteredFurniture.map((item, i) => <Reveal key={item.id} delay={staggerDelay(i, 50, 6)}>{renderCard(item)}</Reveal>)
+            filteredFurniture.map((item, i) => <Reveal key={item.id} style={isWeb ? styles.gridItemWeb : screenWidth < 360 ? styles.gridItemNarrow : styles.gridItem} delay={staggerDelay(i, 50, 6)}>{renderCard(item)}</Reveal>)
           )}
-          <View style={{ height: 100 }} />
         </ScrollView>
       )}
 
@@ -320,6 +321,7 @@ export default function ManageFurniture() {
         <Text style={styles.addBtnText}>ADD FURNITURE</Text>
       </PressScale>
       </ContentFrame>
+      <AdminNavigation active="furniture" placement="footer" />
 
       <ConfirmModal
         visible={deleteModalVisible}
@@ -507,7 +509,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
     flexDirection: "row",
     gap: 16,
-    paddingHorizontal: 2,
+    paddingHorizontal: 16,
+    paddingTop: 16,
   },
   headerPage: { flex: 1 },
   backButton: { alignItems: "center", backgroundColor: Design.color.surface, borderColor: Design.color.line, borderRadius: Design.radius.small, borderWidth: StyleSheet.hairlineWidth, height: 44, justifyContent: "center", width: 44 },
@@ -580,6 +583,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     flexWrap: "wrap",
     padding: 16,
+    paddingBottom: 100,
     gap: 14,
   },
   gridWeb: {
@@ -588,8 +592,11 @@ const styles = StyleSheet.create({
     gap: 16,
   },
 
+  gridItem: { width: "47.5%" },
+  gridItemNarrow: { width: "100%" },
+  gridItemWeb: { width: "100%", minWidth: 0 },
   card: {
-    width: "47.5%",
+    width: "100%",
     backgroundColor: Design.color.surface,
     borderRadius: Design.radius.card,
     overflow: "hidden",

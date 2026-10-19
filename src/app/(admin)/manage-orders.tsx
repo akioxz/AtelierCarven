@@ -205,7 +205,7 @@ export default function ManageOrders() {
         <PressScale onPress={() => goBackOr(router, "/(admin)/dashboard")} style={styles.backButton} accessibilityLabel="Go back">
           <Feather name="arrow-left" size={19} color={Design.color.ink} />
         </PressScale>
-        <PageHeader title="Orders" subtitle="Review deliveries and update statuses." />
+        <PageHeader title="Orders" subtitle="Review deliveries and update statuses." style={{ flex: 1, minWidth: 0 }} />
       </View>
 
       {/* Filters */}
@@ -219,6 +219,7 @@ export default function ManageOrders() {
                 selectedStatus === status && styles.filterPillActive,
               ]}
               onPress={() => {
+                if (status === selectedStatus) return;
                 setSelectedStatus(status);
                 setLoading(true);
               }}
@@ -250,7 +251,7 @@ export default function ManageOrders() {
           <Text style={styles.emptyText}>No orders found under &quot;{selectedStatus}&quot; status.</Text>
         </View>
       ) : (
-        <Reveal key={`orders-${selectedStatus}`}>
+        <Reveal key={`orders-${selectedStatus}`} style={{ flex: 1 }}>
         <FlatList
           data={orders}
           renderItem={renderOrderItem}
@@ -263,6 +264,7 @@ export default function ManageOrders() {
         </Reveal>
       )}
       </ContentFrame>
+      <AdminNavigation active="orders" placement="footer" />
 
       {/* Order Detail Modal */}
       <Modal visible={selectedOrder !== null} animationType="slide" transparent onRequestClose={closeOrderDetails}>
@@ -411,7 +413,7 @@ export default function ManageOrders() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Design.color.canvas },
   loadingContainer: { alignItems: "center", flex: 1, gap: 14, padding: 24 },
-  header: { alignItems: "center", flexDirection: "row", gap: 16, paddingHorizontal: 2 },
+  header: { alignItems: "center", flexDirection: "row", gap: 16, paddingHorizontal: 16, paddingTop: 16 },
   backButton: { alignItems: "center", backgroundColor: Design.color.surface, borderColor: Design.color.line, borderRadius: Design.radius.small, borderWidth: StyleSheet.hairlineWidth, height: 44, justifyContent: "center", width: 44 },
   accentDivider: { height: 1.5, marginBottom: 8, marginTop: 8, width: 40, backgroundColor: Design.color.accent },
   itemSkeleton: { paddingVertical: 8 },
@@ -421,7 +423,7 @@ const styles = StyleSheet.create({
   filterPillActive: { backgroundColor: Design.color.ink, borderColor: Design.color.ink },
   filterText: { fontSize: 10, color: Design.color.inkSoft, fontFamily: Design.font.monoMedium, letterSpacing: 1 },
   filterTextActive: { color: Design.color.surface },
-  listContainer: { padding: 24, paddingBottom: 100 },
+  listContainer: { padding: 24 },
   emptyContainer: { flex: 1, justifyContent: "center", alignItems: "center", gap: 12, paddingVertical: 100 },
   emptyText: { fontSize: 13, color: Design.color.inkMuted, textAlign: "center" },
   orderCard: { backgroundColor: Design.color.surface, borderRadius: Design.radius.card, padding: 16, marginBottom: 14, borderWidth: 0.5, borderColor: Design.color.line, ...Design.shadow.card },
