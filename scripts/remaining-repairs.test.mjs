@@ -87,15 +87,15 @@ test('older home category response cannot replace newer data or loading state', 
   const first = deferred(), second = deferred();
   const request = { current: 0 }, furniture = [], loading = [];
   let calls = 0;
-  const context = { catalogRequest: request, selectedCategory: 'All',
-    fetchAllRows: () => ++calls === 1 ? first.promise : second.promise,
+  const context = { catalogRequest: request, selectedCategory: 'All', page: 0, setTotal() {},
+    fetchPage: () => ++calls === 1 ? first.promise : second.promise,
     effectivePrice, setFurniture: rows => furniture.push(rows), setLoading: value => loading.push(value), setActionError() {}, setLoadError() {},
   };
   const fetch = callback('src/app/(user)/home.tsx', 'fetchFurniture', context);
   const older = fetch(), newer = fetch();
-  second.resolve([{ id: 'new', price: 100 }]);
+  second.resolve({ rows: [{ id: 'new', price: 100 }], total: 1 });
   await newer;
-  first.resolve([{ id: 'old', price: 100 }]);
+  first.resolve({ rows: [{ id: 'old', price: 100 }], total: 1 });
   await older;
   assert.equal(furniture.length, 1);
   assert.equal(furniture[0][0].id, 'new');

@@ -86,6 +86,14 @@ export function RetryNotice({ message, onRetry }: { message: string; onRetry: ()
   return <View style={{ padding: 20, gap: 12 }}><Text accessibilityRole="alert" style={{ color: Design.color.danger, fontFamily: Design.font.body, lineHeight: 21 }}>{message}</Text><SecondaryButton label="Retry" onPress={onRetry} /></View>;
 }
 
+export function PageControls({ page, total, size = 24, loading = false, onChange }: { page: number; total: number; size?: number; loading?: boolean; onChange: (page: number) => void }) {
+  return <View style={{ padding: 12, gap: 12, flexDirection: "row", flexWrap: "wrap", alignItems: "center", justifyContent: "center" }}>
+    <SecondaryButton label="Previous" disabled={loading || page === 0} onPress={() => onChange(page - 1)} />
+    <Text accessibilityLiveRegion="polite" style={{ color: Design.color.inkMuted, fontFamily: Design.font.body, fontSize: 12 }}>{loading ? "Loading…" : total === 0 ? "0 items" : `${Math.min(page * size + 1, total)}–${Math.min((page + 1) * size, total)} of ${total}`}</Text>
+    <SecondaryButton label="Next" disabled={loading || (page + 1) * size >= total} onPress={() => onChange(page + 1)} />
+  </View>;
+}
+
 function Navigation({ active, items, admin = false }: { active: NavKey; items: typeof customerItems; admin?: boolean }) {
   const router = useRouter();
   const insets = useSafeAreaInsets();

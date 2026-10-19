@@ -3,7 +3,7 @@ import { useRouter } from "expo-router";
 import { useEffect, useRef, useState } from "react";
 import { Platform, ScrollView, StatusBar, StyleSheet, Text, TextInput, useWindowDimensions, View } from "react-native";
 import { CategoryTiles } from "../../components/category-tiles";
-import { ContentFrame, SectionHeading, RetryNotice } from "../../components/app-ui";
+import { ContentFrame, SectionHeading, RetryNotice, PageControls } from "../../components/app-ui";
 import { PressScale, Reveal, staggerDelay } from "../../components/motion";
 import { ProductCard } from "../../components/product-card";
 import { CardSkeleton } from "../../components/skeleton";
@@ -11,7 +11,7 @@ import { Design, layout } from "../../constants/design";
 import { goBackOr } from "../../lib/navigation";
 import { effectivePrice } from "../../lib/pricing";
 import { supabase } from "../../lib/supabase";
-import { fetchAllRows } from "../../lib/pagination";
+import { fetchAllRows, fetchPage } from "../../lib/pagination";
 
 const CATEGORIES = ["All", "Sofa", "Chair", "Table", "Bed"];
 const SORTS = [
@@ -35,6 +35,8 @@ export default function Search() {
   const [favorites, setFavorites] = useState<string[]>([]);
   const [actionError, setActionError] = useState("");
   const [loadError, setLoadError] = useState("");
+  const [page, setPage] = useState(0);
+  const [total, setTotal] = useState(0);
   const [reload, setReload] = useState(0);
   const pendingFavorites = useRef(new Set<string>());
   const trimmed = query.trim();
@@ -58,7 +60,7 @@ export default function Search() {
         setLoading(true);
         setLoadError("");
         try {
-          const data = await fetchAllRows((from, to) => {
+          const { rows: data, total: count } = await fetchPage((from, to) => {
             let queryBuilder = supabase.from("furniture").select("*", { count: "exact" }).eq("is_deleted", false);
             if (selectedCategory !== "All") queryBuilder = queryBuilder.eq("category", selectedCategory);
             const term = query.trim().replace(/[,()]/g, " ");
@@ -70,8 +72,9 @@ export default function Search() {
               default: queryBuilder = queryBuilder.order("created_at", { ascending: false });
             }
             return queryBuilder.order("id").range(from, to);
-          });
+          }, page);
           if (latestRequest.current !== requestId) return;
+          setTotal(count);
           data.forEach(effectivePrice);
           setFurniture(data.map(row => ({ ...row, salePrice: row.sale_price ?? null, reviewCount: row.review_count ?? null })));
         } catch { if (latestRequest.current === requestId) setLoadError("Could not load search results. Please retry."); }
@@ -81,7 +84,7 @@ export default function Search() {
     }, query.trim() ? 300 : 0);
     const tracker = latestRequest;
     return () => { clearTimeout(queryTrigger); tracker.current++; };
-  }, [selectedCategory, sort, query, reload]);
+  }, [selectedCategory, sort, query, reload, page]);
   useEffect(() => {
     const timer = setTimeout(() => inputRef.current?.focus(), 80);
     return () => clearTimeout(timer);
@@ -126,24 +129,24 @@ export default function Search() {
               </PressScale>
               <View style={styles.search}>
                 <Feather name="search" size={17} color={Design.color.inkMuted} />
-                <TextInput ref={inputRef} value={query} onChangeText={setQuery} placeholder="Search pieces, materials, categories" placeholderTextColor={Design.color.inkMuted} style={styles.searchInput} returnKeyType="search" autoCorrect={false} />
-                {trimmed ? <PressScale accessibilityLabel="Clear search" onPress={() => setQuery("")} hitSlop={8}><Feather name="x" size={16} color={Design.color.inkMuted} /></PressScale> : null}
+                <TextInput ref={inputRef} value={query} onChangeText={value => { setPage(0); setQuery(value); }} placeholder="Search pieces, materials, categories" placeholderTextColor={Design.color.inkMuted} style={styles.searchInput} returnKeyType="search" autoCorrect={false} />
+                {trimmed ? <PressScale accessibilityLabel="Clear search" onPress={() => { setPage(0); setQuery(""); }} hitSlop={8}><Feather name="x" size={16} color={Design.color.inkMuted} /></PressScale> : null}
               </View>
             </View>
           </Reveal>
 
           <Reveal delay={staggerDelay(1)}>
-            <CategoryTiles categories={CATEGORIES} selected={selectedCategory} onSelect={setSelectedCategory} />
+            <CategoryTiles categories={CATEGORIES} selected={selectedCategory} onSelect={value => { setPage(0); setSelectedCategory(value); }} />
           </Reveal>
 
           {selectedCategory !== "All" ? (
             <Reveal>
               <View style={styles.activeRow}>
-                <PressScale onPress={() => setSelectedCategory("All")} accessibilityLabel={`Clear ${selectedCategory} filter`} style={styles.activeChip}>
+                <PressScale onPress={() => { setPage(0); setSelectedCategory("All"); }} accessibilityLabel={`Clear ${selectedCategory} filter`} style={styles.activeChip}>
                   <Text style={styles.activeChipText}>{selectedCategory}</Text>
                   <Feather name="x" size={12} color={Design.color.surface} />
                 </PressScale>
-                <PressScale accessibilityLabel="Clear all filters" onPress={() => setSelectedCategory("All")} hitSlop={8}><Text style={styles.clearAll}>Clear all</Text></PressScale>
+                <PressScale accessibilityLabel="Clear all filters" onPress={() => { setPage(0); setSelectedCategory("All"); }} hitSlop={8}><Text style={styles.clearAll}>Clear all</Text></PressScale>
               </View>
             </Reveal>
           ) : null}
@@ -151,12 +154,12 @@ export default function Search() {
           <View style={styles.sortBlock}>
             <SectionHeading overline="Search the collection" title={trimmed ? `Results for “${trimmed}”` : "Browse everything"} />
             <View style={styles.sortRow}>
-              <Text style={styles.resultCount}>{loading ? "" : `${furniture.length} piece${furniture.length === 1 ? "" : "s"} found`}</Text>
+              <Text style={styles.resultCount}>{loading ? "" : `${total} piece${total === 1 ? "" : "s"} found`}</Text>
               <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.sortScroll}>
                 {SORTS.map((option) => {
                   const selected = option.key === sort;
                   return (
-                    <PressScale key={option.key} onPress={() => setSort(option.key)} accessibilityLabel={`Sort by ${option.label}`} accessibilityState={{ selected }} style={[styles.sortChip, selected && styles.sortChipSelected]}>
+                    <PressScale key={option.key} onPress={() => { setPage(0); setSort(option.key); }} accessibilityLabel={`Sort by ${option.label}`} accessibilityState={{ selected }} style={[styles.sortChip, selected && styles.sortChipSelected]}>
                       <Text style={[styles.sortText, selected && styles.sortTextSelected]}>{option.label}</Text>
                     </PressScale>
                   );
@@ -206,6 +209,7 @@ export default function Search() {
               ))}
             </View>
           )}
+        <PageControls page={page} total={total} loading={loading} onChange={setPage} />
         </ContentFrame>
       </ScrollView>
     </View>

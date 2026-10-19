@@ -25,6 +25,7 @@ function load(path) {
   return module.exports;
 }
 const { formatDelivery } = load('src/lib/delivery.ts');
+const { fetchPage } = load('src/lib/pagination.ts');
 
 test('native auth persistence awaits writes and propagates storage rejection', async () => {
   const failure = Promise.reject(new Error('Storage unavailable'));
@@ -71,10 +72,11 @@ test('failed customer profile save keeps the draft and releases its synchronous 
 
 test('product review read failure stays separate from a successful empty result', async () => {
   let error, loading, rows;
-  const context = { id: 'fixture', setReviewsError: value => error = value, setReviewsLoading: value => loading = value, setReviews: value => rows = value, isPublicReview: () => true, supabase: { rpc: () => ({ order: async () => ({ data: null, error: Error('Failed') }) }) } };
+  let failed = true;
+  const context = { reviewsRequest: { current: 0 }, reviewPage: 0, setReviewsTotal() {}, fetchPage: async () => { if (failed) throw Error('Failed'); return { rows: [], total: 0 }; }, id: 'fixture', setReviewsError: value => error = value, setReviewsLoading: value => loading = value, setReviews: value => rows = value, isPublicReview: () => true, supabase: { rpc: () => ({ order: async () => ({ data: null, error: Error('Failed') }) }) } };
   const fetch = callback('src/app/(user)/product.tsx', 'fetchReviews', context);
   await fetch(); assert.match(error, /Could not load/); assert.equal(loading, false); assert.equal(rows, undefined);
-  context.supabase.rpc = () => ({ order: async () => ({ data: [], error: null }) });
+  failed = false;
   await fetch(); assert.equal(error, ''); assert.equal(rows.length, 0);
 });
 
@@ -82,4 +84,25 @@ test('required delivery rejects missing, blank, array and delimiter-conflicting 
   const valid = { fullName: ' Buyer ', mobile: '09123456789', city: 'City', address: 'Street', notes: 'Gate' };
   assert.equal(formatDelivery(valid), 'Name: Buyer | Mobile: 09123456789 | City: City | Address: Street | Notes: Gate');
   for (const key of ['fullName', 'mobile', 'city', 'address']) for (const value of [undefined, '', ' \t\n', ['City'], 'A | B']) assert.throws(() => formatDelivery({ ...valid, [key]: value }));
+});
+
+
+test('bounded pages fill through small server caps without skipping or fetching the entire list', async () => {
+  const rows = Array.from({ length: 1050 }, (_, id) => ({ id })), requests = [];
+  const build = async (from, to) => { requests.push([from, to]); return { data: rows.slice(from, Math.min(to + 1, from + 7)), error: null, count: rows.length }; };
+  const first = await fetchPage(build, 0);
+  assert.equal(first.rows.length, 24); assert.equal(first.total, 1050); assert.equal(first.rows[23].id, 23);
+  assert.equal(requests.length, 4); assert.equal(requests.at(-1)[1], 23);
+  const second = await fetchPage(build, 1);
+  assert.equal(second.rows[0].id, 24); assert.equal(second.rows.at(-1).id, 47);
+  const last = await fetchPage(build, 43);
+  assert.equal(last.rows.length, 18); assert.equal(last.rows.at(-1).id, 1049);
+});
+
+test('bounded pages reject a partial failure or changed count rather than returning partial success', async () => {
+  let calls = 0;
+  await assert.rejects(fetchPage(async () => ++calls === 1 ? { data: [{ id: 1 }], count: 50, error: null } : { data: null, count: null, error: Error('Disconnected') }, 0), /Disconnected/);
+  calls = 0;
+  await assert.rejects(fetchPage(async () => ({ data: [{ id: ++calls }], count: calls === 1 ? 50 : 49, error: null }), 0), /list changed/);
+  await assert.rejects(fetchPage(async () => { assert.fail('Must reject before query'); }, -1), /Invalid page/);
 });

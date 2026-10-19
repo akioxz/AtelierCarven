@@ -14,9 +14,10 @@ import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import Animated, { useAnimatedStyle, useSharedValue } from "react-native-reanimated";
 import { scheduleOnRN } from "react-native-worklets";
 import { Design } from "../../constants/design";
+import { fetchPage } from "../../lib/pagination";
 import { supabase } from "../../lib/supabase";
 import { goBackOr } from "../../lib/navigation";
-import { CustomerNavigation, PageHeader, RetryNotice } from "../../components/app-ui";
+import { CustomerNavigation, PageHeader, RetryNotice, PageControls } from "../../components/app-ui";
 import { PressScale, Reveal } from "../../components/motion";
 import { ShimmerBlock } from "../../components/skeleton";
 
@@ -67,16 +68,19 @@ export default function ImagePlacement() {
   }));
 
   const [catalogError, setCatalogError] = useState("");
+  const [page, setPage] = useState(0);
+  const [total, setTotal] = useState(0);
+  const catalogRequest = useRef(0);
   const fetchFurniture = useCallback(async () => {
+    const request = ++catalogRequest.current;
     setFetchingFurniture(true); setCatalogError("");
     try {
-      const { data, error } = await supabase.from("furniture").select("*").eq("is_deleted", false);
-      if (error) throw error;
-      setFurnitureList(data || []);
-    } catch { setCatalogError("Could not load the placement catalog. Please retry."); }
-    finally { setFetchingFurniture(false); }
-  }, []);
-  useEffect(() => { void (async () => { await fetchFurniture(); })(); }, [fetchFurniture]);
+      const { rows, total: count } = await fetchPage((from, to) => supabase.from("furniture").select("*", { count: "exact" }).eq("is_deleted", false).order("id").range(from, to), page, 12);
+      if (request === catalogRequest.current) { setFurnitureList(rows); setTotal(count); }
+    } catch { if (request === catalogRequest.current) setCatalogError("Could not load the placement catalog. Please retry."); }
+    finally { if (request === catalogRequest.current) setFetchingFurniture(false); }
+  }, [page]);
+  useEffect(() => { const tracker = catalogRequest; void (async () => { await fetchFurniture(); })(); return () => { tracker.current++; }; }, [fetchFurniture]);
 
   const pickImage = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -234,6 +238,7 @@ export default function ImagePlacement() {
           <Reveal>
           <View style={styles.section}>
             <Text style={styles.sectionLabel}>SELECT FURNITURE</Text>
+            <PageControls page={page} total={total} size={12} loading={fetchingFurniture} onChange={setPage} />
             {fetchingFurniture ? (
               <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.catalogScroll}>
                 <ShimmerBlock width={110} height={140} radius={Design.radius.card} />

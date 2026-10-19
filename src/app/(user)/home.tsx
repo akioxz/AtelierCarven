@@ -4,14 +4,14 @@ import { useRouter } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Platform, ScrollView, StatusBar, StyleSheet, Text, useWindowDimensions, View } from "react-native";
 import { CategoryTiles } from "../../components/category-tiles";
-import { ContentFrame, CustomerNavigation, SectionHeading, RetryNotice } from "../../components/app-ui";
+import { ContentFrame, CustomerNavigation, SectionHeading, RetryNotice, PageControls } from "../../components/app-ui";
 import { PressScale, Reveal, staggerDelay } from "../../components/motion";
 import { ProductCard } from "../../components/product-card";
 import { CardSkeleton } from "../../components/skeleton";
 import { Design, layout } from "../../constants/design";
 import { effectivePrice } from "../../lib/pricing";
 import { supabase } from "../../lib/supabase";
-import { fetchAllRows } from "../../lib/pagination";
+import { fetchAllRows, fetchPage } from "../../lib/pagination";
 
 const CATEGORIES = ["All", "Sofa", "Chair", "Table", "Bed"];
 
@@ -35,22 +35,24 @@ export default function Home() {
     const { data } = await supabase.from("profiles").select("username").eq("id", user.id).single();
     setUsername(data?.username || "Guest");
   }, []);
+  const [page, setPage] = useState(0);
+  const [total, setTotal] = useState(0);
   const catalogRequest = useRef(0);
   const fetchFurniture = useCallback(async () => {
     const request = ++catalogRequest.current;
     setLoading(true);
     setLoadError("");
     try {
-      const data = await fetchAllRows((from, to) => {
+      const { rows: data, total: count } = await fetchPage((from, to) => {
         let query = supabase.from("furniture").select("*", { count: "exact" }).eq("is_deleted", false);
         if (selectedCategory !== "All") query = query.eq("category", selectedCategory);
         return query.order("created_at", { ascending: false }).order("id").range(from, to);
-      });
+      }, page);
       data.forEach(effectivePrice);
-      if (request === catalogRequest.current) setFurniture(data.map(row => ({ ...row, salePrice: row.sale_price ?? null, reviewCount: row.review_count ?? null })));
+      if (request === catalogRequest.current) { setTotal(count); setFurniture(data.map(row => ({ ...row, salePrice: row.sale_price ?? null, reviewCount: row.review_count ?? null }))); }
     } catch { if (request === catalogRequest.current) setLoadError("Could not load the collection. Please retry."); }
     finally { if (request === catalogRequest.current) setLoading(false); }
-  }, [selectedCategory]);
+  }, [selectedCategory, page]);
   const fetchCartCount = useCallback(async () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
@@ -158,7 +160,7 @@ export default function Home() {
           </Reveal>
 
           <Reveal delay={staggerDelay(1)}>
-            <CategoryTiles categories={CATEGORIES} selected={selectedCategory} onSelect={setSelectedCategory} />
+            <CategoryTiles categories={CATEGORIES} selected={selectedCategory} onSelect={value => { setPage(0); setSelectedCategory(value); }} />
           </Reveal>
 
           <View style={styles.collectionWrap}>
@@ -166,7 +168,7 @@ export default function Home() {
               overline={selectedCategory === "All" ? "The Collection" : selectedCategory}
               title={selectedCategory === "All" ? "Handpicked for you" : `${selectedCategory} pieces`}
             />
-            {!loading ? <Text style={styles.collectionCount}>{`${furniture.length} piece${furniture.length === 1 ? "" : "s"}`}</Text> : null}
+            {!loading ? <Text style={styles.collectionCount}>{`${total} piece${total === 1 ? "" : "s"}`}</Text> : null}
           </View>
           {loading ? (
             <View style={[styles.grid, wide && styles.gridWide]}>
@@ -209,6 +211,7 @@ export default function Home() {
               ))}
             </View>
           )}
+        <PageControls page={page} total={total} loading={loading} onChange={setPage} />
         </ContentFrame>
       </ScrollView>
       <CustomerNavigation active="home" placement="footer" />

@@ -154,7 +154,7 @@ test('reselecting the active Orders filter never starts loading; changing it sti
   for (const status of ['All', 'Pending']) {
     let selected = 'All', loading = false;
     const callback = runInNewContext(ts.transpileModule(`(${handler.getText(ast)})`, { compilerOptions: { target: ts.ScriptTarget.ES2022 } }).outputText,
-      { status, selectedStatus: selected, setSelectedStatus: value => selected = value, setLoading: value => loading = value });
+      { status, selectedStatus: selected, setPage() {}, setSelectedStatus: value => selected = value, setLoading: value => loading = value });
     callback();
     assert.equal(selected, status);
     assert.equal(loading, status !== 'All');
@@ -408,4 +408,18 @@ test('failed cart read has an in-place retry that clears errors on successful re
   const tree = Screen();
   assert.equal(descendants(tree, node => node.type?.name === 'RetryNotice').length, 1);
   assert.equal(descendants(tree, node => node.props?.children === 'Nothing here yet.').length, 0);
+});
+
+
+test('page controls expose exact totals and disable navigation at each boundary', () => {
+  const { PageControls } = runtime().load('src/components/app-ui.tsx');
+  let selected;
+  for (const [page, previous, next] of [[0, true, false], [1, false, true]]) {
+    const tree = PageControls({ page, total: 30, onChange: value => selected = value });
+    const buttons = descendants(tree, node => node.props?.label === 'Previous' || node.props?.label === 'Next');
+    assert.equal(buttons[0].props.disabled, previous); assert.equal(buttons[1].props.disabled, next);
+    if (!next) { buttons[1].props.onPress(); assert.equal(selected, 1); }
+    const text = descendants(tree, node => node.type === 'Text')[0];
+    assert.equal(text.props.children, page === 0 ? '1–24 of 30' : '25–30 of 30');
+  }
 });

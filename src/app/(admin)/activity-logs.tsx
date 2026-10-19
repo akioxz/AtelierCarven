@@ -3,13 +3,13 @@ import {
   StatusBar, useWindowDimensions, Platform,
 } from "react-native";
 import { useRouter } from "expo-router";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { Feather } from "@expo/vector-icons";
 import { Design, layout } from "../../constants/design";
 import { supabase } from "../../lib/supabase";
-import { fetchAllRows } from "../../lib/pagination";
+import { fetchPage } from "../../lib/pagination";
 import { goBackOr } from "../../lib/navigation";
-import { AdminNavigation, ContentFrame, PageHeader, RetryNotice } from "../../components/app-ui";
+import { AdminNavigation, ContentFrame, PageHeader, RetryNotice, PageControls } from "../../components/app-ui";
 import { PressScale, Reveal, staggerDelay } from "../../components/motion";
 import { ShimmerBlock } from "../../components/skeleton";
 
@@ -21,17 +21,21 @@ export default function ActivityLogs() {
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
 
-  const fetchLogs = async () => {
+  const [page, setPage] = useState(0);
+  const [total, setTotal] = useState(0);
+  const latest = useRef(0);
+  const fetchLogs = useCallback(async () => {
+    const request = ++latest.current;
     setLoading(true);
     setLoadError("");
     try {
-      const data = await fetchAllRows((from, to) => supabase.from("activity_logs").select("*", { count: "exact" }).order("created_at", { ascending: false }).order("id").range(from, to));
-      setLogs(data);
-    } catch { setLoadError("Could not load the activity history. Please retry."); }
-    finally { setLoading(false); }
-  };
+      const { rows, total: count } = await fetchPage((from, to) => supabase.from("activity_logs").select("*", { count: "exact" }).order("created_at", { ascending: false }).order("id").range(from, to), page);
+      if (request === latest.current) { setLogs(rows); setTotal(count); }
+    } catch { if (request === latest.current) setLoadError("Could not load this activity page. Please retry."); }
+    finally { if (request === latest.current) setLoading(false); }
+  }, [page]);
 
-  useEffect(() => { void (async () => { await fetchLogs(); })(); }, []);
+  useEffect(() => { const tracker = latest; void (async () => { await fetchLogs(); })(); return () => { tracker.current++; }; }, [fetchLogs]);
 
   const getLogBadge = (action: string) => {
     if (action.includes("Added")) return { color: "#3B6D11", bg: "#E2EAD9", icon: "plus-circle", label: "ADDED" };
@@ -113,6 +117,7 @@ export default function ActivityLogs() {
 
 
       </View>
+      <PageControls page={page} total={total} loading={loading} onChange={setPage} />
       </ContentFrame>
       <AdminNavigation active="logs" placement="footer" />
     </View>

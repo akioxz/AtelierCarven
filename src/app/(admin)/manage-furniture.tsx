@@ -17,9 +17,9 @@ import {
 import { Design } from "../../constants/design";
 import { pickAndUploadImage } from "../../lib/imageUpload";
 import { supabase } from "../../lib/supabase";
-import { fetchAllRows } from "../../lib/pagination";
+import { fetchAllRows, fetchPage } from "../../lib/pagination";
 import { goBackOr } from "../../lib/navigation";
-import { AdminNavigation, ContentFrame, PageHeader, RetryNotice } from "../../components/app-ui";
+import { AdminNavigation, ContentFrame, PageHeader, RetryNotice, PageControls } from "../../components/app-ui";
 import { PressScale, Reveal, staggerDelay } from "../../components/motion";
 import { ShimmerBlock } from "../../components/skeleton";
 import ConfirmModal from "../../components/confirm-modal";
@@ -83,26 +83,38 @@ export default function ManageFurniture() {
     else closeForm();
   };
 
+  const [page, setPage] = useState(0);
+  const [total, setTotal] = useState(0);
+  const collectionRequest = useRef(0);
+  const guideRequest = useRef(0);
   const fetchFurniture = useCallback(async () => {
+    const request = ++collectionRequest.current;
     setLoading(true);
     setCollectionError("");
     try {
-      const data = await fetchAllRows((from, to) => supabase.from("furniture").select("*", { count: "exact" }).eq("is_deleted", false).order("created_at", { ascending: false }).order("id").range(from, to));
-      setFurniture(data);
-    } catch { setCollectionError("Could not load the complete collection. Please retry."); }
-    finally { setLoading(false); }
-  }, []);
+      const { rows, total: count } = await fetchPage((from, to) => {
+        let query = supabase.from("furniture").select("*", { count: "exact" }).eq("is_deleted", false);
+        if (activeFilter !== "All") query = query.eq("category", activeFilter);
+        return query.order("created_at", { ascending: false }).order("id").range(from, to);
+      }, page);
+      if (request === collectionRequest.current) { setFurniture(rows); setTotal(count); }
+    } catch { if (request === collectionRequest.current) setCollectionError("Could not load this collection page. Please retry."); }
+    finally { if (request === collectionRequest.current) setLoading(false); }
+  }, [activeFilter, page]);
   const fetchSizeGuides = useCallback(async () => {
+    const request = ++guideRequest.current;
     setGuidesError("");
+    setGuidesReady(false);
     try {
-      const data = await fetchAllRows((from, to) => supabase.from("size_guides").select("*", { count: "exact" }).order("furniture_id").range(from, to));
+      const data = await fetchAllRows((from, to) => supabase.from("size_guides").select("*", { count: "exact" }).in("furniture_id", furniture.map(item => item.id)).order("furniture_id").range(from, to));
+      if (request !== guideRequest.current) return;
       const map: Record<string, any> = {};
       data.forEach(guide => { map[guide.furniture_id] = guide; });
       setSizeGuides(map);
       setGuidesReady(true);
       return map;
-    } catch { setGuidesReady(false); setGuidesError("Could not load dimensions. Retry before saving an existing item."); }
-  }, []);
+    } catch { if (request === guideRequest.current) { setGuidesReady(false); setGuidesError("Could not load dimensions. Retry before saving an existing item."); } }
+  }, [furniture]);
 
   const retryDimensions = async () => {
     const request = galleryRequest.current;
@@ -116,8 +128,11 @@ export default function ManageFurniture() {
   };
 
   useEffect(() => {
-    void (async () => { await fetchFurniture(); await fetchSizeGuides(); })();
-  }, [fetchFurniture, fetchSizeGuides]);
+    const tracker = collectionRequest;
+    void (async () => { await fetchFurniture(); })();
+    return () => { tracker.current++; };
+  }, [fetchFurniture]);
+  useEffect(() => { const tracker = guideRequest; void (async () => { await fetchSizeGuides(); })(); return () => { tracker.current++; }; }, [fetchSizeGuides]);
 
   const filteredFurniture = activeFilter === "All"
     ? furniture
@@ -307,7 +322,7 @@ export default function ManageFurniture() {
           <Feather name="arrow-left" size={19} color={Design.color.ink} />
         </PressScale>
         {errorMsg && !modalVisible ? <Text accessibilityRole="alert" style={styles.errorText}>{errorMsg}</Text> : null}
-        <PageHeader title="Furniture" subtitle={`${filteredFurniture.length} ${activeFilter === "All" ? "items" : activeFilter.toLowerCase() + "s"} in the collection.`} style={styles.headerPage} />
+        <PageHeader title="Furniture" subtitle={`${total} ${activeFilter === "All" ? "items" : activeFilter.toLowerCase() + "s"} in the collection.`} style={styles.headerPage} />
       </View>
 
       {/* Filter tabs */}
@@ -318,14 +333,12 @@ export default function ManageFurniture() {
         contentContainerStyle={styles.filterRow}
       >
         {FILTERS.map((f) => {
-          const count = f === "All"
-            ? furniture.length
-            : furniture.filter((i) => i.category === f).length;
+          const count = activeFilter === f ? total : null;
           return (
             <PressScale
               key={f}
               style={[styles.filterPill, activeFilter === f && styles.filterPillActive]}
-              onPress={() => setActiveFilter(f)}
+              onPress={() => { setPage(0); setActiveFilter(f); }}
               accessibilityLabel={`Filter by ${f}`}
               accessibilityRole="tab"
               accessibilityState={{ selected: activeFilter === f }}
@@ -368,6 +381,7 @@ export default function ManageFurniture() {
         />
       )}
 
+      <PageControls page={page} total={total} loading={loading} onChange={setPage} />
       <PressScale style={styles.addBtn} onPress={openAdd} accessibilityLabel="Add furniture">
         <Feather name="plus" size={16} color={Design.color.surface} />
         <Text style={styles.addBtnText}>ADD FURNITURE</Text>

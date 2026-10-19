@@ -12,9 +12,9 @@ import {
 } from "react-native";
 import { Design } from "../../constants/design";
 import { supabase } from "../../lib/supabase";
-import { fetchAllRows } from "../../lib/pagination";
+import { fetchAllRows, fetchPage } from "../../lib/pagination";
 import { goBackOr } from "../../lib/navigation";
-import { AdminNavigation, ContentFrame, PageHeader, RetryNotice } from "../../components/app-ui";
+import { AdminNavigation, ContentFrame, PageHeader, RetryNotice, PageControls } from "../../components/app-ui";
 import { PressScale, Reveal } from "../../components/motion";
 import { ShimmerBlock } from "../../components/skeleton";
 import { getStatusBadge } from "../../constants/statuses";
@@ -51,6 +51,8 @@ export default function ManageOrders() {
   const updatePending = useRef(false);
   const [itemsError, setItemsError] = useState("");
 
+  const [page, setPage] = useState(0);
+  const [total, setTotal] = useState(0);
   const listRequest = useRef(0);
   const detailRequest = useRef(0);
   const fetchOrders = useCallback(async () => {
@@ -58,15 +60,15 @@ export default function ManageOrders() {
     setLoading(true);
     setUpdateError("");
     try {
-      const data = await fetchAllRows((from, to) => {
+      const { rows: data, total: count } = await fetchPage((from, to) => {
         let query = supabase.from("orders").select("*, profiles(*)", { count: "exact" });
         if (selectedStatus !== "All") query = query.eq("status", selectedStatus);
         return query.order("created_at", { ascending: false }).order("id").range(from, to);
-      });
-      if (request === listRequest.current) setOrders(data);
+      }, page);
+      if (request === listRequest.current) { setOrders(data); setTotal(count); }
     } catch { if (request === listRequest.current) setUpdateError("Could not load orders. Please refresh."); }
     finally { if (request === listRequest.current) { setLoading(false); setRefreshing(false); } }
-  }, [selectedStatus]);
+  }, [selectedStatus, page]);
 
   useEffect(() => {
     let cancelled = false;
@@ -230,7 +232,7 @@ export default function ManageOrders() {
               ]}
               onPress={() => {
                 if (status === selectedStatus) return;
-                setSelectedStatus(status);
+                setPage(0); setSelectedStatus(status);
                 setLoading(true);
               }}
               accessibilityLabel={`Filter by ${status}`}
@@ -275,6 +277,7 @@ export default function ManageOrders() {
         />
         </Reveal>
       )}
+      <PageControls page={page} total={total} loading={loading} onChange={setPage} />
       </ContentFrame>
       <AdminNavigation active="orders" placement="footer" />
 
