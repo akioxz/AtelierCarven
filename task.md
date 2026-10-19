@@ -6,7 +6,7 @@
 
 ### P1 — High priority
 
-- [x] [P1 #1] Restrict public profile access. Applied `20261019015425_restrict_public_profiles.sql` to project `hghsiwgxzawivwgsqdvd` after explicit approval. Live role checks passed for anonymous denial, owner isolation, admin reads/order joins, and review RPC execution. The isolated fixture verifies reviewer names and safe fields; there are no live reviews. Updated product caller is committed locally; app deployment remains pending.
+- [x] [P1 #1] Restrict public profile access. Applied `20261019015425_restrict_public_profiles.sql` to project `hghsiwgxzawivwgsqdvd` after explicit approval. Live role checks passed for anonymous denial, owner isolation, admin reads/order joins, and review RPC execution. The isolated fixture verifies reviewer names and safe fields; there are no live reviews. Updated product caller is committed locally and served by Expo Go development; signed-in device review rendering remains pending.
 - [ ] [P1 #2] Make checkout completion atomic and handle every write failure. `src/app/(user)/checkout-review.tsx:81-119` creates the order separately, logs an order-item insertion failure, then clears the cart and shows success. Cart deletion errors are also ignored. Preserve the cart and report failure unless the complete order succeeds.
 - [ ] [P1 #3] Remove the URL total as checkout authority. `src/app/(user)/checkout-review.tsx:51,67-85` refetches cart lines but inserts the earlier, editable route total unchanged. Changed carts can disagree with the displayed/submitted total. Recompute from an authoritative snapshot; server-side recalculation/protection is currently unverified.
 - [ ] [P1 #4] Carry sale pricing through the whole purchase flow. `src/components/product-card.tsx:81-90` and `src/app/(user)/home.tsx:208-214` display sale prices, while `product.tsx:133`, `cart.tsx:20`, `checkout.tsx:41`, and `checkout-review.tsx:105` use list prices. `favorites.tsx:91-103` also passes unmapped snake_case sale/review fields to the card. Use one effective-price contract consistently.
@@ -33,11 +33,20 @@
 - [x] Final TypeScript check passed. Lint passed with the same four pre-existing font warnings. Web export passed for 46 routes. Initial RPC typing regression was repaired before the final checks.
 - [x] User explicitly approved the remote migration; verified the target and applied only the profile privacy repair as version `20261019015425`. Live read checks passed without writing customer data. Renamed the local migration and fixture reference to match remote history. The sale-data migration was already recorded remotely; no blanket push was used.
 
+
+### Profile repair follow-up — 2026-10-19
+
+- [x] Live PostgREST verification: anonymous profile ID and private-field queries both returned HTTP 401 / SQLSTATE 42501; the ordered review RPC returned HTTP 200 and an empty array for an unmatched product UUID.
+- [x] Exported committed repair code separately from unrelated dirty work: 46 routes. Confirmed the exported bundle contains the new review RPC caller and no private environment values across 114 files.
+- [x] Local browser smoke: protected product route redirected to onboarding when signed out; no error/warning console entries on the correctly served route. This does not verify signed-in review rendering or native behavior.
+- [x] User confirmed Expo Go/local development. Started the existing workspace with `npx --no-install expo start --lan --port 8081`; Metro status and Android Expo manifest returned HTTP 200. Android launch bundle compiled (2,030 modules), returned HTTP 200, and contains the privacy-safe review RPC caller. Connect through `exp://192.168.254.105:8081` on the same network. No Vercel/EAS publication is required for this local workflow.
+- [ ] Open/reload the app in Expo Go and check product reviews in a signed-in test session. No physical device or signed-in test session was available to this agent; no live review rows were created.
+
 ## Verification Gaps
 
 - Remaining order/role authorization is unverified. Customer order UPDATE is allowed by the RLS policy in `20260908000004_rls_initplan.sql:60-63` and the UPDATE grant in `20260908000000_rls_audit_and_grants.sql:118`. Intended role/order protection relies on `protect_profile_role` and `protect_order_admin_fields`, whose definitions and trigger attachments are absent from the local migration history. Do not claim a confirmed role/status exploit without inspecting those controls. Core table bootstrap definitions are also absent from this migration set.
 - Desktop hero layout needs rendered verification: `src/app/(user)/home.tsx:293-295` switches to a row while its media retains width 100%, risking a collapsed/overflowing copy panel. Native safe areas, touch behavior, and accessibility have not been exercised on devices.
-- Browser journeys were source-reviewed, not executed; existing scripts create remote data. P1 #1 received the separately approved live migration and SQL role checks described above; PostgREST/browser behavior remains unverified. The temporary test runtime stayed outside repo dependencies. No app deployment was performed. The placement feature is a 2D image overlay; native behavior and public indexing remain unverified.
+- Browser journeys were source-reviewed, not executed; existing scripts create remote data. P1 #1 received the separately approved live migration and SQL role checks described above; Anonymous PostgREST and signed-out local browser checks passed; signed-in browser/native behavior remains unverified. The temporary test runtime stayed outside repo dependencies. No app deployment was performed. The placement feature is a 2D image overlay; native behavior and public indexing remain unverified.
 
 ## Checks
 
