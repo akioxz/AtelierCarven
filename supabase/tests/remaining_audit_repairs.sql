@@ -110,6 +110,7 @@ alter table public.activity_logs enable row level security;
 create policy admin_logs on public.activity_logs for select to authenticated using(private.is_admin());
 grant select on public.activity_logs to authenticated;
 create policy admin_orders on public.orders for all to authenticated using(private.is_admin()) with check(private.is_admin());
+create policy admin_line_reads on public.order_items for select to authenticated using(private.is_admin());
 create policy admin_furniture on public.furniture for all to authenticated using(private.is_admin()) with check(private.is_admin());
 create table public.reviews(
  id uuid primary key default gen_random_uuid(),furniture_id uuid not null references public.furniture(id),
@@ -259,6 +260,113 @@ select set_config('request.jwt.claim.sub','',true);
 do $test$
 begin
  begin perform public.add_cart_item('10000000-0000-0000-0000-000000000001',1); raise exception 'Missing identity accepted';
+ exception when insufficient_privilege then null; end;
+end;
+$test$;
+reset role;
+
+-- Reproduce the inspected legacy grants, including explicit column UPDATE.
+grant all on public.profiles, public.orders, public.order_items to anon, authenticated;
+grant update (price) on public.order_items to authenticated;
+savepoint vulnerable_lines;
+set local role authenticated;
+select set_config('request.jwt.claim.sub','00000000-0000-0000-0000-000000000001',true);
+update public.order_items set price=1,quantity=99;
+do $test$
+begin
+ if not exists(select 1 from public.order_items where price=1 and quantity=99) then
+  raise exception 'Negative control did not reproduce financial mutation'; end if;
+end;
+$test$;
+delete from public.order_items;
+do $test$
+begin
+ if exists(select 1 from public.order_items) then raise exception 'Negative control did not delete owned lines'; end if;
+end;
+$test$;
+rollback to savepoint vulnerable_lines;
+savepoint vulnerable_parent;
+set local role authenticated;
+select set_config('request.jwt.claim.sub','00000000-0000-0000-0000-000000000001',true);
+delete from public.orders;
+do $test$
+begin
+ if exists(select 1 from public.order_items) then raise exception 'Negative control did not cascade'; end if;
+end;
+$test$;
+rollback to savepoint vulnerable_parent;
+
+\ir ../migrations/20261019045409_lock_purchased_order_items.sql
+
+-- Check effective privileges, including inherited PUBLIC/column grants.
+do $test$
+declare api_role text; relation_name text; column_name text;
+begin
+ foreach api_role in array array['anon','authenticated'] loop
+  foreach relation_name in array array['profiles','orders','order_items'] loop
+   if has_table_privilege(api_role,'public.'||relation_name,'TRUNCATE') then
+    raise exception 'TRUNCATE retained for % on %',api_role,relation_name; end if;
+  end loop;
+  if has_table_privilege(api_role,'public.order_items','UPDATE')
+     or has_table_privilege(api_role,'public.order_items','DELETE')
+     or has_table_privilege(api_role,'public.orders','DELETE') then
+   raise exception 'Purchased-line mutation privilege retained for %',api_role; end if;
+  foreach column_name in array array['id','order_id','furniture_id','quantity','price','color','material'] loop
+   if has_column_privilege(api_role,'public.order_items',column_name,'UPDATE') then
+    raise exception 'Column UPDATE retained for % on %',api_role,column_name; end if;
+  end loop;
+ end loop;
+end;
+$test$;
+set local role authenticated;
+select set_config('request.jwt.claim.sub','00000000-0000-0000-0000-000000000001',true);
+do $test$
+declare relation_name text; saved_order uuid;
+begin
+ if (select count(*) from public.order_items)<>2 then raise exception 'Owner read changed'; end if;
+ begin update public.order_items set price=1; raise exception 'Price update allowed';
+ exception when insufficient_privilege then null; end;
+ begin update public.order_items set quantity=99; raise exception 'Quantity update allowed';
+ exception when insufficient_privilege then null; end;
+ begin update public.order_items set order_id=gen_random_uuid(); raise exception 'Reparent allowed';
+ exception when insufficient_privilege then null; end;
+ begin delete from public.order_items; raise exception 'Line delete allowed';
+ exception when insufficient_privilege then null; end;
+ begin delete from public.orders; raise exception 'Parent cascade allowed';
+ exception when insufficient_privilege then null; end;
+ foreach relation_name in array array['profiles','orders','order_items'] loop
+  begin execute format('truncate public.%I cascade',relation_name); raise exception 'TRUNCATE allowed';
+  exception when insufficient_privilege then null; end;
+ end loop;
+ -- A real invoker checkout must still save its complete snapshot and clear cart.
+ perform public.add_cart_item('10000000-0000-0000-0000-000000000001',1,'Black','Wood');
+ -- The earlier cart-delta test left six items of this same variant.
+ saved_order:=public.checkout_cart(560,'Fixture address','cod');
+ if not exists(select 1 from public.order_items where order_id=saved_order and quantity=7 and price=80)
+    or exists(select 1 from public.cart) then raise exception 'Checkout broken by revokes'; end if;
+end;
+$test$;
+select set_config('request.jwt.claim.sub','00000000-0000-0000-0000-000000000002',true);
+do $test$
+begin
+ if exists(select 1 from public.order_items) then raise exception 'Other-owner lines visible'; end if;
+end;
+$test$;
+select set_config('request.jwt.claim.sub','00000000-0000-0000-0000-000000000003',true);
+do $test$
+begin
+ if (select count(*) from public.order_items)<>3 then raise exception 'Admin line reads changed'; end if;
+ update public.orders set status='Completed' where user_id='00000000-0000-0000-0000-000000000001';
+ if not found then raise exception 'Admin status update blocked'; end if;
+end;
+$test$;
+reset role;
+set local role anon;
+do $test$
+begin
+ begin delete from public.order_items; raise exception 'Anonymous line delete allowed';
+ exception when insufficient_privilege then null; end;
+ begin truncate public.order_items; raise exception 'Anonymous TRUNCATE allowed';
  exception when insufficient_privilege then null; end;
 end;
 $test$;
