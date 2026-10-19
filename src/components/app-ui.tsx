@@ -92,6 +92,10 @@ export function TextLink({ label, onPress, style }: { label: string; onPress: ()
   );
 }
 
+export function RetryNotice({ message, onRetry }: { message: string; onRetry: () => void }) {
+  return <View style={{ padding: 20, gap: 12 }}><Text accessibilityRole="alert" style={{ color: Design.color.danger, fontFamily: Design.font.body, lineHeight: 21 }}>{message}</Text><SecondaryButton label="Retry" onPress={onRetry} /></View>;
+}
+
 function Navigation({ active, items, admin = false }: { active: NavKey; items: typeof customerItems; admin?: boolean }) {
   const router = useRouter();
   const insets = useSafeAreaInsets();

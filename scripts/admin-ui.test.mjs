@@ -118,11 +118,14 @@ test('admin stack applies top and side safe areas without duplicating footer bot
 });
 
 test('furniture grid puts width on direct layout children and fills each card', () => {
-  for (const [width, expected] of [[320, '100%'], [420, '47.5%']]) {
+  for (const [width, columns, expected] of [[320, 1, 288], [420, 2, 187]]) {
     const rt = runtime({ width, state: [[{ id: 'piece', name: 'Chair', category: 'Chair', price: 100 }], false] });
     const Screen = rt.load('src/app/(admin)/manage-furniture.tsx').default;
     const tree = Screen();
-    const item = descendants(tree, node => node.type?.name === 'Reveal' && node.props.children?.props?.style?.[0]?.width === '100%')[0];
+    const list = descendants(tree, node => node.type === 'FlatList')[0];
+    assert.equal(list.props.numColumns, columns);
+    assert.equal(list.props.initialNumToRender, 12);
+    const item = list.props.renderItem({ item: list.props.data[0], index: 0 });
     assert.ok(item);
     assert.equal(flatten(item.props.style).width, expected);
     assert.equal(flatten(item.props.children.props.style).width, '100%');
@@ -149,4 +152,149 @@ test('reselecting the active Orders filter never starts loading; changing it sti
     assert.equal(selected, status);
     assert.equal(loading, status !== 'All');
   }
+});
+
+function callback(path, name, context) {
+  const ast = ts.createSourceFile(path, read(path), ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
+  let expression;
+  const visit = node => {
+    if (ts.isVariableDeclaration(node) && node.name.getText(ast) === name) {
+      expression = node.initializer;
+      if (ts.isCallExpression(expression)) expression = expression.arguments[0];
+    }
+    ts.forEachChild(node, visit);
+  };
+  visit(ast);
+  assert.ok(expression, name);
+  return runInNewContext(ts.transpileModule(`(${expression.getText(ast)})`, { compilerOptions: { target: ts.ScriptTarget.ES2022 } }).outputText, context);
+}
+
+test('profile session failure clears loading, reports retry and never invents a profile', async () => {
+  let loading, error, writes = 0;
+  await callback('src/app/(admin)/profile.tsx', 'fetchProfile', {
+    setLoading: value => loading = value, setLoadError: value => error = value, setProfile: () => writes++,
+    supabase: { auth: { getUser: async () => ({ data: { user: null }, error: null }) } },
+  })();
+  assert.equal(loading, false);
+  assert.match(error, /Could not load/);
+  assert.equal(writes, 0);
+});
+
+test('avatar profile-write error stays visible and releases its synchronous guard', async () => {
+  let error, uploading, fetched = 0;
+  const pending = { current: false };
+  await callback('src/app/(admin)/profile.tsx', 'handleAvatarUpload', {
+    avatarPending: pending, setUploadingAvatar: value => uploading = value, setAvatarError: value => error = value,
+    pickAndUploadImage: async () => 'local-test-image', fetchProfile: async () => fetched++,
+    supabase: { auth: { getUser: async () => ({ data: { user: { id: 'test' } } }) },
+      from: () => ({ update: () => ({ eq: async () => ({ error: { code: '42501' } }) }) }) },
+  })();
+  assert.match(error, /Could not confirm/);
+  assert.equal(uploading, false);
+  assert.equal(pending.current, false);
+  assert.equal(fetched, 0);
+});
+
+test('dashboard load failure shows Retry rather than an empty-store welcome', () => {
+  const Screen = runtime({ state: [{ furniture: 0 }, [], false, 'Failed to load'] }).load('src/app/(admin)/dashboard.tsx').default;
+  const tree = Screen();
+  assert.equal(descendants(tree, node => node.type?.name === 'RetryNotice').length, 1);
+  assert.equal(descendants(tree, node => node.props?.children === 'Your dashboard is ready.').length, 0);
+});
+
+test('activity list virtualizes rows and retains the full recorded action', () => {
+  const log = { id: 'log', action: 'Updated order status to Completed', target_item: 'Order #test', created_at: '2026-10-19' };
+  const Screen = runtime({ state: [[log], false] }).load('src/app/(admin)/activity-logs.tsx').default;
+  const list = descendants(Screen(), node => node.type === 'FlatList')[0];
+  assert.ok(list);
+  assert.equal(list.props.initialNumToRender, 12);
+  const row = list.props.renderItem({ item: log, index: 0 });
+  assert.equal(descendants(row, node => node.props?.children === log.action).length, 1);
+});
+
+test('confirmation blocks cancellation/back and disables both actions while pending', () => {
+  let cancelled = 0;
+  const Confirm = runtime().load('src/components/confirm-modal.tsx').default;
+  const tree = Confirm({ visible: true, title: 'Update?', message: 'Confirm', confirmLabel: 'UPDATE', pending: true, error: 'Retry failed', onCancel: () => cancelled++, onConfirm: () => {} });
+  tree.props.onRequestClose();
+  assert.equal(cancelled, 0);
+  const buttons = descendants(tree, node => node.type?.name === 'PressScale');
+  assert.equal(buttons.length, 2);
+  assert.ok(buttons.every(button => button.props.disabled));
+  assert.equal(descendants(tree, node => node.props?.accessibilityRole === 'alert').length, 1);
+});
+
+test('status update rejection is visible in the confirmation and duplicate taps make one request', async () => {
+  let release, calls = 0, updating, error;
+  const pending = { current: false };
+  const promise = new Promise(resolve => release = resolve);
+  const context = {
+    selectedOrder: { id: 'order' }, modalStatus: 'Completed', updatePending: pending,
+    setUpdating: value => updating = value, setUpdateError: value => error = value,
+    supabase: { from: () => ({ update: () => ({ eq: () => { calls++; return { select: () => ({ single: () => promise }) }; } }) }) },
+  };
+  const update = callback('src/app/(admin)/manage-orders.tsx', 'handleUpdateStatus', context);
+  const first = update();
+  await update();
+  assert.equal(calls, 1);
+  release({ error: { code: '42501' } });
+  await first;
+  assert.match(error, /Couldn't confirm/);
+  assert.equal(updating, false);
+  assert.equal(pending.current, false);
+});
+
+test('dirty form dismissal requests confirmation and pending work cannot dismiss', () => {
+  let discarded = false, closed = false;
+  const context = {
+    mutationPending: { current: false }, imagePending: { current: false }, galleryPending: { current: false },
+    formSignature: 'changed', originalForm: { current: 'original' },
+    setDiscardOpen: value => discarded = value, closeForm: () => closed = true,
+  };
+  const close = callback('src/app/(admin)/manage-furniture.tsx', 'requestCloseForm', context);
+  close();
+  assert.equal(discarded, true);
+  assert.equal(closed, false);
+  discarded = false;
+  context.galleryPending.current = true;
+  close();
+  assert.equal(discarded, false);
+  context.galleryPending.current = false;
+  context.formSignature = 'original';
+  close();
+  assert.equal(closed, true);
+});
+
+test('muted text token meets normal-text contrast on all three surfaces', () => {
+  const { Design } = runtime().load('src/constants/design.ts');
+  const luminance = hex => {
+    const c = hex.slice(1).match(/../g).map(x => parseInt(x, 16) / 255).map(x => x <= .04045 ? x / 12.92 : ((x + .055) / 1.055) ** 2.4);
+    return c[0] * .2126 + c[1] * .7152 + c[2] * .0722;
+  };
+  for (const surface of ['canvas', 'surface', 'surfaceMuted']) {
+    const a = luminance(Design.color.inkMuted), b = luminance(Design.color[surface]);
+    assert.ok((Math.max(a, b) + .05) / (Math.min(a, b) + .05) >= 4.5, surface);
+  }
+});
+
+test('order detail displays stored variants and a legacy fallback without inventing values', () => {
+  for (const variant of [{ color: 'Blue', material: 'Oak' }, {}]) {
+    const state = [];
+    state[4] = { id: 'order', status: 'Pending', address: '' };
+    state[5] = [{ id: 'line', furniture: { name: 'Chair', category: 'Chair' }, price: 100, quantity: 1, ...variant }];
+    const Screen = runtime({ state }).load('src/app/(admin)/manage-orders.tsx').default;
+    const copy = descendants(Screen(), node => node.type === 'Text').map(node => [node.props.children].flat().join('')).join('\n');
+    assert.ok(copy.includes(`Color: ${variant.color || 'Not recorded'}`));
+    assert.ok(copy.includes(`Material: ${variant.material || 'Not recorded'}`));
+  }
+});
+
+test('furniture dimensions have native accessible names and category selection is exposed', () => {
+  const Screen = runtime().load('src/app/(admin)/manage-furniture.tsx').default;
+  const tree = Screen();
+  const labels = descendants(tree, node => node.type === 'TextInput').map(node => node.props.accessibilityLabel);
+  for (const label of ['Width in centimetres', 'Height in centimetres', 'Depth in centimetres', 'Weight in kilograms']) assert.ok(labels.includes(label));
+  const category = descendants(tree, node => node.props?.accessibilityLabel === 'Set category to Sofa')[0];
+  assert.equal(category.props.accessibilityRole, 'radio');
+  assert.equal(category.props.accessibilityState.checked, true);
 });

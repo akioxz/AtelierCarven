@@ -107,7 +107,7 @@ test('older admin detail response cannot overwrite the selected order', async ()
   const written = [];
   let calls = 0;
   const context = { detailRequest: { current: 0 }, fetchAllRows: () => ++calls === 1 ? first.promise : second.promise,
-    setLoadingItems() {}, setOrderItems: rows => written.push(rows), setUpdateError() {},
+    setLoadingItems() {}, setItemsError() {}, setOrderItems: rows => written.push(rows), setUpdateError() {},
   };
   const fetch = callback('src/app/(admin)/manage-orders.tsx', 'fetchOrderItems', context);
   const older = fetch('old'), newer = fetch('new');
@@ -162,7 +162,7 @@ function furnitureHarness({ guideError = true, deletionError = false } = {}) {
   const errors = [], editing = [], closed = [], logs = [], calls = [];
   const state = { guideError };
   const context = {
-    mutationPending: { current: false }, guidesReady: true, editing: null, name: 'Chair', price: '100', category: 'Chair',
+    mutationPending: { current: false }, imagePending: { current: false }, galleryPending: { current: false }, setUploadingGallery: () => {}, guidesReady: true, editing: null, name: 'Chair', price: '100', category: 'Chair',
     CATEGORIES: ['Chair'], description: '', imageUrl: '', width: '20', height: '', depth: '', weight: '',
     setErrorMsg: value => errors.push(value), setSaving() {}, setEditing: value => { editing.push(value); context.editing = value; },
     setModalVisible: value => closed.push(value), fetchFurniture: async () => {}, fetchSizeGuides: async () => {},

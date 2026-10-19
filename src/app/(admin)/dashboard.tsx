@@ -2,7 +2,7 @@ import { Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import { Platform, ScrollView, StatusBar, StyleSheet, Text, useWindowDimensions, View } from "react-native";
-import { AdminNavigation, ContentFrame, PageHeader, PrimaryButton } from "../../components/app-ui";
+import { AdminNavigation, ContentFrame, PageHeader, PrimaryButton, RetryNotice } from "../../components/app-ui";
 import { PressScale, Reveal } from "../../components/motion";
 import { ShimmerBlock } from "../../components/skeleton";
 import { Design, layout } from "../../constants/design";
@@ -20,9 +20,11 @@ export default function Dashboard() {
   const [username, setUsername] = useState("Admin");
 
   const fetchData = async () => {
+    setLoading(true);
+    setLoadError("");
+    try {
     const { data: { user } } = await supabase.auth.getUser();
     if (user) { const { data: profile } = await supabase.from("profiles").select("username").eq("id", user.id).single(); setUsername(profile?.username || "Admin"); }
-    try {
       const [{ data: summary, error }, { data: recent, error: logsError }] = await Promise.all([
         supabase.rpc("admin_dashboard_summary"),
         supabase.from("activity_logs").select("*").order("created_at", { ascending: false }).order("id").limit(5),
@@ -32,7 +34,7 @@ export default function Dashboard() {
       if (Object.values(values).some(value => !Number.isFinite(value) || value < 0)) throw new Error("Invalid dashboard summary");
       setStats({ furniture: values.furniture, users: values.users, logs: values.logs, orders: values.orders, revenue: values.revenue, pending: values.pending });
       setRecentLogs(recent || []);
-    } catch { setLoadError("Could not load dashboard totals. Reopen this page to retry."); }
+    } catch { setLoadError("Could not load dashboard totals. Please retry."); }
     finally { setLoading(false); }
   };
 
@@ -42,17 +44,17 @@ export default function Dashboard() {
   const isEmpty = stats.furniture === 0;
 
   return (
-    <View style={styles.screen}><StatusBar barStyle="dark-content" /><AdminNavigation active="dashboard" />{loadError ? <Text accessibilityRole="alert" style={{ color: Design.color.danger, padding: 12 }}>{loadError}</Text> : null}
+    <View style={styles.screen}><StatusBar barStyle="dark-content" /><AdminNavigation active="dashboard" />
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}><ContentFrame style={styles.frame}>
         <PageHeader title="Operations, at a glance." subtitle={`Welcome back, ${username}. Keep the collection and orders moving.`} right={<PressScale onPress={() => router.push("/(admin)/profile")} style={styles.avatar} accessibilityLabel="Open admin profile"><Text style={styles.avatarText}>{username.charAt(0).toUpperCase()}</Text></PressScale>} />
-        {loading ? <View style={styles.loading}><ShimmerBlock height={12} radius={6} width="38%" /><View style={styles.metrics}><ShimmerBlock height={110} radius={Design.radius.card} width="48%" /><ShimmerBlock height={110} radius={Design.radius.card} width="48%" /></View><ShimmerBlock height={160} radius={Design.radius.card} width="100%" /></View> : isEmpty ? <Reveal><View style={styles.welcome}><View style={styles.welcomeIcon}><Feather name="package" size={26} color={Design.color.accent} /></View><Text style={styles.welcomeTitle}>Your dashboard is ready.</Text><Text style={styles.welcomeSubtitle}>Add your first piece of furniture to start tracking orders, revenue, and activity.</Text><PrimaryButton label="Add your first piece" onPress={() => router.push("/(admin)/manage-furniture")} style={styles.welcomeCta} /></View></Reveal> : <>
+        {loading ? <View style={styles.loading}><ShimmerBlock height={12} radius={6} width="38%" /><View style={styles.metrics}><ShimmerBlock height={110} radius={Design.radius.card} width="48%" /><ShimmerBlock height={110} radius={Design.radius.card} width="48%" /></View><ShimmerBlock height={160} radius={Design.radius.card} width="100%" /></View> : loadError ? <RetryNotice message={loadError} onRetry={() => void fetchData()} /> : isEmpty ? <Reveal><View style={styles.welcome}><View style={styles.welcomeIcon}><Feather name="package" size={26} color={Design.color.accent} /></View><Text style={styles.welcomeTitle}>Your dashboard is ready.</Text><Text style={styles.welcomeSubtitle}>Add your first piece of furniture to start tracking orders, revenue, and activity.</Text><PrimaryButton label="Add your first piece" onPress={() => router.push("/(admin)/manage-furniture")} style={styles.welcomeCta} /></View></Reveal> : <>
           <Reveal>
           <View style={[styles.metrics, wide && styles.metricsWide, narrow && styles.metricsNarrow]}><Metric narrow={narrow} icon="dollar-sign" label="Revenue" value={`₱${stats.revenue.toLocaleString()}`} feature /><Metric narrow={narrow} icon="shopping-bag" label="Active orders" value={stats.orders.toString()} /><Metric narrow={narrow} icon="box" label="Collection" value={stats.furniture.toString()} /><Metric narrow={narrow} icon="users" label="Customers" value={stats.users.toString()} /></View>
           </Reveal>
           <Reveal delay={120}>
           <View style={[styles.workspace, wide && styles.workspaceWide]}>
             <View style={[styles.activity, wide && styles.activityWide]}><View style={styles.sectionTop}><Text style={styles.sectionTitle}>Recent activity</Text><PressScale onPress={() => router.push("/(admin)/activity-logs")} accessibilityLabel="View all activity"><Text style={styles.textLink}>View all</Text></PressScale></View>
-              {recentLogs.length === 0 ? <Text style={styles.empty}>No activity has been recorded yet.</Text> : recentLogs.map((log) => { const state = badge(log.action); return <PressScale key={log.id} onPress={() => router.push(logRoute(log))} style={styles.log} accessibilityLabel={`Open ${state.label} log`}><View style={[styles.logMarker, { backgroundColor: state.color }]} /><View style={styles.logCopy}><Text style={styles.logTitle}>{log.target_item || state.label}</Text><Text style={styles.logMeta}>{state.label} · {new Date(log.created_at).toLocaleString()}</Text></View><Feather name="chevron-right" size={17} color={Design.color.inkMuted} /></PressScale>; })}
+              {recentLogs.length === 0 ? <Text style={styles.empty}>No activity has been recorded yet.</Text> : recentLogs.map((log) => { const state = badge(log.action); return <PressScale key={log.id} onPress={() => router.push(logRoute(log))} style={styles.log} accessibilityLabel={`Open ${state.label} log`}><View style={[styles.logMarker, { backgroundColor: state.color }]} /><View style={styles.logCopy}><Text style={styles.logTitle}>{log.target_item || state.label}</Text><Text style={styles.logMeta}>{log.action} · {new Date(log.created_at).toLocaleString()}</Text></View><Feather name="chevron-right" size={17} color={Design.color.inkMuted} /></PressScale>; })}
             </View>
             <View style={[styles.actions, wide && styles.actionsWide]}><Text style={styles.sectionTitle}>Keep moving</Text><Action icon="package" title="Manage collection" description="Add, update, and retire furniture." badge={`${stats.furniture} items`} onPress={() => router.push("/(admin)/manage-furniture")} /><Action icon="shopping-bag" title="Review orders" description="Check delivery details and order status." badge={`${stats.pending} pending`} onPress={() => router.push("/(admin)/manage-orders")} /><Action icon="activity" title="Activity history" description={`${stats.logs} recorded actions.`} onPress={() => router.push("/(admin)/activity-logs")} /></View>
           </View>

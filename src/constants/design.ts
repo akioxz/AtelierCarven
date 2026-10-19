@@ -5,7 +5,7 @@ export const Design = {
     surfaceMuted: "#DDD5C4",
     ink: "#1D1B17",
     inkSoft: "#5A554B",
-    inkMuted: "#76705F",
+    inkMuted: "#5C574B",
     line: "#CFC6B2",
     accent: "#B5501E",
     accentDeep: "#8A3A12",

@@ -1,5 +1,5 @@
 import {
-  View, Text, StyleSheet, ScrollView,
+  View, Text, StyleSheet, FlatList,
   StatusBar, useWindowDimensions, Platform,
 } from "react-native";
 import { useRouter } from "expo-router";
@@ -9,7 +9,7 @@ import { Design, layout } from "../../constants/design";
 import { supabase } from "../../lib/supabase";
 import { fetchAllRows } from "../../lib/pagination";
 import { goBackOr } from "../../lib/navigation";
-import { AdminNavigation, ContentFrame, PageHeader } from "../../components/app-ui";
+import { AdminNavigation, ContentFrame, PageHeader, RetryNotice } from "../../components/app-ui";
 import { PressScale, Reveal, staggerDelay } from "../../components/motion";
 import { ShimmerBlock } from "../../components/skeleton";
 
@@ -22,10 +22,12 @@ export default function ActivityLogs() {
   const [loadError, setLoadError] = useState("");
 
   const fetchLogs = async () => {
+    setLoading(true);
+    setLoadError("");
     try {
       const data = await fetchAllRows((from, to) => supabase.from("activity_logs").select("*", { count: "exact" }).order("created_at", { ascending: false }).order("id").range(from, to));
       setLogs(data);
-    } catch { setLoadError("Could not load the complete activity history. Reopen this page to retry."); }
+    } catch { setLoadError("Could not load the activity history. Please retry."); }
     finally { setLoading(false); }
   };
 
@@ -42,7 +44,6 @@ export default function ActivityLogs() {
     <View style={styles.container}>
       <StatusBar barStyle="dark-content" />
       <AdminNavigation active="logs" />
-      {loadError ? <Text accessibilityRole="alert" style={{ color: Design.color.danger, padding: 12 }}>{loadError}</Text> : null}
 
       <ContentFrame>
       <View style={styles.main}>
@@ -57,23 +58,22 @@ export default function ActivityLogs() {
 
         {loading ? (
           <View style={styles.loading}><ShimmerBlock height={48} radius={Design.radius.card} width="100%" /><ShimmerBlock height={48} radius={Design.radius.card} width="100%" /><ShimmerBlock height={48} radius={Design.radius.card} width="100%" /></View>
-        ) : logs.length === 0 ? (
+        ) : loadError ? <RetryNotice message={loadError} onRetry={() => void fetchLogs()} /> : logs.length === 0 ? (
           <View style={styles.empty}>
             <Feather name="clipboard" size={40} color={Design.color.line} />
             <Text style={styles.emptyText}>No activity logs yet.</Text>
           </View>
         ) : (
-          <ScrollView style={[styles.list, isWeb && styles.listWeb]} contentContainerStyle={{ paddingBottom: 24 }} showsVerticalScrollIndicator={false}>
-            {/* Web table header */}
-            {isWeb && (
+          <FlatList data={logs} keyExtractor={log => log.id} initialNumToRender={12} windowSize={5} style={{ flex: 1 }} contentContainerStyle={[styles.list, isWeb && styles.listWeb]} showsVerticalScrollIndicator={false}
+            ListHeaderComponent={isWeb ? (
               <View style={styles.tableHeader}>
                 <Text style={styles.tableHeaderCell}>ACTION</Text>
                 <Text style={[styles.tableHeaderCell, { flex: 2 }]}>ITEM</Text>
                 <Text style={styles.tableHeaderCell}>DATE & TIME</Text>
               </View>
-            )}
+            ) : null}
 
-            {logs.map((log, i) => {
+            renderItem={({ item: log, index: i }) => {
               const badge = getLogBadge(log.action);
               return isWeb ? (
                 <Reveal key={log.id} delay={staggerDelay(i, 40, 10)}>
@@ -86,6 +86,7 @@ export default function ActivityLogs() {
                   </View>
                   <View style={[styles.tableCell, { flex: 2 }]}>
                     <Text style={styles.logTarget}>{log.target_item}</Text>
+                    <Text style={styles.logAction}>{log.action}</Text>
                   </View>
                   <View style={styles.tableCell}>
                     <Text style={styles.logTime}>{new Date(log.created_at).toLocaleString()}</Text>
@@ -101,13 +102,13 @@ export default function ActivityLogs() {
                   </View>
                   <View style={styles.logContent}>
                     <Text style={styles.logTarget}>{log.target_item}</Text>
+                    <Text style={styles.logAction}>{log.action}</Text>
                     <Text style={styles.logTime}>{new Date(log.created_at).toLocaleString()}</Text>
                   </View>
                 </View>
                 </Reveal>
               );
-            })}
-          </ScrollView>
+            }} />
         )}
 
 
@@ -131,7 +132,7 @@ const styles = StyleSheet.create({
   headerWeb: { paddingHorizontal: 0 },
   backButton: { alignItems: "center", backgroundColor: Design.color.surface, borderColor: Design.color.line, borderRadius: Design.radius.small, borderWidth: StyleSheet.hairlineWidth, height: 44, justifyContent: "center", width: 44 },
   loading: { gap: 12, padding: 16 },
-  list: { flex: 1, padding: 24 },
+  list: { padding: 24 },
   listWeb: { padding: 32 },
   tableHeader: { flexDirection: "row", paddingVertical: 12, paddingHorizontal: 16, backgroundColor: Design.color.surfaceMuted, borderRadius: Design.radius.small, marginBottom: 8 },
   tableHeaderCell: { flex: 1, fontSize: 10, fontFamily: Design.font.monoMedium, letterSpacing: 2, color: Design.color.inkSoft },
@@ -142,6 +143,7 @@ const styles = StyleSheet.create({
   logItem: { flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 14, paddingBottom: 14, borderBottomWidth: 0.5, borderBottomColor: Design.color.line },
   logContent: { flex: 1 },
   logTarget: { fontSize: 13, fontWeight: "500", color: Design.color.ink, marginBottom: 2 },
+  logAction: { fontSize: 12, lineHeight: 18, color: Design.color.inkSoft, marginBottom: 4 },
   logTime: { fontSize: 11, fontFamily: Design.font.mono, color: Design.color.inkMuted },
   empty: { flex: 1, justifyContent: "center", alignItems: "center", gap: 12, marginTop: 80 },
   emptyText: { fontSize: 13, color: Design.color.inkMuted },

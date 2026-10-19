@@ -14,11 +14,13 @@ type Props = {
   cancelLabel?: string;
   danger?: boolean;
   icon?: keyof typeof Feather.glyphMap;
+  pending?: boolean;
+  error?: string;
 };
 
-export default function ConfirmModal({ visible, title, message, confirmLabel, onConfirm, onCancel, cancelLabel = "CANCEL", danger = false, icon = "alert-triangle" }: Props) {
+export default function ConfirmModal({ visible, title, message, confirmLabel, onConfirm, onCancel, cancelLabel = "CANCEL", danger = false, icon = "alert-triangle", pending = false, error }: Props) {
   return (
-    <Modal visible={visible} animationType="fade" transparent onRequestClose={onCancel}>
+    <Modal visible={visible} animationType="fade" transparent onRequestClose={() => { if (!pending) onCancel(); }}>
       <View style={styles.backdrop}>
         <View style={styles.card} accessibilityViewIsModal>
           <View style={[styles.iconWrap, danger && styles.iconWrapDanger]}>
@@ -26,12 +28,13 @@ export default function ConfirmModal({ visible, title, message, confirmLabel, on
           </View>
           <Text style={[styles.title, danger && styles.titleDanger]}>{title}</Text>
           <Text style={styles.message}>{message}</Text>
+          {error ? <Text accessibilityRole="alert" style={{ color: Design.color.danger, marginTop: 12 }}>{error}</Text> : null}
           <View style={styles.actions}>
-            <PressScale onPress={onCancel} accessibilityLabel={cancelLabel} style={styles.cancelBtn}>
+            <PressScale onPress={onCancel} disabled={pending} accessibilityState={{ disabled: pending }} accessibilityLabel={cancelLabel} style={styles.cancelBtn}>
               <Text style={styles.cancelText}>{cancelLabel}</Text>
             </PressScale>
-            <PressScale onPress={onConfirm} accessibilityLabel={confirmLabel} style={[styles.confirmBtn, danger && styles.confirmBtnDanger]}>
-              <Text style={styles.confirmText}>{confirmLabel}</Text>
+            <PressScale onPress={onConfirm} disabled={pending} accessibilityState={{ disabled: pending }} accessibilityLabel={confirmLabel} style={[styles.confirmBtn, danger && styles.confirmBtnDanger]}>
+              <Text style={styles.confirmText}>{pending ? "WORKING…" : confirmLabel}</Text>
             </PressScale>
           </View>
         </View>
