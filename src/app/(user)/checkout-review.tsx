@@ -1,6 +1,6 @@
 import { Feather } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Modal, ScrollView, StatusBar, StyleSheet, Text, View } from "react-native";
 import Animated, { Easing, cancelAnimation, useAnimatedStyle, useSharedValue, withRepeat, withTiming } from "react-native-reanimated";
 import { ContentFrame, CustomerNavigation, PageHeader, StepIndicator } from "../../components/app-ui";
@@ -31,17 +31,28 @@ export default function CheckoutReview() {
   const [cartItems, setCartItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState(false);
+  const confirming = useRef(false);
+  const [cartError, setCartError] = useState(false);
   const [alertVisible, setAlertVisible] = useState(false);
   const [alertTitle, setAlertTitle] = useState("");
   const [alertMessage, setAlertMessage] = useState("");
   const spin = useSharedValue(0);
 
   const fetchCart = useCallback(async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) { router.replace("/(auth)/onboarding"); return; }
-    const { data } = await supabase.from("cart").select("*, furniture(*)").eq("user_id", user.id);
-    setCartItems(data || []);
-    setLoading(false);
+    setLoading(true);
+    setCartError(false);
+    try {
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      if (authError) throw authError;
+      if (!user) { router.replace("/(auth)/onboarding"); return; }
+      const { data, error } = await supabase.from("cart").select("*, furniture(*)").eq("user_id", user.id);
+      if (error || !Array.isArray(data)) throw new Error("Cart unavailable");
+      setCartItems(data);
+    } catch {
+      setCartError(true);
+    } finally {
+      setLoading(false);
+    }
   }, [router]);
 
   useEffect(() => {
@@ -57,71 +68,42 @@ export default function CheckoutReview() {
   };
 
   const handleConfirm = async () => {
+    if (confirming.current || loading || cartError || cartItems.length === 0) return;
+    confirming.current = true;
     setProcessing(true);
-    spin.set(withRepeat(withTiming(1, { duration: 800, easing: Easing.linear }), -1));
-
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) { showAlert("Sign in required", "You need to be signed in to place an order."); cancelAnimation(spin); setProcessing(false); return; }
-
-      const { data: cartItems, error: cartFetchErr } = await supabase
-        .from("cart")
-        .select("*, furniture(*)")
-        .eq("user_id", user.id);
-
-      if (cartFetchErr || !cartItems || cartItems.length === 0) {
-        showAlert("Empty Cart", "No items in your cart to checkout.");
-        cancelAnimation(spin);
-        setProcessing(false);
-        return;
-      }
+      spin.set(withRepeat(withTiming(1, { duration: 800, easing: Easing.linear }), -1));
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      if (authError) throw authError;
+      if (!user) { showAlert("Sign in required", "You need to be signed in to place an order."); return; }
 
       const formattedAddress = `Name: ${fullName || ""} | Mobile: ${mobile || ""} | City: ${city || ""} | Address: ${address || ""} | Notes: ${notes || ""}`;
 
-      const { data: newOrder, error: orderErr } = await supabase
-        .from("orders")
-        .insert({
-          user_id: user.id,
-          total: orderTotal,
-          status: "Pending",
-          address: formattedAddress,
-          payment_method: method,
-        })
-        .select()
-        .single();
-
-      if (orderErr) {
-        console.error("Orders Insert Error:", orderErr);
-        showAlert("Checkout Error", "Failed to place your order. Please try again.");
-        cancelAnimation(spin);
-        setProcessing(false);
-        return;
+      const { data: orderId, error } = await supabase.rpc("checkout_cart", {
+        p_total: orderTotal,
+        p_address: formattedAddress,
+        p_payment_method: method,
+      });
+      if (error) {
+        if (error.code === "P0002") {
+          showAlert("Cart changed", "Your cart is empty or was already checked out. Check your orders before trying again.");
+          return;
+        }
+        throw error;
       }
-
-      const itemsToInsert = cartItems.map((item) => ({
-        order_id: newOrder.id,
-        furniture_id: item.furniture_id,
-        quantity: item.quantity,
-        price: Number(item.furniture?.price || 0),
-      }));
-
-      const { error: itemsErr } = await supabase
-        .from("order_items")
-        .insert(itemsToInsert);
-
-      if (itemsErr) {
-        console.error("Order Items Insert Error:", itemsErr);
+      if (typeof orderId !== "string" || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(orderId)) {
+        throw new Error("Order confirmation unavailable");
       }
-
-      await supabase.from("cart").delete().eq("user_id", user.id);
-      await new Promise((resolve) => setTimeout(resolve, 1500));
-
       router.replace("/(user)/order-success");
-    } catch (err) {
-      console.error("Confirm order payment transaction failed:", err);
+    } catch {
+      // A transport failure may arrive after commit. Do not promise that the
+      // order failed, or encourage an immediate duplicate submission.
+      showAlert("Checkout not confirmed", "We couldn't confirm your order. Your cart is cleared only after the complete order is saved. Check your orders before trying again.");
+    } finally {
       cancelAnimation(spin);
+      spin.set(0);
       setProcessing(false);
-      showAlert("Payment Error", "Something went wrong. Please try again.");
+      confirming.current = false;
     }
   };
 
@@ -146,7 +128,7 @@ export default function CheckoutReview() {
           <Reveal>
             <View style={styles.card}>
               <Text style={styles.cardTitle}>Your order</Text>
-              {cartItems.length === 0 ? <Text style={styles.muted}>Your cart is empty.</Text> : cartItems.map((item) => (
+              {cartError ? <View><Text style={styles.muted}>We could not load your cart. Please try again.</Text><PressScale onPress={() => void fetchCart()} accessibilityRole="button" accessibilityLabel="Retry loading cart"><Text style={styles.detailValue}>RETRY</Text></PressScale></View> : cartItems.length === 0 ? <Text style={styles.muted}>Your cart is empty.</Text> : cartItems.map((item) => (
                 <View key={item.id} style={styles.orderRow}>
                   <View style={{ flex: 1 }}>
                     <Text style={styles.orderName}>{item.furniture?.name}</Text>
@@ -194,7 +176,7 @@ export default function CheckoutReview() {
               <Feather name="shield" size={13} color={Design.color.inkSoft} />
               <Text style={styles.securityText}>Your order details are securely stored. We never share your personal information.</Text>
             </View>
-            <PressScale style={[styles.confirmBtn, processing && styles.confirmBtnDisabled]} onPress={handleConfirm} disabled={processing} accessibilityLabel={processing ? "Processing order" : "Confirm order"}>
+            <PressScale style={[styles.confirmBtn, (processing || cartError || cartItems.length === 0) && styles.confirmBtnDisabled]} onPress={handleConfirm} disabled={processing || cartError || cartItems.length === 0} accessibilityLabel={processing ? "Processing order" : "Confirm order"}>
               {processing ? (
                 <Animated.View style={spinStyle}>
                   <Feather name="loader" size={18} color={Design.color.accent} />
