@@ -1,5 +1,4 @@
 import { Feather } from "@expo/vector-icons";
-import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
 import { useEffect, useRef, useState } from "react";
 import { Platform, ScrollView, StatusBar, StyleSheet, Text, TextInput, useWindowDimensions, View } from "react-native";
@@ -10,7 +9,9 @@ import { ProductCard } from "../../components/product-card";
 import { CardSkeleton } from "../../components/skeleton";
 import { Design, layout } from "../../constants/design";
 import { goBackOr } from "../../lib/navigation";
+import { effectivePrice } from "../../lib/pricing";
 import { supabase } from "../../lib/supabase";
+import { fetchAllRows } from "../../lib/pagination";
 
 const CATEGORIES = ["All", "Sofa", "Chair", "Table", "Bed"];
 const SORTS = [
@@ -32,15 +33,17 @@ export default function Search() {
   const [furniture, setFurniture] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [favorites, setFavorites] = useState<string[]>([]);
+  const [actionError, setActionError] = useState("");
+  const pendingFavorites = useRef(new Set<string>());
   const trimmed = query.trim();
 
   useEffect(() => {
     (async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
-      const { data } = await supabase.from("favorites").select("furniture_id").eq("user_id", user.id);
+      const data = await fetchAllRows((from, to) => supabase.from("favorites").select("furniture_id", { count: "exact" }).eq("user_id", user.id).order("id").range(from, to));
       setFavorites((data || []).map((item: any) => item.furniture_id));
-    })();
+    })().catch(() => setActionError("Could not load saved pieces. Please refresh."));
   }, []);
 
   // debounce + stale-response guard
@@ -51,24 +54,30 @@ export default function Search() {
       const requestId = ++latestRequest.current;
       const run = async () => {
         setLoading(true);
-        let queryBuilder = supabase.from("furniture").select("*").eq("is_deleted", false);
-        if (selectedCategory !== "All") queryBuilder = queryBuilder.eq("category", selectedCategory);
-        const term = query.trim();
-        if (term) queryBuilder = queryBuilder.or(`name.ilike.%${term}%,description.ilike.%${term}%,category.ilike.%${term}%`);
-        switch (sort) {
-          case "price-asc": queryBuilder = queryBuilder.order("price", { ascending: true }); break;
-          case "price-desc": queryBuilder = queryBuilder.order("price", { ascending: false }); break;
-          case "rating": queryBuilder = queryBuilder.order("rating", { ascending: false, nullsFirst: false }).order("review_count", { ascending: false }); break;
-          default: queryBuilder = queryBuilder.order("created_at", { ascending: false });
-        }
-        const { data } = await queryBuilder;
-        if (latestRequest.current !== requestId) return;
-        setFurniture(data || []);
-        setLoading(false);
+        try {
+          const data = await fetchAllRows((from, to) => {
+            let queryBuilder = supabase.from("furniture").select("*", { count: "exact" }).eq("is_deleted", false);
+            if (selectedCategory !== "All") queryBuilder = queryBuilder.eq("category", selectedCategory);
+            const term = query.trim().replace(/[,()]/g, " ");
+            if (term) queryBuilder = queryBuilder.or(`name.ilike.%${term}%,description.ilike.%${term}%,category.ilike.%${term}%`);
+            switch (sort) {
+              case "price-asc": queryBuilder = queryBuilder.order("price", { ascending: true }); break;
+              case "price-desc": queryBuilder = queryBuilder.order("price", { ascending: false }); break;
+              case "rating": queryBuilder = queryBuilder.order("rating", { ascending: false, nullsFirst: false }).order("review_count", { ascending: false }); break;
+              default: queryBuilder = queryBuilder.order("created_at", { ascending: false });
+            }
+            return queryBuilder.order("id").range(from, to);
+          });
+          if (latestRequest.current !== requestId) return;
+          data.forEach(effectivePrice);
+          setFurniture(data.map(row => ({ ...row, salePrice: row.sale_price ?? null, reviewCount: row.review_count ?? null })));
+        } catch { if (latestRequest.current === requestId) setActionError("Could not load search results. Please try again."); }
+        finally { if (latestRequest.current === requestId) setLoading(false); }
       };
       run();
     }, query.trim() ? 300 : 0);
-    return () => clearTimeout(queryTrigger);
+    const tracker = latestRequest;
+    return () => { clearTimeout(queryTrigger); tracker.current++; };
   }, [selectedCategory, sort, query]);
   useEffect(() => {
     const timer = setTimeout(() => inputRef.current?.focus(), 80);
@@ -76,24 +85,29 @@ export default function Search() {
   }, []);
 
   const toggleFavorite = async (furnitureId: string) => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) { router.replace("/(auth)/onboarding"); return; }
-    Haptics.selectionAsync();
-    if (favorites.includes(furnitureId)) {
-      setFavorites((previous) => previous.filter((id) => id !== furnitureId));
-      await supabase.from("favorites").delete().eq("user_id", user.id).eq("furniture_id", furnitureId);
-    } else {
-      setFavorites((previous) => [...previous, furnitureId]);
-      await supabase.from("favorites").insert({ user_id: user.id, furniture_id: furnitureId });
-    }
+    if (pendingFavorites.current.has(furnitureId)) return;
+    pendingFavorites.current.add(furnitureId);
+    setActionError("");
+    try {
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      if (authError) throw authError;
+      if (!user) { router.replace("/(auth)/onboarding"); return; }
+      const removing = favorites.includes(furnitureId);
+      const { error } = removing
+        ? await supabase.from("favorites").delete().eq("user_id", user.id).eq("furniture_id", furnitureId)
+        : await supabase.from("favorites").insert({ user_id: user.id, furniture_id: furnitureId });
+      if (error) throw error;
+      setFavorites(previous => removing ? previous.filter(id => id !== furnitureId) : [...previous, furnitureId]);
+    } catch {
+      setActionError("Could not update your saved pieces. Please try again.");
+    } finally { pendingFavorites.current.delete(furnitureId); }
   };
   const addToCart = async (furnitureId: string) => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) { router.replace("/(auth)/onboarding"); return; }
-    Haptics.selectionAsync();
-    const { data: existing } = await supabase.from("cart").select("*").eq("user_id", user.id).eq("furniture_id", furnitureId).single();
-    if (existing) await supabase.from("cart").update({ quantity: existing.quantity + 1 }).eq("id", existing.id);
-    else await supabase.from("cart").insert({ user_id: user.id, furniture_id: furnitureId, quantity: 1 });
+    setActionError("");
+    try {
+      const { data, error } = await supabase.rpc("add_cart_item", { p_furniture_id: furnitureId, p_quantity: 1 });
+      if (error || typeof data !== "string") throw new Error("Cart write failed");
+    } catch { setActionError("Could not add this piece to your cart. Please try again."); }
   };
 
   return (
@@ -101,6 +115,7 @@ export default function Search() {
       <StatusBar barStyle="dark-content" />
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
         <ContentFrame style={styles.frame}>
+          {actionError ? <Text accessibilityRole="alert" style={{ color: Design.color.danger, padding: 12 }}>{actionError}</Text> : null}
           <Reveal>
             <View style={styles.topbar}>
               <PressScale accessibilityLabel="Go back" onPress={() => goBackOr(router, "/(user)/home")} style={styles.iconAction}>

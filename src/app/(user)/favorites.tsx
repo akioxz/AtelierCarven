@@ -11,7 +11,9 @@ import {
 } from "react-native";
 import { Design } from "../../constants/design";
 import { goBackOr } from "../../lib/navigation";
+import { effectivePrice } from "../../lib/pricing";
 import { supabase } from "../../lib/supabase";
+import { fetchAllRows } from "../../lib/pagination";
 import { ContentFrame, CustomerNavigation, PageHeader, PrimaryButton } from "../../components/app-ui";
 import { PressScale, Reveal } from "../../components/motion";
 import { ProductCard } from "../../components/product-card";
@@ -22,6 +24,7 @@ export default function Favorites() {
   const [favorites, setFavorites] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [actionError, setActionError] = useState("");
 
   const fetchFavorites = useCallback(async () => {
     const {
@@ -34,13 +37,13 @@ export default function Favorites() {
       return;
     }
 
-    const { data, error } = await supabase
-      .from("favorites")
-      .select("*, furniture(*)")
-      .eq("user_id", user.id);
+    let data: any[] = [];
+    let error: unknown = null;
+    try { data = await fetchAllRows((from, to) => supabase.from("favorites").select("*, furniture(*)", { count: "exact" }).eq("user_id", user.id).order("id").range(from, to)); data.forEach(favorite => { if (favorite.furniture) effectivePrice(favorite.furniture); }); }
+    catch (failure) { error = failure; }
 
     if (error) {
-      console.error("Error fetching favorites:", error);
+      setActionError("Could not load saved pieces. Please refresh.");
     } else {
       // Filter out favorites that might have been deleted from the database
       setFavorites(data?.filter((fav) => fav.furniture && !fav.furniture.is_deleted) || []);
@@ -67,8 +70,7 @@ export default function Favorites() {
       return;
     }
 
-    // Optimistically update the UI
-    setFavorites((prev) => prev.filter((item) => item.furniture_id !== furnitureId));
+    setActionError("");
 
     const { error } = await supabase
       .from("favorites")
@@ -77,13 +79,14 @@ export default function Favorites() {
       .eq("furniture_id", furnitureId);
 
     if (error) {
-      console.error("Error removing favorite:", error);
-      fetchFavorites(); // Revert on error
+      setActionError("Could not remove this saved piece. Please try again.");
+      return;
     }
+    setFavorites(previous => previous.filter(item => item.furniture_id !== furnitureId));
   };
 
   const renderItem = ({ item, index }: { item: any; index: number }) => {
-    const product = item.furniture;
+    const product = item.furniture ? { ...item.furniture, salePrice: item.furniture.sale_price, reviewCount: item.furniture.review_count } : null;
     if (!product) return null;
 
     return (
@@ -109,7 +112,7 @@ export default function Favorites() {
     <View style={styles.container}>
       <StatusBar barStyle="dark-content" />
       <CustomerNavigation active="favorites" />
-      <ContentFrame style={styles.frame}>
+      <ContentFrame style={styles.frame}>{actionError ? <Text accessibilityRole="alert" style={{ color: Design.color.danger }}>{actionError}</Text> : null}
         <View style={styles.headerRow}>
           <View style={styles.headerCopy}>
             <PageHeader

@@ -1,4 +1,4 @@
-import { Stack, useRouter } from "expo-router";
+import { Stack, usePathname, useRouter } from "expo-router";
 import { useEffect } from "react";
 import { supabase } from "../lib/supabase";
 import { useFonts } from "expo-font";
@@ -16,14 +16,26 @@ import {
   IBMPlexMono_500Medium,
   IBMPlexMono_600SemiBold,
 } from "@expo-google-fonts/ibm-plex-mono";
+import {
+  PlayfairDisplay_400Regular,
+  PlayfairDisplay_500Medium,
+  PlayfairDisplay_600SemiBold,
+  PlayfairDisplay_700Bold,
+} from "@expo-google-fonts/playfair-display";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { EntryVeil } from "../components/web-motion";
 
 export default function RootLayout() {
   const router = useRouter();
+  const pathname = usePathname();
+  const recoveryRoute = pathname.endsWith("/reset-password");
 
   const [fontsLoaded, fontError] = useFonts({
+    PlayfairDisplay_400Regular,
+    PlayfairDisplay_500Medium,
+    PlayfairDisplay_600SemiBold,
+    PlayfairDisplay_700Bold,
     ...AntDesign.font,
     ...Feather.font,
     IBMPlexSans_300Light,
@@ -39,7 +51,7 @@ export default function RootLayout() {
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        if (event === "TOKEN_REFRESHED") return;
+        if (event === "TOKEN_REFRESHED" || recoveryRoute) return;
 
         if (
           event === "SIGNED_OUT" ||
@@ -59,6 +71,7 @@ export default function RootLayout() {
 
     // Also handle refresh token errors globally
     const handleTokenError = async () => {
+      if (recoveryRoute) return;
       try {
         const { data, error } = await supabase.auth.getSession();
         if (error || !data.session) {
@@ -74,7 +87,7 @@ export default function RootLayout() {
     handleTokenError();
 
     return () => subscription.unsubscribe();
-  }, [router]);
+  }, [router, recoveryRoute]);
 
   if (!fontsLoaded && !fontError) {
     return null;

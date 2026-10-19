@@ -13,6 +13,7 @@ import {
 } from "react-native";
 import { pickAndUploadImage } from "../../lib/imageUpload";
 import { supabase } from "../../lib/supabase";
+import { fetchAllRows } from "../../lib/pagination";
 import { goBackOr } from "../../lib/navigation";
 import { Design } from "../../constants/design";
 import { getStatusBadge } from "../../constants/statuses";
@@ -38,6 +39,7 @@ export default function UserProfile() {
   const [orders, setOrders] = useState<any[]>([]);
   const [loadingOrders, setLoadingOrders] = useState(true);
   const [selectedOrder, setSelectedOrder] = useState<any>(null);
+  const [ordersError, setOrdersError] = useState("");
   const [orderItems, setOrderItems] = useState<any[]>([]);
   const [loadingItems, setLoadingItems] = useState(false);
 
@@ -59,21 +61,18 @@ export default function UserProfile() {
   const fetchOrders = useCallback(async () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
-    const { data } = await supabase
-      .from("orders")
-      .select("*")
-      .eq("user_id", user.id)
-      .order("created_at", { ascending: false });
+    let data: any[] = [];
+    try { data = await fetchAllRows((from, to) => supabase.from("orders").select("*", { count: "exact" }).eq("user_id", user.id).order("created_at", { ascending: false }).order("id").range(from, to)); }
+    catch { setOrdersError("Could not load your complete order history. Reopen this page to retry."); setLoadingOrders(false); return; }
     setOrders(data || []);
     setLoadingOrders(false);
   }, []);
 
   const fetchOrderItems = async (orderId: string) => {
     setLoadingItems(true);
-    const { data } = await supabase
-      .from("order_items")
-      .select("*, furniture(*)")
-      .eq("order_id", orderId);
+    let data: any[] = [];
+    try { data = await fetchAllRows((from, to) => supabase.from("order_items").select("*, furniture(*)", { count: "exact" }).eq("order_id", orderId).order("id").range(from, to)); }
+    catch { setOrdersError("Could not load these order items. Reopen the order to retry."); setLoadingItems(false); return; }
     setOrderItems(data || []);
     setLoadingItems(false);
   };
@@ -143,6 +142,7 @@ export default function UserProfile() {
     <View style={styles.container}>
       <StatusBar barStyle="dark-content" />
       <CustomerNavigation active="profile" />
+      {ordersError ? <Text accessibilityRole="alert" style={{ color: Design.color.danger, padding: 12 }}>{ordersError}</Text> : null}
       <ScrollView showsVerticalScrollIndicator={false}>
         <ContentFrame>
         <View style={styles.headerRow}>
@@ -349,6 +349,7 @@ export default function UserProfile() {
 
                   <Text style={styles.modalSectionLabel}>ITEMS ORDERED</Text>
                   <View style={styles.modalCard}>
+                    {ordersError ? <Text accessibilityRole="alert" style={{ color: Design.color.danger }}>{ordersError}</Text> : null}
                     {loadingItems ? (
                       <View style={styles.orderSkeleton}><ShimmerBlock width="100%" height={64} radius={Design.radius.card} /></View>
                     ) : orderItems.length === 0 ? (

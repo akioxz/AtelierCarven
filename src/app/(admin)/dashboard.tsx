@@ -16,22 +16,24 @@ export default function Dashboard() {
   const [stats, setStats] = useState({ furniture: 0, users: 0, logs: 0, orders: 0, revenue: 0, pending: 0 });
   const [recentLogs, setRecentLogs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
   const [username, setUsername] = useState("Admin");
 
   const fetchData = async () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (user) { const { data: profile } = await supabase.from("profiles").select("username").eq("id", user.id).single(); setUsername(profile?.username || "Admin"); }
-    const [{ count: furniture }, { count: users }, { count: logs }, { count: orders }, { count: pending }, { data: totals }, { data: recent }] = await Promise.all([
-      supabase.from("furniture").select("*", { count: "exact", head: true }).eq("is_deleted", false),
-      supabase.from("profiles").select("*", { count: "exact", head: true }).eq("role", "user"),
-      supabase.from("activity_logs").select("*", { count: "exact", head: true }),
-      supabase.from("orders").select("*", { count: "exact", head: true }).neq("status", "Cancelled"),
-      supabase.from("orders").select("*", { count: "exact", head: true }).eq("status", "Pending"),
-      supabase.from("orders").select("total").neq("status", "Cancelled"),
-      supabase.from("activity_logs").select("*").order("created_at", { ascending: false }).limit(5),
-    ]);
-    setStats({ furniture: furniture || 0, users: users || 0, logs: logs || 0, orders: orders || 0, revenue: (totals || []).reduce((sum, order) => sum + Number(order.total || 0), 0), pending: pending || 0 });
-    setRecentLogs(recent || []); setLoading(false);
+    try {
+      const [{ data: summary, error }, { data: recent, error: logsError }] = await Promise.all([
+        supabase.rpc("admin_dashboard_summary"),
+        supabase.from("activity_logs").select("*").order("created_at", { ascending: false }).order("id").limit(5),
+      ]);
+      if (error || logsError || !summary || typeof summary !== "object") throw new Error("Dashboard unavailable");
+      const values = Object.fromEntries(["furniture", "users", "logs", "orders", "pending", "revenue"].map(key => [key, Number(summary[key])]));
+      if (Object.values(values).some(value => !Number.isFinite(value) || value < 0)) throw new Error("Invalid dashboard summary");
+      setStats({ furniture: values.furniture, users: values.users, logs: values.logs, orders: values.orders, revenue: values.revenue, pending: values.pending });
+      setRecentLogs(recent || []);
+    } catch { setLoadError("Could not load dashboard totals. Reopen this page to retry."); }
+    finally { setLoading(false); }
   };
 
   useEffect(() => { void (async () => { await fetchData(); })(); }, []);
@@ -40,7 +42,7 @@ export default function Dashboard() {
   const isEmpty = stats.furniture === 0;
 
   return (
-    <View style={styles.screen}><StatusBar barStyle="dark-content" /><AdminNavigation active="dashboard" />
+    <View style={styles.screen}><StatusBar barStyle="dark-content" /><AdminNavigation active="dashboard" />{loadError ? <Text accessibilityRole="alert" style={{ color: Design.color.danger, padding: 12 }}>{loadError}</Text> : null}
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}><ContentFrame style={styles.frame}>
         <PageHeader title="Operations, at a glance." subtitle={`Welcome back, ${username}. Keep the collection and orders moving.`} right={<PressScale onPress={() => router.push("/(admin)/profile")} style={styles.avatar} accessibilityLabel="Open admin profile"><Text style={styles.avatarText}>{username.charAt(0).toUpperCase()}</Text></PressScale>} />
         {loading ? <View style={styles.loading}><ShimmerBlock height={12} radius={6} width="38%" /><View style={styles.metrics}><ShimmerBlock height={110} radius={Design.radius.card} width="48%" /><ShimmerBlock height={110} radius={Design.radius.card} width="48%" /></View><ShimmerBlock height={160} radius={Design.radius.card} width="100%" /></View> : isEmpty ? <Reveal><View style={styles.welcome}><View style={styles.welcomeIcon}><Feather name="package" size={26} color={Design.color.accent} /></View><Text style={styles.welcomeTitle}>Your dashboard is ready.</Text><Text style={styles.welcomeSubtitle}>Add your first piece of furniture to start tracking orders, revenue, and activity.</Text><PrimaryButton label="Add your first piece" onPress={() => router.push("/(admin)/manage-furniture")} style={styles.welcomeCta} /></View></Reveal> : <>

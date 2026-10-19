@@ -1,7 +1,7 @@
 import { Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { Image } from "expo-image";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   Modal,
   Platform,
@@ -15,6 +15,7 @@ import {
 import { Design } from "../../constants/design";
 import { pickAndUploadImage } from "../../lib/imageUpload";
 import { supabase } from "../../lib/supabase";
+import { fetchAllRows } from "../../lib/pagination";
 import { goBackOr } from "../../lib/navigation";
 import { AdminNavigation, ContentFrame, PageHeader } from "../../components/app-ui";
 import { PressScale, Reveal, staggerDelay } from "../../components/motion";
@@ -49,6 +50,7 @@ export default function ManageFurniture() {
   const [imageUrl, setImageUrl] = useState("");
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const mutationPending = useRef(false);
   const [errorMsg, setErrorMsg] = useState("");
   const [deleteModalVisible, setDeleteModalVisible] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<any>(null);
@@ -56,26 +58,28 @@ export default function ManageFurniture() {
   const [height, setHeight] = useState("");
   const [depth, setDepth] = useState("");
   const [weight, setWeight] = useState("");
+  const [guidesReady, setGuidesReady] = useState(false);
+  const galleryRequest = useRef(0);
   const [sizeGuides, setSizeGuides] = useState<Record<string, any>>({});
   const [galleryImages, setGalleryImages] = useState<any[]>([]);
   const [uploadingGallery, setUploadingGallery] = useState(false);
 
   const fetchFurniture = useCallback(async () => {
     setLoading(true);
-    const { data } = await supabase
-      .from("furniture")
-      .select("*")
-      .eq("is_deleted", false)
-      .order("created_at", { ascending: false });
-    setFurniture(data || []);
-    setLoading(false);
+    try {
+      const data = await fetchAllRows((from, to) => supabase.from("furniture").select("*", { count: "exact" }).eq("is_deleted", false).order("created_at", { ascending: false }).order("id").range(from, to));
+      setFurniture(data);
+    } catch { setErrorMsg("Could not load the complete collection. Reopen this page to retry."); }
+    finally { setLoading(false); }
   }, []);
-
   const fetchSizeGuides = useCallback(async () => {
-    const { data } = await supabase.from("size_guides").select("*");
-    const map: Record<string, any> = {};
-    (data || []).forEach((guide: any) => { map[guide.furniture_id] = guide; });
-    setSizeGuides(map);
+    try {
+      const data = await fetchAllRows((from, to) => supabase.from("size_guides").select("*", { count: "exact" }).order("furniture_id").range(from, to));
+      const map: Record<string, any> = {};
+      data.forEach(guide => { map[guide.furniture_id] = guide; });
+      setSizeGuides(map);
+      setGuidesReady(true);
+    } catch { setGuidesReady(false); setErrorMsg("Could not load dimensions. Reopen this page before editing dimensions."); }
   }, []);
 
   useEffect(() => {
@@ -87,15 +91,14 @@ export default function ManageFurniture() {
     : furniture.filter((item) => item.category === activeFilter);
 
   const logAction = async (action: string, target: string) => {
-    const { data: { user } } = await supabase.auth.getUser();
-    await supabase.from("activity_logs").insert({
-      admin_id: user?.id,
-      action,
-      target_item: target,
-    });
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) throw new Error("Activity log authentication unavailable");
+    const { error } = await supabase.from("activity_logs").insert({ admin_id: user.id, action, target_item: target });
+    if (error) throw error;
   };
 
   const openAdd = () => {
+    galleryRequest.current++;
     setEditing(null);
     setName(""); setPrice(""); setCategory("Sofa");
     setDescription(""); setImageUrl(""); setErrorMsg("");
@@ -105,6 +108,7 @@ export default function ManageFurniture() {
   };
 
   const openEdit = async (item: any) => {
+    const request = ++galleryRequest.current;
     setEditing(item);
     setName(item.name);
     setPrice(String(item.price));
@@ -119,8 +123,11 @@ export default function ManageFurniture() {
     setErrorMsg("");
     setModalVisible(true);
     // Fetch gallery images for this item
-    const { data: gi } = await supabase.from("furniture_images").select("*").eq("furniture_id", item.id).order("display_order");
-    setGalleryImages(gi || []);
+    setGalleryImages([]);
+    try {
+      const gi = await fetchAllRows((from, to) => supabase.from("furniture_images").select("*", { count: "exact" }).eq("furniture_id", item.id).order("display_order").order("id").range(from, to));
+      if (request === galleryRequest.current) setGalleryImages(gi);
+    } catch { setErrorMsg("Could not load this gallery. Reopen the item to retry."); }
   };
 
   const handlePickImage = async () => {
@@ -134,64 +141,77 @@ export default function ManageFurniture() {
   };
 
   const handleSave = async () => {
+    if (mutationPending.current) return;
     setErrorMsg("");
-    const parsedPrice = parseFloat(price.replace(/[₱,\s]/g, ""));
-    if (!name || !category || isNaN(parsedPrice) || parsedPrice <= 0) {
-      setErrorMsg("Please enter a valid name, price (numbers only), and category.");
+    if (editing && !guidesReady) { setErrorMsg("Dimensions were not loaded. Reopen this page before saving changes."); return; }
+    const parsedPrice = Math.round(Number(price.replace(/[₱,\s]/g, "")) * 100) / 100;
+    const dimensions = {
+      width_cm: width.trim() ? Number(width) : null,
+      height_cm: height.trim() ? Number(height) : null,
+      depth_cm: depth.trim() ? Number(depth) : null,
+      weight_kg: weight.trim() ? Number(weight) : null,
+    };
+    if (!name.trim() || !CATEGORIES.includes(category) || !Number.isFinite(parsedPrice) || parsedPrice <= 0
+        || Object.values(dimensions).some(value => value !== null && (!Number.isFinite(value) || value <= 0))) {
+      setErrorMsg("Enter a name, valid price/category, and positive dimensions or leave dimensions blank.");
       return;
     }
+    mutationPending.current = true;
     setSaving(true);
-    let furnitureId: string | null = editing?.id ?? null;
-    if (editing) {
-      const { error } = await supabase.from("furniture").update({
-        name, price: parsedPrice, category, description,
-        image_url: imageUrl, updated_at: new Date().toISOString(),
-      }).eq("id", editing.id);
-      if (error) { setErrorMsg("Failed to update: " + error.message); setSaving(false); return; }
-      await logAction("Edited furniture", name);
-    } else {
-      const { data, error } = await supabase.from("furniture").insert({
-        name, price: parsedPrice, category, description,
-        image_url: imageUrl, is_deleted: false,
-      }).select("id").single();
-      if (error) { setErrorMsg("Failed to add: " + error.message); setSaving(false); return; }
-      furnitureId = data?.id ?? null;
-      await logAction("Added furniture", name);
-    }
-
-    const dimensions = {
-      width_cm: width.trim() ? parseFloat(width) : null,
-      height_cm: height.trim() ? parseFloat(height) : null,
-      depth_cm: depth.trim() ? parseFloat(depth) : null,
-      weight_kg: weight.trim() ? parseFloat(weight) : null,
-    };
-    const hasAnyDimension = Object.values(dimensions).some((value) => value != null);
-    if (furnitureId) {
-      if (hasAnyDimension) {
-        await supabase.from("size_guides").upsert({ furniture_id: furnitureId, ...dimensions, updated_at: new Date().toISOString() });
-      } else {
-        await supabase.from("size_guides").delete().eq("furniture_id", furnitureId);
-      }
-    }
-
-    setSaving(false);
-    setModalVisible(false);
-    fetchFurniture();
-    fetchSizeGuides();
+    let furnitureSaved = false;
+    let dimensionsSaved = false;
+    try {
+      const payload = { name: name.trim(), price: parsedPrice, category, description, image_url: imageUrl, updated_at: new Date().toISOString() };
+      const result = editing
+        ? await supabase.from("furniture").update(payload).eq("id", editing.id).select("id").single()
+        : await supabase.from("furniture").insert({ ...payload, is_deleted: false }).select("id").single();
+      if (result.error || !result.data?.id) throw new Error("Furniture write failed");
+      const furnitureId = result.data.id;
+      furnitureSaved = true;
+      // A partial save must retry this row, rather than creating another item.
+      setEditing({ ...editing, ...payload, id: furnitureId });
+      const guide = Object.values(dimensions).some(value => value !== null)
+        ? await supabase.from("size_guides").upsert({ furniture_id: furnitureId, ...dimensions, updated_at: new Date().toISOString() }).select("furniture_id").single()
+        : await supabase.from("size_guides").delete().eq("furniture_id", furnitureId);
+      if (guide.error) throw new Error("Dimension write failed");
+      dimensionsSaved = true;
+      await logAction(editing ? "Edited furniture" : "Added furniture", name.trim());
+      setModalVisible(false);
+      await Promise.all([fetchFurniture(), fetchSizeGuides()]);
+    } catch {
+      setErrorMsg(!furnitureSaved ? "Furniture was not saved. Your form is kept; please retry."
+        : !dimensionsSaved ? "Furniture saved, but dimensions were not saved. Your form is kept; retry to finish."
+          : "Furniture and dimensions saved, but the activity log failed. Retry to record the change.");
+    } finally { mutationPending.current = false; setSaving(false); }
   };
-
   const handleDelete = (item: any) => {
+    setErrorMsg("");
     setItemToDelete(item);
     setDeleteModalVisible(true);
   };
-
   const confirmDelete = async () => {
-    if (!itemToDelete) return;
-    await supabase.from("furniture").update({ is_deleted: true }).eq("id", itemToDelete.id);
-    await logAction("Deleted furniture", itemToDelete.name);
-    setDeleteModalVisible(false);
-    setItemToDelete(null);
-    fetchFurniture();
+    if (!itemToDelete || mutationPending.current) return;
+    mutationPending.current = true;
+    setErrorMsg("");
+    let deleted = false;
+    try {
+      const { error, data } = await supabase.from("furniture").update({ is_deleted: true }).eq("id", itemToDelete.id).select("id").single();
+      if (error || !data?.id) throw new Error("Furniture deletion failed");
+      deleted = true;
+      await logAction("Deleted furniture", itemToDelete.name);
+      setDeleteModalVisible(false);
+      setItemToDelete(null);
+      await fetchFurniture();
+    } catch {
+      setErrorMsg(deleted ? "Furniture was removed, but the activity log failed. Retry to record the change." : "Could not remove furniture. Please try again.");
+    } finally { mutationPending.current = false; }
+  };
+  const removeGalleryImage = async (imageId: string) => {
+    try {
+      const { error, data } = await supabase.from("furniture_images").delete().eq("id", imageId).select("id").single();
+      if (error || !data?.id) throw new Error("Gallery deletion failed");
+      setGalleryImages(previous => previous.filter(image => image.id !== imageId));
+    } catch { setErrorMsg("Could not remove this gallery image. Please try again."); }
   };
 
   const renderCard = (item: any) => (
@@ -240,6 +260,7 @@ export default function ManageFurniture() {
         <PressScale onPress={() => goBackOr(router, "/(admin)/dashboard")} style={styles.backButton} accessibilityLabel="Go back">
           <Feather name="arrow-left" size={19} color={Design.color.ink} />
         </PressScale>
+        {errorMsg && !modalVisible ? <Text accessibilityRole="alert" style={styles.errorText}>{errorMsg}</Text> : null}
         <PageHeader title="Furniture" subtitle={`${filteredFurniture.length} ${activeFilter === "All" ? "items" : activeFilter.toLowerCase() + "s"} in the collection.`} style={styles.headerPage} />
       </View>
 
@@ -303,7 +324,7 @@ export default function ManageFurniture() {
       <ConfirmModal
         visible={deleteModalVisible}
         title="Delete furniture?"
-        message={<>Are you sure you want to delete <Text style={{ fontFamily: Design.font.bodyBold }}>&quot;{itemToDelete?.name}&quot;</Text>? This action cannot be undone.</>}
+        message={<>Are you sure you want to delete <Text style={{ fontFamily: Design.font.bodyBold }}>&quot;{itemToDelete?.name}&quot;</Text>? This action cannot be undone.{errorMsg ? <Text style={styles.errorText}>{errorMsg}</Text> : null}</>}
         confirmLabel="DELETE"
         cancelLabel="CANCEL"
         danger
@@ -431,10 +452,7 @@ export default function ManageFurniture() {
                     {galleryImages.map((gi: any) => (
                       <View key={gi.id} style={styles.galleryThumb}>
                         <Image source={{ uri: gi.image_url }} style={styles.galleryThumbImage} contentFit="cover" transition={200} />
-                        <PressScale style={styles.galleryDelete} onPress={async () => {
-                          await supabase.from("furniture_images").delete().eq("id", gi.id);
-                          setGalleryImages((prev) => prev.filter((g: any) => g.id !== gi.id));
-                        }} accessibilityLabel="Remove gallery image">
+                        <PressScale style={styles.galleryDelete} onPress={() => void removeGalleryImage(gi.id)} accessibilityLabel="Remove gallery image">
                           <Feather name="x" size={12} color={Design.color.surface} />
                         </PressScale>
                       </View>
@@ -445,10 +463,12 @@ export default function ManageFurniture() {
                         const url = await pickAndUploadImage("furniture-images", "gallery");
                         if (url && editing?.id) {
                           const nextOrder = galleryImages.length;
-                          const { data } = await supabase.from("furniture_images").insert({ furniture_id: editing.id, image_url: url, display_order: nextOrder }).select("*").single();
-                          if (data) setGalleryImages((prev) => [...prev, data]);
+                          const { data, error } = await supabase.from("furniture_images").insert({ furniture_id: editing.id, image_url: url, display_order: nextOrder }).select("*").single();
+                          if (error || !data) throw new Error("Gallery write failed");
+                          setGalleryImages((prev) => [...prev, data]);
                         }
-                      } finally {
+                      } catch { setErrorMsg("Could not save the gallery image. Please try again."); }
+                      finally {
                         setUploadingGallery(false);
                       }
                     }} accessibilityLabel="Add gallery image">

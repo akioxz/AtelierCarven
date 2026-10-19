@@ -1,8 +1,7 @@
 import { AntDesign, Feather } from "@expo/vector-icons";
-import * as Haptics from "expo-haptics";
 import { Image } from "expo-image";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { FlatList, Modal, Platform, StatusBar, StyleSheet, Text, TextInput, useWindowDimensions, View } from "react-native";
 import { PrimaryButton, Overline } from "../../components/app-ui";
 import { PressScale, Reveal, staggerDelay } from "../../components/motion";
@@ -10,6 +9,7 @@ import { ShimmerBlock } from "../../components/skeleton";
 import { Design, layout } from "../../constants/design";
 import { goBackOr } from "../../lib/navigation";
 import { supabase } from "../../lib/supabase";
+import { effectivePrice } from "../../lib/pricing";
 
 const COLORS = [{ name: "Black", hex: "#211A16" }, { name: "White", hex: "#FFFCF8" }, { name: "Gray", hex: "#929292" }, { name: "Beige", hex: "#C6A27C" }];
 const MATERIALS = ["Wood", "Metal", "Leather", "Fabric", "Marble"];
@@ -45,6 +45,10 @@ export default function Product() {
   const [selectedMaterial, setSelectedMaterial] = useState(MATERIALS[0]);
   const [quantity, setQuantity] = useState(1);
   const [submitting, setSubmitting] = useState(false);
+  const [actionError, setActionError] = useState("");
+  const cartPending = useRef(false);
+  const reviewPending = useRef(false);
+  const favoritePending = useRef(false);
   const [intent, setIntent] = useState<"cart" | "buy">("cart");
   const [reviews, setReviews] = useState<PublicReview[]>([]);
   const [sizeGuide, setSizeGuide] = useState<any>(null);
@@ -56,7 +60,15 @@ export default function Product() {
   const [galleryImages, setGalleryImages] = useState<any[]>([]);
   const [activeImageIndex, setActiveImageIndex] = useState(0);
 
-  const fetchItem = useCallback(async () => { const { data } = await supabase.from("furniture").select("*").eq("id", id).single(); setItem(data); setLoading(false); }, [id]);
+  const fetchItem = useCallback(async () => {
+    try {
+      const { data, error } = await supabase.from("furniture").select("*").eq("id", id).eq("is_deleted", false).single();
+      if (error || !data) throw new Error("Item unavailable");
+      effectivePrice(data);
+      setItem(data);
+    } catch { setItem(null); setActionError("This piece is unavailable. Please return to the collection."); }
+    finally { setLoading(false); }
+  }, [id]);
   const fetchReviews = useCallback(async () => {
     if (typeof id !== "string") return;
     const { data, error } = await supabase
@@ -76,38 +88,61 @@ export default function Product() {
   const fetchFavorite = useCallback(async () => { const { data: { user } } = await supabase.auth.getUser(); if (!user) return; const { data } = await supabase.from("favorites").select("id").eq("user_id", user.id).eq("furniture_id", id).single(); setIsFavorite(Boolean(data)); }, [id]);
   const fetchGallery = useCallback(async () => { const { data } = await supabase.from("furniture_images").select("*").eq("furniture_id", id).order("display_order"); setGalleryImages(data || []); }, [id]);
   useEffect(() => { void (async () => { await fetchItem(); await fetchFavorite(); await fetchReviews(); await fetchSizeGuide(); await fetchGallery(); })(); }, [fetchFavorite, fetchGallery, fetchItem, fetchReviews, fetchSizeGuide]);
-  const toggleFavorite = useCallback(async () => { const { data: { user } } = await supabase.auth.getUser(); if (!user) { router.replace("/(auth)/onboarding"); return; } Haptics.selectionAsync(); setIsFavorite((value) => !value); if (isFavorite) await supabase.from("favorites").delete().eq("user_id", user.id).eq("furniture_id", id); else await supabase.from("favorites").insert({ user_id: user.id, furniture_id: id }); }, [id, isFavorite, router]);
-  const openSelection = useCallback((nextIntent: "cart" | "buy") => { setIntent(nextIntent); setQuantity(1); setSheetOpen(true); }, []);
-  const submit = useCallback(async () => {
-    setSubmitting(true);
+  const toggleFavorite = async () => {
+    if (favoritePending.current) return;
+    favoritePending.current = true;
+    setActionError("");
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      if (authError) throw authError;
       if (!user) { router.replace("/(auth)/onboarding"); return; }
-      Haptics.selectionAsync();
-      const { data: existing } = await supabase.from("cart").select("*").eq("user_id", user.id).eq("furniture_id", id).eq("color", selectedColor).eq("material", selectedMaterial).single();
-      if (existing) await supabase.from("cart").update({ quantity: existing.quantity + quantity }).eq("id", existing.id);
-      else await supabase.from("cart").insert({ user_id: user.id, furniture_id: id, quantity, color: selectedColor, material: selectedMaterial });
+      const { error } = isFavorite
+        ? await supabase.from("favorites").delete().eq("user_id", user.id).eq("furniture_id", id)
+        : await supabase.from("favorites").insert({ user_id: user.id, furniture_id: id });
+      if (error) throw error;
+      setIsFavorite(!isFavorite);
+    } catch { setActionError("Could not update this saved piece. Please try again."); }
+    finally { favoritePending.current = false; }
+  };
+  const openSelection = useCallback((nextIntent: "cart" | "buy") => { setActionError(""); setIntent(nextIntent); setQuantity(1); setSheetOpen(true); }, []);
+  const submit = useCallback(async () => {
+    if (cartPending.current) return;
+    cartPending.current = true;
+    setSubmitting(true);
+    setActionError("");
+    try {
+      const { data, error } = await supabase.rpc("add_cart_item", {
+        p_furniture_id: id, p_quantity: quantity, p_color: selectedColor, p_material: selectedMaterial,
+      });
+      if (error || typeof data !== "string") throw new Error("Cart write failed");
       setSheetOpen(false);
       if (intent === "buy") router.push("/(user)/checkout");
-    } finally {
-      setSubmitting(false);
-    }
+    } catch { setActionError("Could not save your cart item. Your selections have been kept. Please try again."); }
+    finally { cartPending.current = false; setSubmitting(false); }
   }, [id, selectedColor, selectedMaterial, quantity, intent, router]);
   const submitReview = useCallback(async () => {
-    if (reviewRating === 0) return;
+    if (reviewRating === 0 || reviewPending.current) return;
+    reviewPending.current = true;
     setSubmittingReview(true);
+    setActionError("");
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      if (authError) throw authError;
       if (!user) { router.replace("/(auth)/onboarding"); return; }
-      await supabase.from("reviews").insert({ furniture_id: id, user_id: user.id, rating: reviewRating, comment: reviewComment.trim() || null });
+      const { error } = await supabase.from("reviews").insert({
+        furniture_id: id, user_id: user.id, rating: reviewRating, comment: reviewComment.trim() || null,
+      });
+      if (error) {
+        setActionError(error.code === "23505" ? "You have already reviewed this piece. Your draft has been kept." : "Could not save your review. Your draft has been kept. Please try again.");
+        return;
+      }
       setReviewSheetOpen(false);
       setReviewRating(0);
       setReviewComment("");
-      fetchItem();
-      fetchReviews();
-    } finally {
-      setSubmittingReview(false);
-    }
+      void fetchItem();
+      void fetchReviews();
+    } catch { setActionError("Could not save your review. Your draft has been kept. Please try again."); }
+    finally { reviewPending.current = false; setSubmittingReview(false); }
   }, [id, reviewRating, reviewComment, fetchItem, fetchReviews, router]);
 
   const allImages = useMemo(() => {
@@ -141,6 +176,7 @@ export default function Product() {
 
   const listHeader = (
     <View style={[styles.frame, wide && styles.frameWide]}>
+      {actionError ? <Text accessibilityRole="alert" style={{ color: Design.color.danger, padding: 12 }}>{actionError}</Text> : null}
       <Reveal>
         <View style={styles.utility}>
           <PressScale accessibilityLabel="Go back" onPress={() => goBackOr(router, "/(user)/home")} style={styles.utilityButton}>
@@ -162,7 +198,7 @@ export default function Product() {
             <Text style={styles.serial}>ATELIER № {String(id).slice(0, 8).toUpperCase()}</Text>
             <Text accessibilityRole="header" style={styles.name}>{item.name}</Text><View style={styles.rule} />
           {item.rating != null ? <View accessibilityLabel={`Rated ${Number(item.rating).toFixed(1)} out of 5${item.review_count != null ? `, ${item.review_count} reviews` : ""}`} style={styles.rating}><View style={styles.stars}>{[1, 2, 3, 4, 5].map((star) => <Feather key={star} name="star" size={13} color={star <= Math.round(item.rating) ? Design.color.accent : Design.color.line} />)}</View><Text style={styles.ratingText}>{Number(item.rating).toFixed(1)}{item.review_count != null ? ` · ${item.review_count} reviews` : ""}</Text></View> : null}
-          <Text accessibilityLabel={`Price: ${Number(item.price).toLocaleString()} Philippine Pesos`} style={styles.price}>₱{Number(item.price).toLocaleString()}</Text>
+          <Text accessibilityLabel={`Price: ${effectivePrice(item).toLocaleString()} Philippine Pesos`} style={styles.price}>₱{effectivePrice(item).toLocaleString()}</Text>
           <Text style={styles.description}>{item.description || "A carefully selected piece designed to bring lasting comfort and character to your home."}</Text>
           <View style={styles.inlineSelectors}>
             <Text style={styles.optionLabel}>Colour</Text><View accessibilityRole="radiogroup" accessibilityLabel="Select a colour" style={styles.colorChoices}>{COLORS.map((color) => <PressScale key={color.name} accessibilityRole="radio" accessibilityLabel={`Colour: ${color.name}`} accessibilityState={{ checked: selectedColor === color.name }} onPress={() => setSelectedColor(color.name)} style={[styles.colorChoice, selectedColor === color.name && styles.colorChoiceSelected]}><View style={[styles.swatch, { backgroundColor: color.hex }, color.name === "White" && styles.whiteSwatch]} /><Text style={styles.choiceText}>{color.name}</Text></PressScale>)}</View>
@@ -193,13 +229,13 @@ export default function Product() {
       />
       {!wide ? <View style={styles.bottomActions}><PressScale accessibilityLabel="Add to cart" onPress={() => openSelection("cart")} style={[styles.secondaryAction, styles.bottomSecondary]}><Text style={styles.secondaryActionText}>ADD TO CART</Text></PressScale><PressScale accessibilityLabel="Buy now" onPress={() => openSelection("buy")} style={styles.buyAction}><Text style={styles.buyActionText}>BUY NOW</Text></PressScale></View> : null}
       <Modal visible={sheetOpen} animationType="slide" transparent onRequestClose={() => setSheetOpen(false)}>
-        <View style={styles.overlay}><View style={styles.sheet}><View style={styles.sheetHandle} /><View style={styles.sheetHeader}><View><Text style={styles.sheetTitle}>Ready to add</Text><Text style={styles.sheetSub}>{selectedColor} · {selectedMaterial}</Text></View><PressScale accessibilityLabel="Close" onPress={() => setSheetOpen(false)} style={styles.close}><Feather name="x" size={18} color={Design.color.ink} /></PressScale></View>
+        <View style={styles.overlay}><View style={styles.sheet}>{actionError ? <Text accessibilityRole="alert" style={{ color: Design.color.danger, padding: 12 }}>{actionError}</Text> : null}<View style={styles.sheetHandle} /><View style={styles.sheetHeader}><View><Text style={styles.sheetTitle}>Ready to add</Text><Text style={styles.sheetSub}>{selectedColor} · {selectedMaterial}</Text></View><PressScale accessibilityLabel="Close" onPress={() => setSheetOpen(false)} style={styles.close}><Feather name="x" size={18} color={Design.color.ink} /></PressScale></View>
           <View style={[styles.quantityRow, { marginTop: 0 }]}><View><Text style={styles.optionLabel}>Quantity</Text><Text style={styles.quantityHint}>Select the number of pieces.</Text></View><View style={styles.stepper}><PressScale accessibilityLabel="Decrease quantity" onPress={() => setQuantity((value) => Math.max(1, value - 1))} style={styles.step}><Feather name="minus" size={15} color={Design.color.ink} /></PressScale><Text accessibilityLabel={`Quantity: ${quantity}`} style={styles.quantity}>{quantity}</Text><PressScale accessibilityLabel="Increase quantity" onPress={() => setQuantity((value) => value + 1)} style={styles.step}><Feather name="plus" size={15} color={Design.color.ink} /></PressScale></View></View>
           <PrimaryButton label={submitting ? "ADDING…" : intent === "buy" ? "CONTINUE TO CHECKOUT" : "ADD TO CART"} disabled={submitting} onPress={submit} />
         </View></View>
       </Modal>
       <Modal visible={reviewSheetOpen} animationType="slide" transparent onRequestClose={() => setReviewSheetOpen(false)}>
-        <View style={styles.overlay}><View style={styles.sheet}><View style={styles.sheetHandle} /><View style={styles.sheetHeader}><View><Text style={styles.sheetTitle}>Write a review</Text><Text style={styles.sheetSub}>{item.name}</Text></View><PressScale accessibilityLabel="Close" onPress={() => setReviewSheetOpen(false)} style={styles.close}><Feather name="x" size={18} color={Design.color.ink} /></PressScale></View>
+        <View style={styles.overlay}><View style={styles.sheet}>{actionError ? <Text accessibilityRole="alert" style={{ color: Design.color.danger, padding: 12 }}>{actionError}</Text> : null}<View style={styles.sheetHandle} /><View style={styles.sheetHeader}><View><Text style={styles.sheetTitle}>Write a review</Text><Text style={styles.sheetSub}>{item.name}</Text></View><PressScale accessibilityLabel="Close" onPress={() => setReviewSheetOpen(false)} style={styles.close}><Feather name="x" size={18} color={Design.color.ink} /></PressScale></View>
           <Text style={styles.optionLabel}>Your rating</Text>
           <View style={styles.reviewStars}>{[1, 2, 3, 4, 5].map((star) => <PressScale key={star} accessibilityLabel={`Rate ${star} of 5`} onPress={() => setReviewRating(star)} hitSlop={4} style={styles.reviewStar}>{star <= reviewRating ? <AntDesign name="star" size={30} color={Design.color.accent} /> : <Feather name="star" size={30} color={Design.color.line} />}</PressScale>)}</View>
           <Text style={styles.reviewHint}>{reviewRating === 0 ? "Tap to rate this piece" : `${reviewRating} of 5`}</Text>
@@ -209,7 +245,7 @@ export default function Product() {
         </View></View>
       </Modal>
       <Modal visible={sizeGuideOpen} animationType="slide" transparent onRequestClose={() => setSizeGuideOpen(false)}>
-        <View style={styles.overlay}><View style={styles.sheet}><View style={styles.sheetHandle} /><View style={styles.sheetHeader}><View><Text style={styles.sheetTitle}>Size guide</Text><Text style={styles.sheetSub}>{item.name}</Text></View><PressScale accessibilityLabel="Close" onPress={() => setSizeGuideOpen(false)} style={styles.close}><Feather name="x" size={18} color={Design.color.ink} /></PressScale></View>
+        <View style={styles.overlay}><View style={styles.sheet}>{actionError ? <Text accessibilityRole="alert" style={{ color: Design.color.danger, padding: 12 }}>{actionError}</Text> : null}<View style={styles.sheetHandle} /><View style={styles.sheetHeader}><View><Text style={styles.sheetTitle}>Size guide</Text><Text style={styles.sheetSub}>{item.name}</Text></View><PressScale accessibilityLabel="Close" onPress={() => setSizeGuideOpen(false)} style={styles.close}><Feather name="x" size={18} color={Design.color.ink} /></PressScale></View>
           <View style={styles.measureRow}><Text style={styles.measureLabel}>Width</Text><Text style={styles.measureValue}>{sizeGuide?.width_cm != null ? `${Number(sizeGuide.width_cm)} cm` : "—"}</Text></View>
           <View style={styles.measureDivider} />
           <View style={styles.measureRow}><Text style={styles.measureLabel}>Height</Text><Text style={styles.measureValue}>{sizeGuide?.height_cm != null ? `${Number(sizeGuide.height_cm)} cm` : "—"}</Text></View>

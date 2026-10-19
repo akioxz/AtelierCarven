@@ -140,6 +140,8 @@ test('cart load failure remains visible and can be retried without discarding ro
   let shouldFail = true;
   const state = { cart: [{ id: 'previous' }], error: false, loading: false };
   const context = {
+    fetchAllRows: async () => { if (shouldFail) throw new Error("Cart unavailable"); return [{ id: "loaded" }]; },
+    cartTotal: () => 500,
     setLoading: value => { state.loading = value; }, setCartError: value => { state.error = value; },
     setCartItems: value => { state.cart = value; }, router: { replace() { assert.fail('Unexpected auth redirect'); } },
     supabase: {

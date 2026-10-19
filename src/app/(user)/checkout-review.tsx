@@ -9,6 +9,8 @@ import { ShimmerBlock } from "../../components/skeleton";
 import { Design } from "../../constants/design";
 import { goBackOr } from "../../lib/navigation";
 import { supabase } from "../../lib/supabase";
+import { fetchAllRows } from "../../lib/pagination";
+import { cartTotal, effectivePrice } from "../../lib/pricing";
 
 const methodTitles: Record<string, string> = {
   cod: "Cash on delivery",
@@ -19,7 +21,7 @@ const methodTitles: Record<string, string> = {
 
 export default function CheckoutReview() {
   const router = useRouter();
-  const { method = "cod", total, fullName, address, city, mobile, notes } = useLocalSearchParams<{
+  const { method = "cod", fullName, address, city, mobile, notes } = useLocalSearchParams<{
     method?: string;
     total?: string;
     fullName?: string;
@@ -45,8 +47,8 @@ export default function CheckoutReview() {
       const { data: { user }, error: authError } = await supabase.auth.getUser();
       if (authError) throw authError;
       if (!user) { router.replace("/(auth)/onboarding"); return; }
-      const { data, error } = await supabase.from("cart").select("*, furniture(*)").eq("user_id", user.id);
-      if (error || !Array.isArray(data)) throw new Error("Cart unavailable");
+      const data = await fetchAllRows((from, to) => supabase.from("cart").select("*, furniture(*)", { count: "exact" }).eq("user_id", user.id).order("id").range(from, to));
+      cartTotal(data);
       setCartItems(data);
     } catch {
       setCartError(true);
@@ -59,7 +61,7 @@ export default function CheckoutReview() {
     void (async () => { await fetchCart(); })();
   }, [fetchCart]);
 
-  const orderTotal = total ? Number(total) : cartItems.reduce((sum, item) => sum + Number(item.furniture?.price || 0) * item.quantity, 0);
+  const orderTotal = cartTotal(cartItems);
 
   const showAlert = (title: string, message: string) => {
     setAlertTitle(title);
@@ -85,6 +87,10 @@ export default function CheckoutReview() {
         p_payment_method: method,
       });
       if (error) {
+        if (error.code === "22023") {
+          showAlert("Review your cart", "A price, quantity, or available item changed. Return to your cart and review the current order before confirming.");
+          return;
+        }
         if (error.code === "P0002") {
           showAlert("Cart changed", "Your cart is empty or was already checked out. Check your orders before trying again.");
           return;
@@ -134,7 +140,7 @@ export default function CheckoutReview() {
                     <Text style={styles.orderName}>{item.furniture?.name}</Text>
                     <Text style={styles.orderMeta}>{item.furniture?.category} · Qty {item.quantity}</Text>
                   </View>
-                  <Text style={styles.orderPrice}>₱{(Number(item.furniture?.price) * item.quantity).toLocaleString()}</Text>
+                  <Text style={styles.orderPrice}>₱{(effectivePrice(item.furniture) * item.quantity).toLocaleString()}</Text>
                 </View>
               ))}
               <View style={styles.orderTotal}>

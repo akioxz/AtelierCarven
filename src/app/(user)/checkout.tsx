@@ -8,11 +8,14 @@ import { ShimmerBlock } from "../../components/skeleton";
 import { Design } from "../../constants/design";
 import { goBackOr } from "../../lib/navigation";
 import { supabase } from "../../lib/supabase";
+import { fetchAllRows } from "../../lib/pagination";
+import { cartTotal, effectivePrice } from "../../lib/pricing";
 
 export default function Checkout() {
   const router = useRouter();
   const [cartItems, setCartItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [fullName, setFullName] = useState("");
   const [address, setAddress] = useState("");
   const [city, setCity] = useState("");
@@ -21,24 +24,31 @@ export default function Checkout() {
   const [showError, setShowError] = useState(false);
 
   const fetchData = useCallback(async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) { router.replace("/(auth)/onboarding"); return; }
-    const [cart, profile] = await Promise.all([
-      supabase.from("cart").select("*, furniture(*)").eq("user_id", user.id),
-      supabase.from("profiles").select("*").eq("id", user.id).single(),
-    ]);
-    setCartItems(cart.data || []);
-    setFullName(profile.data?.username || "");
-    setAddress(profile.data?.address || "");
-    setMobile(profile.data?.mobile_number || "");
-    setLoading(false);
+    setLoading(true);
+    setLoadError(false);
+    try {
+      const { data: { user }, error } = await supabase.auth.getUser();
+      if (error) throw error;
+      if (!user) { router.replace("/(auth)/onboarding"); return; }
+      const [cart, profile] = await Promise.all([
+        fetchAllRows((from, to) => supabase.from("cart").select("*, furniture(*)", { count: "exact" }).eq("user_id", user.id).order("id").range(from, to)),
+        supabase.from("profiles").select("*").eq("id", user.id).single(),
+      ]);
+      if (profile.error) throw profile.error;
+      cartTotal(cart);
+      setCartItems(cart);
+      setFullName(profile.data?.username || "");
+      setAddress(profile.data?.address || "");
+      setMobile(profile.data?.mobile_number || "");
+    } catch { setLoadError(true); }
+    finally { setLoading(false); }
   }, [router]);
 
   useEffect(() => {
     void (async () => { await fetchData(); })();
   }, [fetchData]);
 
-  const total = cartItems.reduce((sum, item) => sum + Number(item.furniture?.price || 0) * item.quantity, 0);
+  const total = cartTotal(cartItems);
 
   const continueToPayment = () => {
     if (cartItems.length === 0) return;
@@ -48,6 +58,8 @@ export default function Checkout() {
       params: { total: total.toString(), fullName, address, city, mobile, notes },
     } as never);
   };
+
+  if (loadError) return <View style={styles.loading}><Text accessibilityRole="alert">Could not load checkout. Please try again.</Text><PrimaryButton label="RETRY" onPress={() => void fetchData()} /></View>;
 
   if (loading) {
     return <View style={styles.loading}><ShimmerBlock width="100%" height={120} radius={Design.radius.card} /><ShimmerBlock width="100%" height={220} radius={Design.radius.card} /></View>;
@@ -72,7 +84,7 @@ export default function Checkout() {
                     <Text style={styles.orderName}>{item.furniture?.name}</Text>
                     <Text style={styles.orderMeta}>{item.furniture?.category} · Qty {item.quantity}</Text>
                   </View>
-                  <Text style={styles.orderPrice}>₱{(Number(item.furniture?.price) * item.quantity).toLocaleString()}</Text>
+                  <Text style={styles.orderPrice}>₱{(effectivePrice(item.furniture) * item.quantity).toLocaleString()}</Text>
                 </View>
               ))}
               <View style={styles.orderTotal}>

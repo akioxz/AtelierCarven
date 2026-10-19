@@ -8,6 +8,8 @@ import { ShimmerBlock } from "../../components/skeleton";
 import { Design } from "../../constants/design";
 import { goBackOr } from "../../lib/navigation";
 import { supabase } from "../../lib/supabase";
+import { fetchAllRows } from "../../lib/pagination";
+import { cartTotal } from "../../lib/pricing";
 
 const methods = [
   { key: "cod", icon: "package", title: "Cash on delivery", detail: "Pay when your order arrives." },
@@ -20,7 +22,7 @@ type MethodKey = (typeof methods)[number]["key"];
 
 export default function CheckoutPayment() {
   const router = useRouter();
-  const { total, fullName, address, city, mobile, notes } = useLocalSearchParams<{
+  const { fullName, address, city, mobile, notes } = useLocalSearchParams<{
     total?: string;
     fullName?: string;
     address?: string;
@@ -30,21 +32,28 @@ export default function CheckoutPayment() {
   }>();
   const [cartItems, setCartItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [method, setMethod] = useState<MethodKey>("cod");
 
   const fetchCart = useCallback(async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) { router.replace("/(auth)/onboarding"); return; }
-    const { data } = await supabase.from("cart").select("*, furniture(*)").eq("user_id", user.id);
-    setCartItems(data || []);
-    setLoading(false);
+    setLoading(true);
+    setLoadError(false);
+    try {
+      const { data: { user }, error } = await supabase.auth.getUser();
+      if (error) throw error;
+      if (!user) { router.replace("/(auth)/onboarding"); return; }
+      const data = await fetchAllRows((from, to) => supabase.from("cart").select("*, furniture(*)", { count: "exact" }).eq("user_id", user.id).order("id").range(from, to));
+      cartTotal(data);
+      setCartItems(data);
+    } catch { setLoadError(true); }
+    finally { setLoading(false); }
   }, [router]);
 
   useEffect(() => {
     void (async () => { await fetchCart(); })();
   }, [fetchCart]);
 
-  const orderTotal = total ? Number(total) : cartItems.reduce((sum, item) => sum + Number(item.furniture?.price || 0) * item.quantity, 0);
+  const orderTotal = cartTotal(cartItems);
 
   const continueToReview = () => {
     if (cartItems.length === 0) return;
@@ -54,6 +63,8 @@ export default function CheckoutPayment() {
       params: { method, total: orderTotal.toString(), fullName, address, city, mobile, notes },
     } as never);
   };
+
+  if (loadError) return <View style={styles.loading}><Text accessibilityRole="alert">Could not load checkout. Please try again.</Text><PrimaryButton label="RETRY" onPress={() => void fetchCart()} /></View>;
 
   if (loading) {
     return <View style={styles.loading}><ShimmerBlock width="100%" height={120} radius={Design.radius.card} /><ShimmerBlock width="100%" height={180} radius={Design.radius.card} /></View>;

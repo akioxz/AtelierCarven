@@ -7,6 +7,7 @@ import { useState, useEffect } from "react";
 import { Feather } from "@expo/vector-icons";
 import { Design, layout } from "../../constants/design";
 import { supabase } from "../../lib/supabase";
+import { fetchAllRows } from "../../lib/pagination";
 import { goBackOr } from "../../lib/navigation";
 import { AdminNavigation, ContentFrame, PageHeader } from "../../components/app-ui";
 import { PressScale, Reveal, staggerDelay } from "../../components/motion";
@@ -18,11 +19,14 @@ export default function ActivityLogs() {
   const isWeb = Platform.OS === "web" && width >= layout.desktopBreakpoint;
   const [logs, setLogs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
 
   const fetchLogs = async () => {
-    const { data } = await supabase.from("activity_logs").select("*").order("created_at", { ascending: false });
-    setLogs(data || []);
-    setLoading(false);
+    try {
+      const data = await fetchAllRows((from, to) => supabase.from("activity_logs").select("*", { count: "exact" }).order("created_at", { ascending: false }).order("id").range(from, to));
+      setLogs(data);
+    } catch { setLoadError("Could not load the complete activity history. Reopen this page to retry."); }
+    finally { setLoading(false); }
   };
 
   useEffect(() => { void (async () => { await fetchLogs(); })(); }, []);
@@ -38,6 +42,7 @@ export default function ActivityLogs() {
     <View style={styles.container}>
       <StatusBar barStyle="dark-content" />
       <AdminNavigation active="logs" />
+      {loadError ? <Text accessibilityRole="alert" style={{ color: Design.color.danger, padding: 12 }}>{loadError}</Text> : null}
 
       <ContentFrame>
       <View style={styles.main}>
