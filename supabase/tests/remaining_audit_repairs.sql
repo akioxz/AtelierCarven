@@ -126,7 +126,7 @@ insert into public.reviews(id,furniture_id,user_id,rating) values
 create function public.recompute_furniture_rating() returns trigger language plpgsql as $$begin return null; end;$$;
 create trigger reviews_recompute_trigger after insert or update or delete on public.reviews for each row execute function public.recompute_furniture_rating();
 
-\ir ../migrations/20261019050000_remaining_audit_repairs.sql
+\ir ../migrations/20261019031255_remaining_audit_repairs.sql
 
 do $test$
 begin
