@@ -91,7 +91,7 @@ end;
 $test$;
 reset role;
 
-\ir ../migrations/20261019000000_restrict_public_profiles.sql
+\ir ../migrations/20261019015425_restrict_public_profiles.sql
 
 set local role anon;
 do $test$
