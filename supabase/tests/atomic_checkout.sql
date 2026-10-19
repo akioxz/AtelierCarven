@@ -107,7 +107,7 @@ $test$;
 reset role;
 rollback to negative_control;
 
-\ir ../migrations/20261019030000_atomic_checkout.sql
+\ir ../migrations/20261019021942_atomic_checkout.sql
 
 -- The function cannot bypass RLS, and anonymous callers cannot execute it.
 do $test$
