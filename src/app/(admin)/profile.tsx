@@ -1,7 +1,7 @@
 import { Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { Image } from "expo-image";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   ScrollView,
   StatusBar,
@@ -13,7 +13,7 @@ import { Design } from "../../constants/design";
 import { pickAndUploadImage } from "../../lib/imageUpload";
 import { supabase } from "../../lib/supabase";
 import { goBackOr } from "../../lib/navigation";
-import { AdminNavigation, ContentFrame, PageHeader } from "../../components/app-ui";
+import { AdminNavigation, ContentFrame, PageHeader, RetryNotice } from "../../components/app-ui";
 import { PressScale, Reveal, staggerDelay } from "../../components/motion";
 import { ShimmerBlock } from "../../components/skeleton";
 import ConfirmModal from "../../components/confirm-modal";
@@ -24,19 +24,25 @@ export default function AdminProfile() {
   const [loading, setLoading] = useState(true);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [logoutModalVisible, setLogoutModalVisible] = useState(false);
+  const [loadError, setLoadError] = useState("");
+  const [avatarError, setAvatarError] = useState("");
+  const avatarPending = useRef(false);
 
   const fetchProfile = useCallback(async () => {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) return;
-    const { data } = await supabase
+    setLoading(true);
+    setLoadError("");
+    try {
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) throw new Error("Session unavailable");
+    const { data, error } = await supabase
       .from("profiles")
       .select("*")
       .eq("id", user.id)
       .single();
+    if (error || !data) throw new Error("Profile unavailable");
     setProfile(data);
-    setLoading(false);
+    } catch { setLoadError("Could not load your admin profile. Please retry; if your session expired, sign in again."); }
+    finally { setLoading(false); }
   }, []);
 
   useEffect(() => {
@@ -44,21 +50,27 @@ export default function AdminProfile() {
   }, [fetchProfile]);
 
   const handleAvatarUpload = async () => {
+    if (avatarPending.current) return;
+    avatarPending.current = true;
+    setAvatarError("");
     setUploadingAvatar(true);
     try {
       const {
         data: { user },
       } = await supabase.auth.getUser();
-      if (!user) return;
-      const url = await pickAndUploadImage("avatars", `user-${user.id}`);
+      if (!user) throw new Error("Session unavailable");
+      const url = await pickAndUploadImage("avatars", `user-${user.id}`, { throwOnError: true });
       if (url) {
-        await supabase
+        const { error } = await supabase
           .from("profiles")
           .update({ avatar_url: url })
           .eq("id", user.id);
-        fetchProfile();
+        if (error) throw new Error("Profile photo was not saved");
+        await fetchProfile();
       }
+    } catch { setAvatarError("Could not confirm your profile photo change. Reload the profile before retrying.");
     } finally {
+      avatarPending.current = false;
       setUploadingAvatar(false);
     }
   };
@@ -87,7 +99,9 @@ export default function AdminProfile() {
     <View style={styles.container}>
       <StatusBar barStyle="dark-content" />
       <AdminNavigation active="profile" />
-      <ScrollView showsVerticalScrollIndicator={false}>
+      {loadError ? <RetryNotice message={loadError} onRetry={() => void fetchProfile()} /> : null}
+      <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false}>
+        {!loadError ? <>
         <ContentFrame>
         {/* Header */}
         <View style={styles.header}>
@@ -132,6 +146,7 @@ export default function AdminProfile() {
           <Text style={styles.avatarName}>{profile?.username || "Admin"}</Text>
           <Text style={styles.avatarEmail}>{profile?.email}</Text>
           <Text style={styles.avatarHint}>Tap photo to change</Text>
+          {avatarError ? <RetryNotice message={avatarError} onRetry={() => { setAvatarError(""); void fetchProfile(); }} /> : null}
         </View>
         </Reveal>
 
@@ -193,10 +208,12 @@ export default function AdminProfile() {
         </View>
         </Reveal>
 
-        <View style={{ height: 100 }} />
+        <View style={{ height: 24 }} />
         </ContentFrame>
+        </> : null}
       </ScrollView>
 
+      <AdminNavigation active="profile" placement="footer" />
 <ConfirmModal
         visible={logoutModalVisible}
         title="Sign out?"
@@ -224,7 +241,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
     flexDirection: "row",
     gap: 16,
-    paddingHorizontal: 2,
+    paddingHorizontal: 16,
+    paddingTop: 16,
   },
   headerPage: { flex: 1 },
   backButton: { alignItems: "center", backgroundColor: Design.color.surface, borderColor: Design.color.line, borderRadius: Design.radius.small, borderWidth: StyleSheet.hairlineWidth, height: 44, justifyContent: "center", width: 44 },
@@ -266,7 +284,7 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   avatarEmail: { fontSize: 12, fontFamily: Design.font.monoMedium, color: Design.color.inkMuted, marginBottom: 4 },
-  avatarHint: { fontSize: 10, color: Design.color.accent, letterSpacing: 1 },
+  avatarHint: { fontSize: 12, lineHeight: 20, paddingVertical: 2, color: Design.color.accent, textAlign: "center" },
   infoSection: { paddingHorizontal: 24, marginBottom: 20 },
   sectionLabel: {
     fontSize: 10,
@@ -285,13 +303,15 @@ const styles = StyleSheet.create({
   infoRow: {
     flexDirection: "row",
     justifyContent: "space-between",
-    alignItems: "center",
+    alignItems: "flex-start",
+    flexWrap: "wrap",
+    gap: 12,
     paddingVertical: 10,
   },
   infoLabelRow: { flexDirection: "row", alignItems: "center", gap: 6 },
   infoLabel: { fontSize: 10, fontFamily: Design.font.monoMedium, letterSpacing: 1, color: Design.color.inkSoft },
-  infoValue: { fontSize: 13, color: Design.color.ink },
-  readOnlyBadge: { flexDirection: "row", alignItems: "center", gap: 6 },
+  infoValue: { fontSize: 13, lineHeight: 21, flexShrink: 1, color: Design.color.ink, paddingVertical: 2 },
+  readOnlyBadge: { flexDirection: "row", flexShrink: 1, alignItems: "center", gap: 6, minWidth: 0 },
   infoDivider: { height: 0.5, backgroundColor: Design.color.line },
   roleBadge: {
     backgroundColor: Design.color.surfaceMuted,
@@ -309,7 +329,7 @@ const styles = StyleSheet.create({
     marginTop: 10,
     paddingHorizontal: 4,
   },
-  noteText: { fontSize: 11, color: Design.color.inkMuted },
+  noteText: { fontSize: 12, lineHeight: 20, flex: 1, color: Design.color.inkMuted, paddingVertical: 2 },
   logoutSection: { paddingHorizontal: 24 },
   logoutBtn: {
     flexDirection: "row",

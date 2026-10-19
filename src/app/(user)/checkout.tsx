@@ -7,6 +7,7 @@ import { PressScale, Reveal, staggerDelay } from "../../components/motion";
 import { ShimmerBlock } from "../../components/skeleton";
 import { Design } from "../../constants/design";
 import { goBackOr } from "../../lib/navigation";
+import { formatDelivery } from "../../lib/delivery";
 import { supabase } from "../../lib/supabase";
 import { fetchAllRows } from "../../lib/pagination";
 import { cartTotal, effectivePrice } from "../../lib/pricing";
@@ -52,7 +53,7 @@ export default function Checkout() {
 
   const continueToPayment = () => {
     if (cartItems.length === 0) return;
-    if (!fullName.trim() || !mobile.trim() || !address.trim() || !city.trim()) { setShowError(true); return; }
+    try { formatDelivery({ fullName, mobile, address, city, notes }); } catch { setShowError(true); return; }
     router.push({
       pathname: "/(user)/checkout-payment",
       params: { total: total.toString(), fullName, address, city, mobile, notes },
@@ -116,6 +117,7 @@ export default function Checkout() {
           </Reveal>
         </ContentFrame>
       </ScrollView>
+      <CustomerNavigation active="cart" placement="footer" />
     </View>
   );
 }
@@ -132,7 +134,7 @@ function Field({ label, value, onChangeText, placeholder, keyboardType = "defaul
 const styles = StyleSheet.create({
   screen: { backgroundColor: Design.color.canvas, flex: 1 },
   loading: { alignItems: "center", backgroundColor: Design.color.canvas, flex: 1, justifyContent: "center" },
-  scroll: { paddingBottom: 112 },
+  scroll: { paddingBottom: 24 },
   frame: { paddingHorizontal: 20, paddingTop: 30 },
   back: { alignItems: "center", backgroundColor: Design.color.surface, borderColor: Design.color.line, borderRadius: Design.radius.small, borderWidth: StyleSheet.hairlineWidth, height: 44, justifyContent: "center", width: 44 },
   section: { marginTop: 26 },

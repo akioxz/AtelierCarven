@@ -2,7 +2,7 @@ import { Feather } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import { Image } from "expo-image";
 import { useRouter } from "expo-router";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   ScrollView,
   StatusBar,
@@ -14,9 +14,10 @@ import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import Animated, { useAnimatedStyle, useSharedValue } from "react-native-reanimated";
 import { scheduleOnRN } from "react-native-worklets";
 import { Design } from "../../constants/design";
+import { fetchPage } from "../../lib/pagination";
 import { supabase } from "../../lib/supabase";
 import { goBackOr } from "../../lib/navigation";
-import { CustomerNavigation, PageHeader } from "../../components/app-ui";
+import { CustomerNavigation, PageHeader, RetryNotice, PageControls } from "../../components/app-ui";
 import { PressScale, Reveal } from "../../components/motion";
 import { ShimmerBlock } from "../../components/skeleton";
 
@@ -66,18 +67,20 @@ export default function ImagePlacement() {
     ],
   }));
 
-  useEffect(() => {
-    const fetchFurniture = async () => {
-      setFetchingFurniture(true);
-      const { data, error } = await supabase
-        .from("furniture")
-        .select("*")
-        .eq("is_deleted", false);
-      if (!error && data) setFurnitureList(data);
-      setFetchingFurniture(false);
-    };
-    fetchFurniture();
-  }, []);
+  const [catalogError, setCatalogError] = useState("");
+  const [page, setPage] = useState(0);
+  const [total, setTotal] = useState(0);
+  const catalogRequest = useRef(0);
+  const fetchFurniture = useCallback(async () => {
+    const request = ++catalogRequest.current;
+    setFetchingFurniture(true); setCatalogError("");
+    try {
+      const { rows, total: count } = await fetchPage((from, to) => supabase.from("furniture").select("*", { count: "exact" }).eq("is_deleted", false).order("id").range(from, to), page, 12);
+      if (request === catalogRequest.current) { setFurnitureList(rows); setTotal(count); }
+    } catch { if (request === catalogRequest.current) setCatalogError("Could not load the placement catalog. Please retry."); }
+    finally { if (request === catalogRequest.current) setFetchingFurniture(false); }
+  }, [page]);
+  useEffect(() => { const tracker = catalogRequest; void (async () => { await fetchFurniture(); })(); return () => { tracker.current++; }; }, [fetchFurniture]);
 
   const pickImage = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -145,11 +148,12 @@ export default function ImagePlacement() {
       <StatusBar barStyle="dark-content" />
       <CustomerNavigation active="placement" />
 
+      {catalogError ? <RetryNotice message={catalogError} onRetry={() => void fetchFurniture()} /> : null}
       {/* ScrollView disabled while dragging to prevent conflict */}
       <ScrollView
         ref={scrollRef}
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: 100 }}
+        contentContainerStyle={{ paddingBottom: 24 }}
         scrollEnabled={!isDragging}
       >
         {/* Header */}
@@ -234,13 +238,14 @@ export default function ImagePlacement() {
           <Reveal>
           <View style={styles.section}>
             <Text style={styles.sectionLabel}>SELECT FURNITURE</Text>
+            <PageControls page={page} total={total} size={12} loading={fetchingFurniture} onChange={setPage} />
             {fetchingFurniture ? (
               <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.catalogScroll}>
                 <ShimmerBlock width={110} height={140} radius={Design.radius.card} />
                 <ShimmerBlock width={110} height={140} radius={Design.radius.card} />
                 <ShimmerBlock width={110} height={140} radius={Design.radius.card} />
               </ScrollView>
-            ) : furnitureList.length === 0 ? (
+            ) : catalogError ? null : furnitureList.length === 0 ? (
               <Text style={styles.emptyCatalogText}>No furniture pieces available.</Text>
             ) : (
               <ScrollView
@@ -444,6 +449,7 @@ export default function ImagePlacement() {
         </View>
         </Reveal>
       </ScrollView>
+      <CustomerNavigation active="placement" placement="footer" />
 
 
     </View>

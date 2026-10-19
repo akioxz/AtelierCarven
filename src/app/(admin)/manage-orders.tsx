@@ -12,9 +12,9 @@ import {
 } from "react-native";
 import { Design } from "../../constants/design";
 import { supabase } from "../../lib/supabase";
-import { fetchAllRows } from "../../lib/pagination";
+import { fetchAllRows, fetchPage } from "../../lib/pagination";
 import { goBackOr } from "../../lib/navigation";
-import { AdminNavigation, ContentFrame, PageHeader } from "../../components/app-ui";
+import { AdminNavigation, ContentFrame, PageHeader, RetryNotice, PageControls } from "../../components/app-ui";
 import { PressScale, Reveal } from "../../components/motion";
 import { ShimmerBlock } from "../../components/skeleton";
 import { getStatusBadge } from "../../constants/statuses";
@@ -48,22 +48,27 @@ export default function ManageOrders() {
   const [updating, setUpdating] = useState(false);
   const [confirmUpdateOpen, setConfirmUpdateOpen] = useState(false);
   const [updateError, setUpdateError] = useState("");
+  const updatePending = useRef(false);
+  const [itemsError, setItemsError] = useState("");
 
+  const [page, setPage] = useState(0);
+  const [total, setTotal] = useState(0);
   const listRequest = useRef(0);
   const detailRequest = useRef(0);
   const fetchOrders = useCallback(async () => {
     const request = ++listRequest.current;
     setLoading(true);
+    setUpdateError("");
     try {
-      const data = await fetchAllRows((from, to) => {
+      const { rows: data, total: count } = await fetchPage((from, to) => {
         let query = supabase.from("orders").select("*, profiles(*)", { count: "exact" });
         if (selectedStatus !== "All") query = query.eq("status", selectedStatus);
         return query.order("created_at", { ascending: false }).order("id").range(from, to);
-      });
-      if (request === listRequest.current) setOrders(data);
+      }, page);
+      if (request === listRequest.current) { setOrders(data); setTotal(count); }
     } catch { if (request === listRequest.current) setUpdateError("Could not load orders. Please refresh."); }
     finally { if (request === listRequest.current) { setLoading(false); setRefreshing(false); } }
-  }, [selectedStatus]);
+  }, [selectedStatus, page]);
 
   useEffect(() => {
     let cancelled = false;
@@ -76,14 +81,16 @@ export default function ManageOrders() {
   const fetchOrderItems = async (orderId: string) => {
     const request = ++detailRequest.current;
     setLoadingItems(true);
+    setItemsError("");
     setOrderItems([]);
     try {
       const data = await fetchAllRows((from, to) => supabase.from("order_items").select("*, furniture(*)", { count: "exact" }).eq("order_id", orderId).order("id").range(from, to));
       if (request === detailRequest.current) setOrderItems(data);
-    } catch { if (request === detailRequest.current) setUpdateError("Could not load these order items. Reopen the order to retry."); }
+    } catch { if (request === detailRequest.current) setItemsError("Could not load these order items. Please retry."); }
     finally { if (request === detailRequest.current) setLoadingItems(false); }
   };
   const closeOrderDetails = () => { detailRequest.current++; setSelectedOrder(null); setOrderItems([]); };
+  const requestCloseOrderDetails = () => { if (!updatePending.current) closeOrderDetails(); };
   const openOrderDetails = (order: any) => {
     setSelectedOrder(order);
     setModalStatus(order.status);
@@ -92,40 +99,46 @@ export default function ManageOrders() {
   };
 
   const logAdminAction = async (action: string, target: string) => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
-    await supabase
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) throw new Error("Activity authentication unavailable");
+    const { error } = await supabase
       .from("activity_logs")
       .insert({
         admin_id: user.id,
         action,
         target_item: target,
       });
+    if (error) throw error;
   };
 
   const handleUpdateStatus = async () => {
-    if (!selectedOrder) return;
+    if (!selectedOrder || updatePending.current) return;
+    updatePending.current = true;
     setUpdating(true);
-
-    const { error } = await supabase
+    setUpdateError("");
+    let statusSaved = false;
+    try {
+    const { data: savedOrder, error } = await supabase
       .from("orders")
       .update({ status: modalStatus })
-      .eq("id", selectedOrder.id);
+      .eq("id", selectedOrder.id).select("id").single();
 
-    if (error) {
-      console.error("Error updating status:", error);
-      setUpdateError("Couldn't update the status. Please try again.");
-      setUpdating(false);
-      return;
-    }
+    if (error || !savedOrder?.id) throw new Error("Order update not confirmed");
+    statusSaved = true;
     await logAdminAction(
       `Updated order status to ${modalStatus}`,
       `Order #${selectedOrder.id.substring(0, 8)} (${selectedOrder.profiles?.username || "Guest"})`
     );
     closeOrderDetails();
     setConfirmUpdateOpen(false);
-    fetchOrders();
-    setUpdating(false);
+    await fetchOrders();
+    } catch {
+      if (statusSaved) {
+        setSelectedOrder({ ...selectedOrder, status: modalStatus });
+        setConfirmUpdateOpen(false);
+        setUpdateError("Order status was saved, but the activity log failed. Reopen the list to see the saved status.");
+      } else setUpdateError("Couldn't confirm the status update. Please check the order and retry.");
+    } finally { updatePending.current = false; setUpdating(false); }
   };
 
   const parseAddress = (addressStr: string) => {
@@ -197,7 +210,6 @@ export default function ManageOrders() {
     <View style={styles.container}>
       <StatusBar barStyle="dark-content" />
       <AdminNavigation active="orders" />
-      {updateError && !selectedOrder ? <Text accessibilityRole="alert" style={{ color: Design.color.danger, padding: 12 }}>{updateError}</Text> : null}
 
       {/* Header */}
       <ContentFrame>
@@ -205,7 +217,7 @@ export default function ManageOrders() {
         <PressScale onPress={() => goBackOr(router, "/(admin)/dashboard")} style={styles.backButton} accessibilityLabel="Go back">
           <Feather name="arrow-left" size={19} color={Design.color.ink} />
         </PressScale>
-        <PageHeader title="Orders" subtitle="Review deliveries and update statuses." />
+        <PageHeader title="Orders" subtitle="Review deliveries and update statuses." style={{ flex: 1, minWidth: 0 }} />
       </View>
 
       {/* Filters */}
@@ -219,10 +231,13 @@ export default function ManageOrders() {
                 selectedStatus === status && styles.filterPillActive,
               ]}
               onPress={() => {
-                setSelectedStatus(status);
+                if (status === selectedStatus) return;
+                setPage(0); setSelectedStatus(status);
                 setLoading(true);
               }}
               accessibilityLabel={`Filter by ${status}`}
+              accessibilityRole="tab"
+              accessibilityState={{ selected: selectedStatus === status }}
             >
               <Text
                 style={[
@@ -244,13 +259,13 @@ export default function ManageOrders() {
           <ShimmerBlock height={150} radius={Design.radius.card} width="100%" />
           <ShimmerBlock height={150} radius={Design.radius.card} width="100%" />
         </View>
-      ) : orders.length === 0 ? (
+      ) : updateError && !selectedOrder ? <RetryNotice message={updateError} onRetry={handleRefresh} /> : orders.length === 0 ? (
         <View style={styles.emptyContainer}>
           <Feather name="shopping-bag" size={44} color={Design.color.line} />
           <Text style={styles.emptyText}>No orders found under &quot;{selectedStatus}&quot; status.</Text>
         </View>
       ) : (
-        <Reveal key={`orders-${selectedStatus}`}>
+        <Reveal key={`orders-${selectedStatus}`} style={{ flex: 1 }}>
         <FlatList
           data={orders}
           renderItem={renderOrderItem}
@@ -262,10 +277,12 @@ export default function ManageOrders() {
         />
         </Reveal>
       )}
+      <PageControls page={page} total={total} loading={loading} onChange={setPage} />
       </ContentFrame>
+      <AdminNavigation active="orders" placement="footer" />
 
       {/* Order Detail Modal */}
-      <Modal visible={selectedOrder !== null} animationType="slide" transparent onRequestClose={closeOrderDetails}>
+      <Modal visible={selectedOrder !== null} animationType="slide" transparent onRequestClose={requestCloseOrderDetails}>
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             {selectedOrder && (
@@ -275,7 +292,7 @@ export default function ManageOrders() {
                       <Text style={styles.modalTitle}>ORDER DETAILS</Text>
                       <Text style={styles.modalSub}>#{selectedOrder.id.substring(0, 8).toUpperCase()}</Text>
                     </View>
-                    <PressScale style={styles.closeBtn} onPress={closeOrderDetails} accessibilityLabel="Close order details">
+                    <PressScale style={styles.closeBtn} disabled={updating} hitSlop={8} onPress={requestCloseOrderDetails} accessibilityLabel="Close order details">
                       <Feather name="x" size={18} color={Design.color.inkSoft} />
                     </PressScale>
                   </View>
@@ -323,7 +340,7 @@ export default function ManageOrders() {
                   <View style={styles.detailsCard}>
                     {loadingItems ? (
                       <View style={styles.itemSkeleton}><ShimmerBlock width="100%" height={56} radius={Design.radius.card} /></View>
-                    ) : orderItems.length === 0 ? (
+                    ) : itemsError ? <RetryNotice message={itemsError} onRetry={() => void fetchOrderItems(selectedOrder.id)} /> : orderItems.length === 0 ? (
                       <Text style={styles.noItemsText}>No items found for this order.</Text>
                     ) : (
                       orderItems.map((item, index) => (
@@ -333,6 +350,7 @@ export default function ManageOrders() {
                             <View style={{ flex: 1, marginRight: 8 }}>
                               <Text style={styles.itemName} numberOfLines={1}>{item.furniture?.name}</Text>
                               <Text style={styles.itemCategory}>{item.furniture?.category} · Qty {item.quantity}</Text>
+                              <Text style={styles.itemCategory}>Color: {item.color || "Not recorded"} · Material: {item.material || "Not recorded"}</Text>
                             </View>
                             <Text style={styles.itemPrice}>₱{(Number(item.price) * item.quantity).toLocaleString()}</Text>
                           </View>
@@ -354,6 +372,9 @@ export default function ManageOrders() {
                           modalStatus === status && styles.statusSelectPillActive,
                         ]}
                         onPress={() => setModalStatus(status)}
+                        disabled={updating}
+                        accessibilityRole="radio"
+                        accessibilityState={{ checked: modalStatus === status, disabled: updating }}
                         accessibilityLabel={`Set status to ${status}`}
                       >
                         <Text
@@ -374,12 +395,12 @@ export default function ManageOrders() {
 
                 {/* Modal Buttons */}
                 <View style={styles.modalButtons}>
-                  <PressScale style={styles.cancelBtn} onPress={closeOrderDetails} accessibilityLabel="Cancel">
+                  <PressScale style={styles.cancelBtn} disabled={updating} onPress={requestCloseOrderDetails} accessibilityLabel="Cancel">
                     <Text style={styles.cancelBtnText}>CANCEL</Text>
                   </PressScale>
                   <PressScale
                     style={[styles.saveBtn, selectedOrder.status === modalStatus && styles.saveBtnDisabled]}
-                    onPress={() => setConfirmUpdateOpen(true)}
+                    onPress={() => { setUpdateError(""); setConfirmUpdateOpen(true); }}
                     disabled={updating || selectedOrder.status === modalStatus}
                     accessibilityLabel="Update order status"
                   >
@@ -400,6 +421,8 @@ export default function ManageOrders() {
         message={`Update order ${selectedOrder ? `#${selectedOrder.id.substring(0, 8).toUpperCase()}` : ""} to "${modalStatus}"?`}
         confirmLabel={modalStatus === "Cancelled" ? "CANCEL ORDER" : "UPDATE"}
         danger={modalStatus === "Cancelled"}
+        pending={updating}
+        error={updateError}
         onConfirm={handleUpdateStatus}
         onCancel={() => setConfirmUpdateOpen(false)}
       />
@@ -411,7 +434,7 @@ export default function ManageOrders() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Design.color.canvas },
   loadingContainer: { alignItems: "center", flex: 1, gap: 14, padding: 24 },
-  header: { alignItems: "center", flexDirection: "row", gap: 16, paddingHorizontal: 2 },
+  header: { alignItems: "center", flexDirection: "row", gap: 16, paddingHorizontal: 16, paddingTop: 16 },
   backButton: { alignItems: "center", backgroundColor: Design.color.surface, borderColor: Design.color.line, borderRadius: Design.radius.small, borderWidth: StyleSheet.hairlineWidth, height: 44, justifyContent: "center", width: 44 },
   accentDivider: { height: 1.5, marginBottom: 8, marginTop: 8, width: 40, backgroundColor: Design.color.accent },
   itemSkeleton: { paddingVertical: 8 },
@@ -421,7 +444,7 @@ const styles = StyleSheet.create({
   filterPillActive: { backgroundColor: Design.color.ink, borderColor: Design.color.ink },
   filterText: { fontSize: 10, color: Design.color.inkSoft, fontFamily: Design.font.monoMedium, letterSpacing: 1 },
   filterTextActive: { color: Design.color.surface },
-  listContainer: { padding: 24, paddingBottom: 100 },
+  listContainer: { padding: 24 },
   emptyContainer: { flex: 1, justifyContent: "center", alignItems: "center", gap: 12, paddingVertical: 100 },
   emptyText: { fontSize: 13, color: Design.color.inkMuted, textAlign: "center" },
   orderCard: { backgroundColor: Design.color.surface, borderRadius: Design.radius.card, padding: 16, marginBottom: 14, borderWidth: 0.5, borderColor: Design.color.line, ...Design.shadow.card },
@@ -443,7 +466,7 @@ const styles = StyleSheet.create({
   modalHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 12 },
   modalTitle: { fontSize: 11, fontFamily: Design.font.monoMedium, letterSpacing: 3, color: Design.color.inkSoft },
   modalSub: { fontSize: 18, fontFamily: Design.font.monoBold, color: Design.color.ink, marginTop: 2 },
-  closeBtn: { width: 30, height: 30, borderRadius: Design.radius.small, backgroundColor: Design.color.surfaceMuted, justifyContent: "center", alignItems: "center" },
+  closeBtn: { width: 44, height: 44, borderRadius: Design.radius.small, backgroundColor: Design.color.surfaceMuted, justifyContent: "center", alignItems: "center" },
   section: { marginTop: 20 },
   sectionLabel: { fontSize: 9, fontFamily: Design.font.monoMedium, letterSpacing: 2, color: Design.color.inkSoft, marginBottom: 10 },
   detailsCard: { backgroundColor: Design.color.surfaceMuted, borderRadius: Design.radius.card, padding: 16, borderWidth: 0.5, borderColor: Design.color.line, gap: 10 },

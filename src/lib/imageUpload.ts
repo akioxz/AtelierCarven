@@ -5,6 +5,7 @@ import { supabase } from "./supabase";
 export const pickAndUploadImage = async (
   bucket: string,
   folder: string,
+  options: { throwOnError?: boolean } = {},
 ): Promise<string | null> => {
   const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
   if (status !== "granted") {
@@ -36,6 +37,7 @@ export const pickAndUploadImage = async (
     });
 
   if (error) {
+    if (options.throwOnError) throw new Error("Could not upload the image. Please retry.");
     console.error("Upload error:", error);
     return null;
   }

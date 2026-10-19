@@ -4,20 +4,22 @@ import { Image } from "expo-image";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   Modal,
+  FlatList,
   Platform,
   ScrollView,
   StatusBar,
   StyleSheet,
   Text,
   TextInput,
+  useWindowDimensions,
   View,
 } from "react-native";
 import { Design } from "../../constants/design";
 import { pickAndUploadImage } from "../../lib/imageUpload";
 import { supabase } from "../../lib/supabase";
-import { fetchAllRows } from "../../lib/pagination";
+import { fetchAllRows, fetchPage } from "../../lib/pagination";
 import { goBackOr } from "../../lib/navigation";
-import { AdminNavigation, ContentFrame, PageHeader } from "../../components/app-ui";
+import { AdminNavigation, ContentFrame, PageHeader, RetryNotice, PageControls } from "../../components/app-ui";
 import { PressScale, Reveal, staggerDelay } from "../../components/motion";
 import { ShimmerBlock } from "../../components/skeleton";
 import ConfirmModal from "../../components/confirm-modal";
@@ -38,6 +40,7 @@ const getCategoryIcon = (category: string) => {
 
 export default function ManageFurniture() {
   const router = useRouter();
+  const { width: screenWidth } = useWindowDimensions();
   const [furniture, setFurniture] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeFilter, setActiveFilter] = useState("All");
@@ -63,28 +66,73 @@ export default function ManageFurniture() {
   const [sizeGuides, setSizeGuides] = useState<Record<string, any>>({});
   const [galleryImages, setGalleryImages] = useState<any[]>([]);
   const [uploadingGallery, setUploadingGallery] = useState(false);
+  const [collectionError, setCollectionError] = useState("");
+  const [guidesError, setGuidesError] = useState("");
+  const [discardOpen, setDiscardOpen] = useState(false);
+  const [listWidth, setListWidth] = useState(screenWidth);
+  const originalForm = useRef("");
+  const imagePending = useRef(false);
+  const galleryPending = useRef(false);
+  const formSignature = JSON.stringify([name, price, category, description, imageUrl, width, height, depth, weight]);
+  const columns = isWeb ? Math.max(1, Math.floor((listWidth - 18) / 314)) : listWidth < 360 ? 1 : 2;
+  const cardWidth = Math.max(1, (listWidth - 32 - 14 * (columns - 1)) / columns);
+  const closeForm = () => { galleryRequest.current++; setModalVisible(false); setDiscardOpen(false); };
+  const requestCloseForm = () => {
+    if (mutationPending.current || imagePending.current || galleryPending.current) return;
+    if (formSignature !== originalForm.current) setDiscardOpen(true);
+    else closeForm();
+  };
 
+  const [page, setPage] = useState(0);
+  const [total, setTotal] = useState(0);
+  const collectionRequest = useRef(0);
+  const guideRequest = useRef(0);
   const fetchFurniture = useCallback(async () => {
+    const request = ++collectionRequest.current;
     setLoading(true);
+    setCollectionError("");
     try {
-      const data = await fetchAllRows((from, to) => supabase.from("furniture").select("*", { count: "exact" }).eq("is_deleted", false).order("created_at", { ascending: false }).order("id").range(from, to));
-      setFurniture(data);
-    } catch { setErrorMsg("Could not load the complete collection. Reopen this page to retry."); }
-    finally { setLoading(false); }
-  }, []);
+      const { rows, total: count } = await fetchPage((from, to) => {
+        let query = supabase.from("furniture").select("*", { count: "exact" }).eq("is_deleted", false);
+        if (activeFilter !== "All") query = query.eq("category", activeFilter);
+        return query.order("created_at", { ascending: false }).order("id").range(from, to);
+      }, page);
+      if (request === collectionRequest.current) { setFurniture(rows); setTotal(count); }
+    } catch { if (request === collectionRequest.current) setCollectionError("Could not load this collection page. Please retry."); }
+    finally { if (request === collectionRequest.current) setLoading(false); }
+  }, [activeFilter, page]);
   const fetchSizeGuides = useCallback(async () => {
+    const request = ++guideRequest.current;
+    setGuidesError("");
+    setGuidesReady(false);
     try {
-      const data = await fetchAllRows((from, to) => supabase.from("size_guides").select("*", { count: "exact" }).order("furniture_id").range(from, to));
+      const data = await fetchAllRows((from, to) => supabase.from("size_guides").select("*", { count: "exact" }).in("furniture_id", furniture.map(item => item.id)).order("furniture_id").range(from, to));
+      if (request !== guideRequest.current) return;
       const map: Record<string, any> = {};
       data.forEach(guide => { map[guide.furniture_id] = guide; });
       setSizeGuides(map);
       setGuidesReady(true);
-    } catch { setGuidesReady(false); setErrorMsg("Could not load dimensions. Reopen this page before editing dimensions."); }
-  }, []);
+      return map;
+    } catch { if (request === guideRequest.current) { setGuidesReady(false); setGuidesError("Could not load dimensions. Retry before saving an existing item."); } }
+  }, [furniture]);
+
+  const retryDimensions = async () => {
+    const request = galleryRequest.current;
+    const map = await fetchSizeGuides();
+    if (!map || !editing || request !== galleryRequest.current) return;
+    const guide = map[editing.id];
+    const dimensions = [guide?.width_cm, guide?.height_cm, guide?.depth_cm, guide?.weight_kg].map(value => value != null ? String(value) : "");
+    setWidth(dimensions[0]); setHeight(dimensions[1]); setDepth(dimensions[2]); setWeight(dimensions[3]);
+    const baseline = JSON.parse(originalForm.current) as string[];
+    originalForm.current = JSON.stringify([...baseline.slice(0, 5), ...dimensions]);
+  };
 
   useEffect(() => {
-    void (async () => { await fetchFurniture(); await fetchSizeGuides(); })();
-  }, [fetchFurniture, fetchSizeGuides]);
+    const tracker = collectionRequest;
+    void (async () => { await fetchFurniture(); })();
+    return () => { tracker.current++; };
+  }, [fetchFurniture]);
+  useEffect(() => { const tracker = guideRequest; void (async () => { await fetchSizeGuides(); })(); return () => { tracker.current++; }; }, [fetchSizeGuides]);
 
   const filteredFurniture = activeFilter === "All"
     ? furniture
@@ -98,6 +146,7 @@ export default function ManageFurniture() {
   };
 
   const openAdd = () => {
+    originalForm.current = JSON.stringify(["", "", "Sofa", "", "", "", "", "", ""]);
     galleryRequest.current++;
     setEditing(null);
     setName(""); setPrice(""); setCategory("Sofa");
@@ -116,6 +165,7 @@ export default function ManageFurniture() {
     setDescription(item.description || "");
     setImageUrl(item.image_url || "");
     const guide = sizeGuides[item.id];
+    originalForm.current = JSON.stringify([item.name, String(item.price), item.category, item.description || "", item.image_url || "", ...[guide?.width_cm, guide?.height_cm, guide?.depth_cm, guide?.weight_kg].map(value => value != null ? String(value) : "")]);
     setWidth(guide?.width_cm != null ? String(guide.width_cm) : "");
     setHeight(guide?.height_cm != null ? String(guide.height_cm) : "");
     setDepth(guide?.depth_cm != null ? String(guide.depth_cm) : "");
@@ -131,19 +181,23 @@ export default function ManageFurniture() {
   };
 
   const handlePickImage = async () => {
+    if (imagePending.current || mutationPending.current) return;
+    imagePending.current = true;
     setUploading(true);
     try {
-      const url = await pickAndUploadImage("furniture-images", "items");
+      const url = await pickAndUploadImage("furniture-images", "items", { throwOnError: true });
       if (url) setImageUrl(url);
+    } catch { setErrorMsg("Could not upload the furniture image. Tap the image to retry.");
     } finally {
+      imagePending.current = false;
       setUploading(false);
     }
   };
 
   const handleSave = async () => {
-    if (mutationPending.current) return;
+    if (mutationPending.current || imagePending.current || galleryPending.current) return;
     setErrorMsg("");
-    if (editing && !guidesReady) { setErrorMsg("Dimensions were not loaded. Reopen this page before saving changes."); return; }
+    if (editing && !guidesReady) { setErrorMsg("Dimensions were not loaded. Use Retry dimensions before saving."); return; }
     const parsedPrice = Math.round(Number(price.replace(/[₱,\s]/g, "")) * 100) / 100;
     const dimensions = {
       width_cm: width.trim() ? Number(width) : null,
@@ -192,6 +246,7 @@ export default function ManageFurniture() {
   const confirmDelete = async () => {
     if (!itemToDelete || mutationPending.current) return;
     mutationPending.current = true;
+    setSaving(true);
     setErrorMsg("");
     let deleted = false;
     try {
@@ -204,14 +259,18 @@ export default function ManageFurniture() {
       await fetchFurniture();
     } catch {
       setErrorMsg(deleted ? "Furniture was removed, but the activity log failed. Retry to record the change." : "Could not remove furniture. Please try again.");
-    } finally { mutationPending.current = false; }
+    } finally { mutationPending.current = false; setSaving(false); }
   };
   const removeGalleryImage = async (imageId: string) => {
+    if (galleryPending.current || mutationPending.current) return;
+    galleryPending.current = true;
+    setUploadingGallery(true);
     try {
       const { error, data } = await supabase.from("furniture_images").delete().eq("id", imageId).select("id").single();
       if (error || !data?.id) throw new Error("Gallery deletion failed");
       setGalleryImages(previous => previous.filter(image => image.id !== imageId));
     } catch { setErrorMsg("Could not remove this gallery image. Please try again."); }
+    finally { galleryPending.current = false; setUploadingGallery(false); }
   };
 
   const renderCard = (item: any) => (
@@ -233,6 +292,7 @@ export default function ManageFurniture() {
           <Text style={styles.badgeText}>{item.category.toUpperCase()}</Text>
         </View>
       </View>
+
       <View style={styles.cardBody}>
         <Text style={styles.cardName} numberOfLines={2}>{item.name}</Text>
         <Text style={styles.cardPrice}>₱{Number(item.price).toLocaleString()}</Text>
@@ -256,12 +316,13 @@ export default function ManageFurniture() {
       <AdminNavigation active="furniture" />
 
       <ContentFrame>
+      {guidesError ? <RetryNotice message={guidesError} onRetry={() => void fetchSizeGuides()} /> : null}
       <View style={styles.header}>
         <PressScale onPress={() => goBackOr(router, "/(admin)/dashboard")} style={styles.backButton} accessibilityLabel="Go back">
           <Feather name="arrow-left" size={19} color={Design.color.ink} />
         </PressScale>
         {errorMsg && !modalVisible ? <Text accessibilityRole="alert" style={styles.errorText}>{errorMsg}</Text> : null}
-        <PageHeader title="Furniture" subtitle={`${filteredFurniture.length} ${activeFilter === "All" ? "items" : activeFilter.toLowerCase() + "s"} in the collection.`} style={styles.headerPage} />
+        <PageHeader title="Furniture" subtitle={`${total} ${activeFilter === "All" ? "items" : activeFilter.toLowerCase() + "s"} in the collection.`} style={styles.headerPage} />
       </View>
 
       {/* Filter tabs */}
@@ -272,15 +333,15 @@ export default function ManageFurniture() {
         contentContainerStyle={styles.filterRow}
       >
         {FILTERS.map((f) => {
-          const count = f === "All"
-            ? furniture.length
-            : furniture.filter((i) => i.category === f).length;
+          const count = activeFilter === f ? total : null;
           return (
             <PressScale
               key={f}
               style={[styles.filterPill, activeFilter === f && styles.filterPillActive]}
-              onPress={() => setActiveFilter(f)}
+              onPress={() => { setPage(0); setActiveFilter(f); }}
               accessibilityLabel={`Filter by ${f}`}
+              accessibilityRole="tab"
+              accessibilityState={{ selected: activeFilter === f }}
             >
               <Text style={[styles.filterText, activeFilter === f && styles.filterTextActive]}>
                 {f}
@@ -297,29 +358,36 @@ export default function ManageFurniture() {
 
       {loading ? (
         <View style={styles.loadingGrid}><ShimmerBlock height={240} radius={Design.radius.card} width="47.5%" /><ShimmerBlock height={240} radius={Design.radius.card} width="47.5%" /></View>
-      ) : (
-        <ScrollView
+      ) : collectionError ? <RetryNotice message={collectionError} onRetry={() => void fetchFurniture()} /> : (
+        <FlatList
+          key={columns}
+          data={filteredFurniture}
+          numColumns={columns}
+          onLayout={event => setListWidth(event.nativeEvent.layout.width)}
+          keyExtractor={item => item.id}
+          initialNumToRender={12}
+          windowSize={5}
+          columnWrapperStyle={columns > 1 ? { gap: 14 } : undefined}
           style={styles.scroll}
-          contentContainerStyle={[styles.grid, isWeb && styles.gridWeb]}
+          contentContainerStyle={styles.grid}
           showsVerticalScrollIndicator={false}
-        >
-          {filteredFurniture.length === 0 ? (
+          ListEmptyComponent={
             <View style={styles.empty}>
               <Feather name="inbox" size={40} color={Design.color.line} />
               <Text style={styles.emptyText}>No {activeFilter === "All" ? "furniture" : activeFilter} yet.</Text>
             </View>
-          ) : (
-            filteredFurniture.map((item, i) => <Reveal key={item.id} delay={staggerDelay(i, 50, 6)}>{renderCard(item)}</Reveal>)
-          )}
-          <View style={{ height: 100 }} />
-        </ScrollView>
+          }
+          renderItem={({ item, index }) => <Reveal style={{ width: cardWidth, marginBottom: 14 }} delay={staggerDelay(index, 50, 6)}>{renderCard(item)}</Reveal>}
+        />
       )}
 
+      <PageControls page={page} total={total} loading={loading} onChange={setPage} />
       <PressScale style={styles.addBtn} onPress={openAdd} accessibilityLabel="Add furniture">
         <Feather name="plus" size={16} color={Design.color.surface} />
         <Text style={styles.addBtnText}>ADD FURNITURE</Text>
       </PressScale>
       </ContentFrame>
+      <AdminNavigation active="furniture" placement="footer" />
 
       <ConfirmModal
         visible={deleteModalVisible}
@@ -328,12 +396,13 @@ export default function ManageFurniture() {
         confirmLabel="DELETE"
         cancelLabel="CANCEL"
         danger
+        pending={saving || uploadingGallery}
         icon="trash-2"
         onConfirm={confirmDelete}
         onCancel={() => { setDeleteModalVisible(false); setItemToDelete(null); }}
       />
 
-      <Modal visible={modalVisible} animationType="slide" transparent onRequestClose={() => setModalVisible(false)}>
+      <Modal visible={modalVisible} animationType="slide" transparent onRequestClose={requestCloseForm}>
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <ScrollView showsVerticalScrollIndicator={false}>
@@ -341,7 +410,7 @@ export default function ManageFurniture() {
                 <Text style={styles.modalTitle}>
                   {editing ? "EDIT FURNITURE" : "ADD FURNITURE"}
                 </Text>
-                <PressScale onPress={() => setModalVisible(false)} accessibilityLabel="Close">
+                <PressScale onPress={requestCloseForm} disabled={saving || uploading || uploadingGallery} hitSlop={12} accessibilityLabel="Close">
                   <Feather name="x" size={20} color={Design.color.inkSoft} />
                 </PressScale>
               </View>
@@ -367,7 +436,7 @@ export default function ManageFurniture() {
               </PressScale>
 
               <Text style={styles.inputLabel}>OR PASTE IMAGE URL</Text>
-              <TextInput
+              <TextInput editable={!saving && !uploading && !uploadingGallery}
                 style={styles.input}
                 value={imageUrl}
                 onChangeText={setImageUrl}
@@ -378,7 +447,7 @@ export default function ManageFurniture() {
               />
 
               <Text style={styles.inputLabel}>NAME</Text>
-              <TextInput
+              <TextInput editable={!saving && !uploading && !uploadingGallery}
                 style={styles.input}
                 value={name}
                 onChangeText={setName}
@@ -387,7 +456,7 @@ export default function ManageFurniture() {
               />
 
               <Text style={styles.inputLabel}>PRICE (numbers only, e.g. 55000)</Text>
-              <TextInput
+              <TextInput editable={!saving && !uploading && !uploadingGallery}
                 style={styles.input}
                 value={price}
                 onChangeText={setPrice}
@@ -403,7 +472,10 @@ export default function ManageFurniture() {
                     key={cat}
                     style={[styles.categoryPill, category === cat && styles.categoryPillActive]}
                     onPress={() => setCategory(cat)}
+                    disabled={saving || uploading || uploadingGallery}
                     accessibilityLabel={`Set category to ${cat}`}
+                    accessibilityRole="radio"
+                    accessibilityState={{ checked: category === cat }}
                   >
                     <Text style={[styles.categoryText, category === cat && styles.categoryTextActive]}>
                       {cat}
@@ -413,7 +485,7 @@ export default function ManageFurniture() {
               </View>
 
               <Text style={styles.inputLabel}>DESCRIPTION</Text>
-              <TextInput
+              <TextInput editable={!saving && !uploading && !uploadingGallery}
                 style={[styles.input, styles.textArea]}
                 value={description}
                 onChangeText={setDescription}
@@ -424,43 +496,46 @@ export default function ManageFurniture() {
               />
 
               <Text style={styles.inputLabel}>SIZE GUIDE (OPTIONAL)</Text>
+              {editing && !guidesReady ? <RetryNotice message={guidesError || "Dimensions have not loaded. Retry before editing dimensions."} onRetry={() => void retryDimensions()} /> : null}
               <Text style={styles.dimHint}>Shown on the product page. Leave all blank to hide it.</Text>
               <View style={styles.dimColumns}>
                 <View style={styles.dimField}>
                   <Text style={styles.dimCaption}>WIDTH (cm)</Text>
-                  <TextInput style={styles.input} value={width} onChangeText={setWidth} placeholder="120" placeholderTextColor={Design.color.inkMuted} keyboardType="decimal-pad" />
+                  <TextInput style={styles.input} accessibilityLabel="Width in centimetres" editable={!saving && !uploading && !uploadingGallery && (!editing || guidesReady)} value={width} onChangeText={setWidth} placeholder="120" placeholderTextColor={Design.color.inkMuted} keyboardType="decimal-pad" />
                 </View>
                 <View style={styles.dimField}>
                   <Text style={styles.dimCaption}>HEIGHT (cm)</Text>
-                  <TextInput style={styles.input} value={height} onChangeText={setHeight} placeholder="75" placeholderTextColor={Design.color.inkMuted} keyboardType="decimal-pad" />
+                  <TextInput style={styles.input} accessibilityLabel="Height in centimetres" editable={!saving && !uploading && !uploadingGallery && (!editing || guidesReady)} value={height} onChangeText={setHeight} placeholder="75" placeholderTextColor={Design.color.inkMuted} keyboardType="decimal-pad" />
                 </View>
                 <View style={styles.dimField}>
                   <Text style={styles.dimCaption}>DEPTH (cm)</Text>
-                  <TextInput style={styles.input} value={depth} onChangeText={setDepth} placeholder="60" placeholderTextColor={Design.color.inkMuted} keyboardType="decimal-pad" />
+                  <TextInput style={styles.input} accessibilityLabel="Depth in centimetres" editable={!saving && !uploading && !uploadingGallery && (!editing || guidesReady)} value={depth} onChangeText={setDepth} placeholder="60" placeholderTextColor={Design.color.inkMuted} keyboardType="decimal-pad" />
                 </View>
                 <View style={styles.dimField}>
                   <Text style={styles.dimCaption}>WEIGHT (kg)</Text>
-                  <TextInput style={styles.input} value={weight} onChangeText={setWeight} placeholder="8" placeholderTextColor={Design.color.inkMuted} keyboardType="decimal-pad" />
+                  <TextInput style={styles.input} accessibilityLabel="Weight in kilograms" editable={!saving && !uploading && !uploadingGallery && (!editing || guidesReady)} value={weight} onChangeText={setWeight} placeholder="8" placeholderTextColor={Design.color.inkMuted} keyboardType="decimal-pad" />
                 </View>
               </View>
 
               {editing ? (
                 <>
                   <Text style={styles.inputLabel}>GALLERY IMAGES</Text>
-                  <Text style={styles.dimHint}>Additional images shown on the product page. Save the item first before adding gallery images.</Text>
+                  <Text style={styles.dimHint}>Gallery changes save immediately and remain if you cancel this form. Other fields save only when you tap Save.</Text>
                   <View style={styles.galleryGrid}>
                     {galleryImages.map((gi: any) => (
                       <View key={gi.id} style={styles.galleryThumb}>
                         <Image source={{ uri: gi.image_url }} style={styles.galleryThumbImage} contentFit="cover" transition={200} />
-                        <PressScale style={styles.galleryDelete} onPress={() => void removeGalleryImage(gi.id)} accessibilityLabel="Remove gallery image">
+                        <PressScale style={styles.galleryDelete} disabled={saving || uploadingGallery} hitSlop={6} onPress={() => void removeGalleryImage(gi.id)} accessibilityLabel="Remove gallery image">
                           <Feather name="x" size={12} color={Design.color.surface} />
                         </PressScale>
                       </View>
                     ))}
-                    <PressScale style={styles.galleryAddBtn} disabled={uploadingGallery} onPress={async () => {
+                    <PressScale style={styles.galleryAddBtn} disabled={saving || uploadingGallery} onPress={async () => {
+                      if (galleryPending.current || mutationPending.current) return;
+                      galleryPending.current = true;
                       setUploadingGallery(true);
                       try {
-                        const url = await pickAndUploadImage("furniture-images", "gallery");
+                        const url = await pickAndUploadImage("furniture-images", "gallery", { throwOnError: true });
                         if (url && editing?.id) {
                           const nextOrder = galleryImages.length;
                           const { data, error } = await supabase.from("furniture_images").insert({ furniture_id: editing.id, image_url: url, display_order: nextOrder }).select("*").single();
@@ -469,6 +544,7 @@ export default function ManageFurniture() {
                         }
                       } catch { setErrorMsg("Could not save the gallery image. Please try again."); }
                       finally {
+                        galleryPending.current = false;
                         setUploadingGallery(false);
                       }
                     }} accessibilityLabel="Add gallery image">
@@ -480,14 +556,14 @@ export default function ManageFurniture() {
               ) : null}
 
               {errorMsg ? (
-                <Text style={styles.errorText}>{errorMsg}</Text>
+                <Text accessibilityRole="alert" style={styles.errorText}>{errorMsg}</Text>
               ) : null}
 
               <View style={styles.modalButtons}>
-                <PressScale style={styles.cancelBtn} onPress={() => setModalVisible(false)} accessibilityLabel="Cancel">
+                <PressScale style={styles.cancelBtn} disabled={saving || uploading || uploadingGallery} onPress={requestCloseForm} accessibilityLabel="Cancel">
                   <Text style={styles.cancelBtnText}>CANCEL</Text>
                 </PressScale>
-                <PressScale style={styles.saveBtn} onPress={handleSave} disabled={saving} accessibilityLabel="Save furniture">
+                <PressScale style={styles.saveBtn} onPress={handleSave} disabled={saving || uploading || uploadingGallery} accessibilityLabel="Save furniture">
                   <Text style={styles.saveBtnText}>{saving ? "SAVING..." : "SAVE"}</Text>
                 </PressScale>
               </View>
@@ -496,6 +572,7 @@ export default function ManageFurniture() {
           </View>
         </View>
       </Modal>
+      <ConfirmModal visible={discardOpen} title="Discard unsaved changes?" message="Your unsaved fields will be discarded. Gallery changes already saved will remain." confirmLabel="DISCARD" danger onConfirm={closeForm} onCancel={() => setDiscardOpen(false)} />
     </View>
   );
 }
@@ -507,7 +584,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
     flexDirection: "row",
     gap: 16,
-    paddingHorizontal: 2,
+    paddingHorizontal: 16,
+    paddingTop: 16,
   },
   headerPage: { flex: 1 },
   backButton: { alignItems: "center", backgroundColor: Design.color.surface, borderColor: Design.color.line, borderRadius: Design.radius.small, borderWidth: StyleSheet.hairlineWidth, height: 44, justifyContent: "center", width: 44 },
@@ -577,10 +655,8 @@ const styles = StyleSheet.create({
 
   scroll: { flex: 1 },
   grid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
     padding: 16,
-    gap: 14,
+    paddingBottom: 100,
   },
   gridWeb: {
     display: "grid" as any,
@@ -588,8 +664,11 @@ const styles = StyleSheet.create({
     gap: 16,
   },
 
+  gridItem: { width: "47.5%" },
+  gridItemNarrow: { width: "100%" },
+  gridItemWeb: { width: "100%", minWidth: 0 },
   card: {
-    width: "47.5%",
+    width: "100%",
     backgroundColor: Design.color.surface,
     borderRadius: Design.radius.card,
     overflow: "hidden",
@@ -793,6 +872,6 @@ const styles = StyleSheet.create({
   galleryGrid: { flexDirection: "row", flexWrap: "wrap", gap: 10, marginBottom: 16 },
   galleryThumb: { width: 72, height: 72, borderRadius: Design.radius.small, overflow: "hidden", position: "relative" },
   galleryThumbImage: { width: "100%", height: "100%" },
-  galleryDelete: { position: "absolute", top: 4, right: 4, width: 20, height: 20, borderRadius: Design.radius.small, backgroundColor: "rgba(33,26,22,0.7)", alignItems: "center", justifyContent: "center" },
+  galleryDelete: { position: "absolute", top: 6, right: 6, width: 32, height: 32, borderRadius: Design.radius.small, backgroundColor: "rgba(33,26,22,0.7)", alignItems: "center", justifyContent: "center" },
   galleryAddBtn: { width: 72, height: 72, borderRadius: Design.radius.small, borderWidth: 1, borderColor: Design.color.line, borderStyle: "dashed", alignItems: "center", justifyContent: "center", gap: 4 },
 });

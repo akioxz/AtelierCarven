@@ -24,7 +24,6 @@ export default function Payment() {
   const [cardCVV, setCardCVV] = useState("");
   const [cardName, setCardName] = useState("");
   const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
 
   const handleCardNumberChange = (text: string) => {
     const cleanText = text.replace(/[^0-9]/g, "");
@@ -64,7 +63,6 @@ export default function Payment() {
       setError("CVV must be 3 or 4 digits.");
       return;
     }
-    setLoading(true);
     router.push({
       pathname: "/(user)/checkout-review",
       params: { method: "card", total, fullName, address, city, mobile, notes },
@@ -187,10 +185,11 @@ export default function Payment() {
           </Reveal>
 
           <Reveal delay={160}>
-          <PrimaryButton label={loading ? "OPENING REVIEW..." : "CONTINUE TO REVIEW"} onPress={handleContinue} disabled={loading} style={styles.continueBtn} />
+          <PrimaryButton label="CONTINUE TO REVIEW" onPress={handleContinue}  style={styles.continueBtn} />
           </Reveal>
         </ContentFrame>
       </ScrollView>
+      <CustomerNavigation active="cart" placement="footer" />
     </View>
   );
 }
@@ -198,7 +197,7 @@ export default function Payment() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Design.color.canvas },
   scrollContainer: { flex: 1 },
-  scrollContent: { paddingBottom: 112 },
+  scrollContent: { paddingBottom: 24 },
   headerRow: { alignItems: "flex-start", flexDirection: "row", gap: 12, justifyContent: "space-between", marginBottom: 8 },
   headerCopy: { flex: 1 },
   backButton: { alignItems: "center", backgroundColor: Design.color.surface, borderColor: Design.color.line, borderRadius: Design.radius.small, borderWidth: StyleSheet.hairlineWidth, height: 44, justifyContent: "center", width: 44 },

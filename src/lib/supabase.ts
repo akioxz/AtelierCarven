@@ -27,7 +27,7 @@ const customStorage = {
       }
       window.localStorage.setItem(key, value);
     } else {
-      AsyncStorage.setItem(key, value);
+      return AsyncStorage.setItem(key, value);
     }
   },
   removeItem: (key: string) => {
@@ -37,7 +37,7 @@ const customStorage = {
       }
       window.localStorage.removeItem(key);
     } else {
-      AsyncStorage.removeItem(key);
+      return AsyncStorage.removeItem(key);
     }
   },
 };

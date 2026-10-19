@@ -1,7 +1,7 @@
 import { Feather } from "@expo/vector-icons";
 import * as Linking from "expo-linking";
 import { useRouter } from "expo-router";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import {
   KeyboardAvoidingView,
   Platform,
@@ -22,25 +22,30 @@ export default function ForgotPassword() {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
+  const pending = useRef(false);
   const [error, setError] = useState("");
   const [sent, setSent] = useState(false);
 
   const handleSubmit = async () => {
+    if (pending.current) return;
     if (!email.trim()) {
       setError("Enter the email address you use to sign in.");
       return;
     }
+    pending.current = true;
     setLoading(true);
+    try {
     setError("");
     const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
       redirectTo: Linking.createURL("reset-password"),
     });
-    setLoading(false);
     if (error) {
       setError(error.message);
       return;
     }
     setSent(true);
+    } catch { setError("Could not send the reset link. Check your connection and try again."); }
+    finally { pending.current = false; setLoading(false); }
   };
 
   return (

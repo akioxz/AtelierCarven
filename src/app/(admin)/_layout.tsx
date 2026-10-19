@@ -1,6 +1,7 @@
 import { Stack, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import { View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { Design } from "../../constants/design";
 import { supabase } from "../../lib/supabase";
 import { ShimmerBlock } from "../../components/skeleton";
@@ -50,5 +51,5 @@ export default function AdminLayout() {
     );
   }
 
-  return <Stack screenOptions={{ headerShown: false }} />;
+  return <SafeAreaView edges={["top", "left", "right"]} style={{ flex: 1, backgroundColor: Design.color.canvas }}><Stack screenOptions={{ headerShown: false }} /></SafeAreaView>;
 }

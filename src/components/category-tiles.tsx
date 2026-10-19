@@ -19,6 +19,8 @@ export function CategoryTiles({ categories, selected, onSelect }: { categories: 
           <PressScale
             key={category}
             accessibilityLabel={`Select category ${category}`}
+            accessibilityRole="tab"
+            accessibilityState={{ selected: active }}
             style={[styles.tile, active && styles.tileActive]}
             onPress={() => onSelect(category)}
           >

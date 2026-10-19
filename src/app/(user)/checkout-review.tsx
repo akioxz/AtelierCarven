@@ -8,6 +8,7 @@ import { PressScale, Reveal, staggerDelay } from "../../components/motion";
 import { ShimmerBlock } from "../../components/skeleton";
 import { Design } from "../../constants/design";
 import { goBackOr } from "../../lib/navigation";
+import { formatDelivery } from "../../lib/delivery";
 import { supabase } from "../../lib/supabase";
 import { fetchAllRows } from "../../lib/pagination";
 import { cartTotal, effectivePrice } from "../../lib/pricing";
@@ -71,6 +72,9 @@ export default function CheckoutReview() {
 
   const handleConfirm = async () => {
     if (confirming.current || loading || cartError || cartItems.length === 0) return;
+    let formattedAddress: string;
+    try { formattedAddress = formatDelivery({ fullName, mobile, city, address, notes }); }
+    catch { showAlert("Delivery details required", "Return to Delivery and add your name, mobile number, city and address. Do not use ' | ' in these fields."); return; }
     confirming.current = true;
     setProcessing(true);
     try {
@@ -79,7 +83,7 @@ export default function CheckoutReview() {
       if (authError) throw authError;
       if (!user) { showAlert("Sign in required", "You need to be signed in to place an order."); return; }
 
-      const formattedAddress = `Name: ${fullName || ""} | Mobile: ${mobile || ""} | City: ${city || ""} | Address: ${address || ""} | Notes: ${notes || ""}`;
+
 
       const { data: orderId, error } = await supabase.rpc("checkout_cart", {
         p_total: orderTotal,
@@ -196,6 +200,7 @@ export default function CheckoutReview() {
           </Reveal>
         </ContentFrame>
       </ScrollView>
+      <CustomerNavigation active="cart" placement="footer" />
 
       <Modal visible={alertVisible} animationType="fade" transparent onRequestClose={() => setAlertVisible(false)}>
         <View style={styles.alertOverlay}>
@@ -219,7 +224,7 @@ export default function CheckoutReview() {
 const styles = StyleSheet.create({
   screen: { backgroundColor: Design.color.canvas, flex: 1 },
   loading: { alignItems: "center", backgroundColor: Design.color.canvas, flex: 1, justifyContent: "center" },
-  scroll: { paddingBottom: 112 },
+  scroll: { paddingBottom: 24 },
   frame: { paddingHorizontal: 20, paddingTop: 30 },
   back: { alignItems: "center", backgroundColor: Design.color.surface, borderColor: Design.color.line, borderRadius: Design.radius.small, borderWidth: StyleSheet.hairlineWidth, height: 44, justifyContent: "center", width: 44 },
   section: { marginTop: 26 },

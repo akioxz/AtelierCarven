@@ -1,17 +1,17 @@
+import { Image } from "expo-image";
 import { Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Platform, ScrollView, StatusBar, StyleSheet, Text, useWindowDimensions, View } from "react-native";
-import Animated, { ZoomIn } from "react-native-reanimated";
 import { CategoryTiles } from "../../components/category-tiles";
-import { ContentFrame, CustomerNavigation, SectionHeading } from "../../components/app-ui";
+import { ContentFrame, CustomerNavigation, SectionHeading, RetryNotice, PageControls } from "../../components/app-ui";
 import { PressScale, Reveal, staggerDelay } from "../../components/motion";
 import { ProductCard } from "../../components/product-card";
 import { CardSkeleton } from "../../components/skeleton";
 import { Design, layout } from "../../constants/design";
 import { effectivePrice } from "../../lib/pricing";
 import { supabase } from "../../lib/supabase";
-import { fetchAllRows } from "../../lib/pagination";
+import { fetchAllRows, fetchPage } from "../../lib/pagination";
 
 const CATEGORIES = ["All", "Sofa", "Chair", "Table", "Bed"];
 
@@ -26,6 +26,7 @@ export default function Home() {
   const [cartCount, setCartCount] = useState(0);
   const [favorites, setFavorites] = useState<string[]>([]);
   const [actionError, setActionError] = useState("");
+  const [loadError, setLoadError] = useState("");
   const pendingFavorites = useRef(new Set<string>());
 
   const fetchProfile = useCallback(async () => {
@@ -34,21 +35,24 @@ export default function Home() {
     const { data } = await supabase.from("profiles").select("username").eq("id", user.id).single();
     setUsername(data?.username || "Guest");
   }, []);
+  const [page, setPage] = useState(0);
+  const [total, setTotal] = useState(0);
   const catalogRequest = useRef(0);
   const fetchFurniture = useCallback(async () => {
     const request = ++catalogRequest.current;
     setLoading(true);
+    setLoadError("");
     try {
-      const data = await fetchAllRows((from, to) => {
+      const { rows: data, total: count } = await fetchPage((from, to) => {
         let query = supabase.from("furniture").select("*", { count: "exact" }).eq("is_deleted", false);
         if (selectedCategory !== "All") query = query.eq("category", selectedCategory);
         return query.order("created_at", { ascending: false }).order("id").range(from, to);
-      });
+      }, page);
       data.forEach(effectivePrice);
-      if (request === catalogRequest.current) setFurniture(data.map(row => ({ ...row, salePrice: row.sale_price ?? null, reviewCount: row.review_count ?? null })));
-    } catch { if (request === catalogRequest.current) setActionError("Could not load the collection. Please try again."); }
+      if (request === catalogRequest.current) { setTotal(count); setFurniture(data.map(row => ({ ...row, salePrice: row.sale_price ?? null, reviewCount: row.review_count ?? null }))); }
+    } catch { if (request === catalogRequest.current) setLoadError("Could not load the collection. Please retry."); }
     finally { if (request === catalogRequest.current) setLoading(false); }
-  }, [selectedCategory]);
+  }, [selectedCategory, page]);
   const fetchCartCount = useCallback(async () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
@@ -104,12 +108,12 @@ export default function Home() {
         <ContentFrame style={styles.frame}>
           {actionError ? <Text accessibilityRole="alert" style={{ color: Design.color.danger, padding: 12 }}>{actionError}</Text> : null}
           <View style={[styles.hero, wide && styles.heroWide]}>
-            <View style={styles.heroCopy}>
+            <View style={[styles.heroCopy, wide && { flex: 1 }]}>
               <Reveal>
                 <Text style={styles.greeting}>Welcome back{username ? `, ${username}` : ""}.</Text>
               </Reveal>
               <Reveal delay={staggerDelay(1)}>
-                <Text style={styles.title}>Pieces with presence, chosen for everyday living.</Text>
+                <Text style={[styles.title, !wide && styles.titleMobile]}>Pieces with presence, chosen for everyday living.</Text>
               </Reveal>
               <Reveal delay={staggerDelay(2)}>
                 <Text style={styles.subtitle}>Discover the latest furniture in the Atelier Carvén collection.</Text>
@@ -126,25 +130,25 @@ export default function Home() {
                 </View>
               </Reveal>
             </View>
-            <View style={[styles.heroVisual, wide && styles.heroVisualWide]}>
+            {wide ? <View style={[styles.heroVisual, styles.heroVisualWide]}>
               <Reveal delay={staggerDelay(2)}>
                 <View style={styles.heroImage}>
-                  <Feather name="image" size={56} color={Design.color.inkMuted} />
+                  {furniture[0]?.image_url ? <Image source={{ uri: furniture[0].image_url }} style={{ width: "100%", height: "100%" }} contentFit="cover" /> : <Feather name="image" size={56} color={Design.color.inkMuted} />}
                 </View>
               </Reveal>
-              <Animated.View entering={ZoomIn.springify().damping(Design.motion.spring.damping).delay(staggerDelay(4))} style={[styles.callout, styles.calloutTop]}>
+              <Reveal delay={staggerDelay(4)} style={[styles.callout, styles.calloutTop]}>
                 <View style={styles.calloutDot} />
                 <View style={styles.calloutCopy}>
                   <Text style={styles.calloutText}>Every piece, numbered and catalogued.</Text>
                 </View>
-              </Animated.View>
-              <Animated.View entering={ZoomIn.springify().damping(Design.motion.spring.damping).delay(staggerDelay(5))} style={[styles.callout, styles.calloutBottom]}>
+              </Reveal>
+              <Reveal delay={staggerDelay(5)} style={[styles.callout, styles.calloutBottom]}>
                 <View style={styles.calloutCopy}>
                   <Text style={styles.calloutNumber}>{loading ? "—" : furniture.length}</Text>
                   <Text style={styles.calloutSub}>pieces in the ledger</Text>
                 </View>
-              </Animated.View>
-            </View>
+              </Reveal>
+            </View> : null}
           </View>
 
           <Reveal delay={staggerDelay(3)}>
@@ -156,7 +160,7 @@ export default function Home() {
           </Reveal>
 
           <Reveal delay={staggerDelay(1)}>
-            <CategoryTiles categories={CATEGORIES} selected={selectedCategory} onSelect={setSelectedCategory} />
+            <CategoryTiles categories={CATEGORIES} selected={selectedCategory} onSelect={value => { setPage(0); setSelectedCategory(value); }} />
           </Reveal>
 
           <View style={styles.collectionWrap}>
@@ -164,7 +168,7 @@ export default function Home() {
               overline={selectedCategory === "All" ? "The Collection" : selectedCategory}
               title={selectedCategory === "All" ? "Handpicked for you" : `${selectedCategory} pieces`}
             />
-            {!loading ? <Text style={styles.collectionCount}>{`${furniture.length} piece${furniture.length === 1 ? "" : "s"}`}</Text> : null}
+            {!loading ? <Text style={styles.collectionCount}>{`${total} piece${total === 1 ? "" : "s"}`}</Text> : null}
           </View>
           {loading ? (
             <View style={[styles.grid, wide && styles.gridWide]}>
@@ -174,7 +178,7 @@ export default function Home() {
                 </View>
               ))}
             </View>
-          ) : furniture.length === 0 ? (
+          ) : loadError ? <RetryNotice message={loadError} onRetry={() => void fetchFurniture()} /> : furniture.length === 0 ? (
             <Reveal>
               <View style={styles.empty}>
                 <Feather name="search" size={28} color={Design.color.accent} />
@@ -207,16 +211,19 @@ export default function Home() {
               ))}
             </View>
           )}
+        <PageControls page={page} total={total} loading={loading} onChange={setPage} />
         </ContentFrame>
       </ScrollView>
+      <CustomerNavigation active="home" placement="footer" />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  screen: { backgroundColor: Design.color.canvas, flex: 1 }, scroll: { paddingBottom: 112 }, frame: { paddingHorizontal: 20, paddingTop: 28 },
-  hero: { flexDirection: "column", gap: 22, marginBottom: 30 }, heroWide: { alignItems: "center", flexDirection: "row", gap: 56, marginTop: 26 }, heroCopy: { flex: 1, maxWidth: 680 },
+  screen: { backgroundColor: Design.color.canvas, flex: 1 }, scroll: { paddingBottom: 24 }, frame: { paddingHorizontal: 20, paddingTop: 28 },
+  hero: { flexDirection: "column", gap: 22, marginBottom: 30 }, heroWide: { alignItems: "center", flexDirection: "row", gap: 56, marginTop: 26 }, heroCopy: { maxWidth: 680 },
   greeting: { color: Design.color.inkSoft, fontFamily: Design.font.bodyMedium, fontSize: 13, marginBottom: 10 }, title: { color: Design.color.ink, fontFamily: Design.font.display, fontSize: 46, letterSpacing: -1.2, lineHeight: 50, maxWidth: 630, marginTop: 10 }, subtitle: { color: Design.color.inkSoft, fontFamily: Design.font.body, fontSize: 13, lineHeight: 21, marginTop: 11 },
+  titleMobile: { fontSize: 32, lineHeight: 36, letterSpacing: -0.6 },
   heroVisual: { marginTop: 6, position: "relative", width: "100%" }, heroVisualWide: { maxWidth: 540, width: "46%" }, heroImage: { alignItems: "center", aspectRatio: 1.5, backgroundColor: Design.color.surfaceMuted, borderRadius: Design.radius.sheet, justifyContent: "center", overflow: "hidden" },
   callout: { alignItems: "center", backgroundColor: "rgba(245,240,228,0.97)", borderColor: Design.color.line, borderRadius: Design.radius.card, borderWidth: StyleSheet.hairlineWidth, flexDirection: "row", gap: 10, paddingHorizontal: 15, paddingVertical: 12, position: "absolute", ...Design.shadow.card },
   calloutTop: { right: 16, top: -18 }, calloutBottom: { bottom: -18, left: 16 }, calloutDot: { backgroundColor: Design.color.accent, borderRadius: 4, height: 8, width: 8 }, calloutCopy: { flex: 1 }, calloutText: { color: Design.color.ink, fontFamily: Design.font.bodySemibold, fontSize: 12, lineHeight: 17 }, calloutNumber: { color: Design.color.ink, fontFamily: Design.font.display, fontSize: 22, letterSpacing: -0.4, lineHeight: 22 }, calloutSub: { color: Design.color.inkMuted, fontFamily: Design.font.mono, fontSize: 10, marginTop: 2 },

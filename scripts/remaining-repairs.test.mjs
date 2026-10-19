@@ -87,15 +87,15 @@ test('older home category response cannot replace newer data or loading state', 
   const first = deferred(), second = deferred();
   const request = { current: 0 }, furniture = [], loading = [];
   let calls = 0;
-  const context = { catalogRequest: request, selectedCategory: 'All',
-    fetchAllRows: () => ++calls === 1 ? first.promise : second.promise,
-    effectivePrice, setFurniture: rows => furniture.push(rows), setLoading: value => loading.push(value), setActionError() {},
+  const context = { catalogRequest: request, selectedCategory: 'All', page: 0, setTotal() {},
+    fetchPage: () => ++calls === 1 ? first.promise : second.promise,
+    effectivePrice, setFurniture: rows => furniture.push(rows), setLoading: value => loading.push(value), setActionError() {}, setLoadError() {},
   };
   const fetch = callback('src/app/(user)/home.tsx', 'fetchFurniture', context);
   const older = fetch(), newer = fetch();
-  second.resolve([{ id: 'new', price: 100 }]);
+  second.resolve({ rows: [{ id: 'new', price: 100 }], total: 1 });
   await newer;
-  first.resolve([{ id: 'old', price: 100 }]);
+  first.resolve({ rows: [{ id: 'old', price: 100 }], total: 1 });
   await older;
   assert.equal(furniture.length, 1);
   assert.equal(furniture[0][0].id, 'new');
@@ -107,7 +107,7 @@ test('older admin detail response cannot overwrite the selected order', async ()
   const written = [];
   let calls = 0;
   const context = { detailRequest: { current: 0 }, fetchAllRows: () => ++calls === 1 ? first.promise : second.promise,
-    setLoadingItems() {}, setOrderItems: rows => written.push(rows), setUpdateError() {},
+    setLoadingItems() {}, setItemsError() {}, setOrderItems: rows => written.push(rows), setUpdateError() {},
   };
   const fetch = callback('src/app/(admin)/manage-orders.tsx', 'fetchOrderItems', context);
   const older = fetch('old'), newer = fetch('new');
@@ -162,7 +162,7 @@ function furnitureHarness({ guideError = true, deletionError = false } = {}) {
   const errors = [], editing = [], closed = [], logs = [], calls = [];
   const state = { guideError };
   const context = {
-    mutationPending: { current: false }, guidesReady: true, editing: null, name: 'Chair', price: '100', category: 'Chair',
+    mutationPending: { current: false }, imagePending: { current: false }, galleryPending: { current: false }, setUploadingGallery: () => {}, guidesReady: true, editing: null, name: 'Chair', price: '100', category: 'Chair',
     CATEGORIES: ['Chair'], description: '', imageUrl: '', width: '20', height: '', depth: '', weight: '',
     setErrorMsg: value => errors.push(value), setSaving() {}, setEditing: value => { editing.push(value); context.editing = value; },
     setModalVisible: value => closed.push(value), fetchFurniture: async () => {}, fetchSizeGuides: async () => {},

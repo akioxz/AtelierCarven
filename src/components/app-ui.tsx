@@ -1,10 +1,10 @@
 import { Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { Platform, Pressable, StyleSheet, Text, useWindowDimensions, View, type TextStyle, type ViewStyle } from "react-native";
-import Animated, { ZoomIn } from "react-native-reanimated";
+import Animated, { FadeIn } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Design, layout } from "../constants/design";
-import { PressScale, Reveal, staggerDelay } from "./motion";
+import { PressScale } from "./motion";
 
 type NavKey = "home" | "favorites" | "placement" | "cart" | "profile" | "dashboard" | "furniture" | "orders" | "logs";
 
@@ -37,14 +37,8 @@ export function PageHeader({ title, subtitle, right, style }: { title: string; s
   return (
     <View style={[styles.pageHeader, style]}>
       <View style={styles.pageHeaderCopy}>
-        <Reveal>
-          <Text style={styles.pageTitle}>{title}</Text>
-        </Reveal>
-        {subtitle ? (
-          <Reveal delay={staggerDelay(1)}>
-            <Text style={styles.pageSubtitle}>{subtitle}</Text>
-          </Reveal>
-        ) : null}
+        <Text style={styles.pageTitle}>{title}</Text>
+        {subtitle ? <Text style={styles.pageSubtitle}>{subtitle}</Text> : null}
       </View>
       {right}
     </View>
@@ -54,12 +48,8 @@ export function PageHeader({ title, subtitle, right, style }: { title: string; s
 export function SectionHeading({ overline, title, style }: { overline: string; title: string; style?: ViewStyle }) {
   return (
     <View style={[styles.sectionHeading, style]}>
-      <Reveal>
-        <Text style={styles.overline}>{overline}</Text>
-      </Reveal>
-      <Reveal delay={staggerDelay(1)}>
-        <Text style={styles.sectionTitle}>{title}</Text>
-      </Reveal>
+      <Text style={styles.overline}>{overline}</Text>
+      <Text style={styles.sectionTitle}>{title}</Text>
     </View>
   );
 }
@@ -92,6 +82,18 @@ export function TextLink({ label, onPress, style }: { label: string; onPress: ()
   );
 }
 
+export function RetryNotice({ message, onRetry }: { message: string; onRetry: () => void }) {
+  return <View style={{ padding: 20, gap: 12 }}><Text accessibilityRole="alert" style={{ color: Design.color.danger, fontFamily: Design.font.body, lineHeight: 21 }}>{message}</Text><SecondaryButton label="Retry" onPress={onRetry} /></View>;
+}
+
+export function PageControls({ page, total, size = 24, loading = false, onChange }: { page: number; total: number; size?: number; loading?: boolean; onChange: (page: number) => void }) {
+  return <View style={{ padding: 12, gap: 12, flexDirection: "row", flexWrap: "wrap", alignItems: "center", justifyContent: "center" }}>
+    <SecondaryButton label="Previous" disabled={loading || page === 0} onPress={() => onChange(page - 1)} />
+    <Text accessibilityLiveRegion="polite" style={{ color: Design.color.inkMuted, fontFamily: Design.font.body, fontSize: 12 }}>{loading ? "Loading…" : total === 0 ? "0 items" : `${Math.min(page * size + 1, total)}–${Math.min((page + 1) * size, total)} of ${total}`}</Text>
+    <SecondaryButton label="Next" disabled={loading || (page + 1) * size >= total} onPress={() => onChange(page + 1)} />
+  </View>;
+}
+
 function Navigation({ active, items, admin = false }: { active: NavKey; items: typeof customerItems; admin?: boolean }) {
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -108,7 +110,7 @@ function Navigation({ active, items, admin = false }: { active: NavKey; items: t
           {items.map((item) => {
             const selected = item.key === active;
             return (
-              <Pressable key={item.key} onPress={() => go(item.route)} accessibilityRole="tab" accessibilityState={{ selected }} style={({ pressed }) => [styles.desktopNavItem, selected && styles.desktopNavItemSelected, pressed && styles.buttonPressed]}>
+              <Pressable key={item.key} onPress={() => { if (!selected) go(item.route); }} accessibilityRole="tab" accessibilityState={{ selected }} style={({ pressed }) => [styles.desktopNavItem, selected && styles.desktopNavItemSelected, pressed && styles.buttonPressed]}>
                 <Feather name={item.icon} size={15} color={selected ? Design.color.surface : Design.color.inkSoft} />
                 <Text style={[styles.desktopNavLabel, selected && styles.desktopNavLabelSelected]}>{item.label}</Text>
               </Pressable>
@@ -120,14 +122,14 @@ function Navigation({ active, items, admin = false }: { active: NavKey; items: t
   }
 
   return (
-    <View style={[styles.mobileNav, { paddingBottom: Math.max(insets.bottom, 10) }]}>
+    <View style={[styles.mobileNav, styles.mobileFlowNav, { paddingBottom: Math.max(insets.bottom, 10) }]}>
       {items.map((item) => {
         const selected = item.key === active;
         return (
-          <Pressable key={item.key} onPress={() => go(item.route)} accessibilityRole="tab" accessibilityState={{ selected }} style={({ pressed }) => [styles.mobileNavItem, pressed && styles.buttonPressed]} hitSlop={4}>
+          <Pressable key={item.key} onPress={() => { if (!selected) go(item.route); }} accessibilityRole="tab" accessibilityState={{ selected }} style={({ pressed }) => [styles.mobileNavItem, pressed && styles.buttonPressed]} hitSlop={4}>
             <Feather name={item.icon} size={19} color={selected ? Design.color.ink : Design.color.inkMuted} />
             <Text style={[styles.mobileNavLabel, selected && styles.mobileNavLabelSelected]}>{item.label}</Text>
-            {selected ? <Animated.View entering={ZoomIn.springify().damping(Design.motion.spring.damping)} style={styles.activeDot} /> : null}
+            {selected ? <Animated.View entering={FadeIn.duration(100)} style={styles.activeDot} /> : null}
           </Pressable>
         );
       })}
@@ -163,11 +165,17 @@ export function StepIndicator({ currentStep }: { currentStep: 1 | 2 | 3 }) {
   );
 }
 
-export function CustomerNavigation({ active }: { active: Extract<NavKey, "home" | "favorites" | "placement" | "cart" | "profile"> }) {
+export function CustomerNavigation({ active, placement = "header" }: { active: Extract<NavKey, "home" | "favorites" | "placement" | "cart" | "profile">; placement?: "header" | "footer" }) {
+  const { width } = useWindowDimensions();
+  const desktop = Platform.OS === "web" && width >= layout.desktopBreakpoint;
+  if ((placement === "header") !== desktop) return null;
   return <Navigation active={active} items={customerItems} />;
 }
 
-export function AdminNavigation({ active }: { active: Extract<NavKey, "dashboard" | "furniture" | "orders" | "logs" | "profile"> }) {
+export function AdminNavigation({ active, placement = "header" }: { active: Extract<NavKey, "dashboard" | "furniture" | "orders" | "logs" | "profile">; placement?: "header" | "footer" }) {
+  const { width } = useWindowDimensions();
+  const desktop = Platform.OS === "web" && width >= layout.desktopBreakpoint;
+  if ((placement === "header") !== desktop) return null;
   return <Navigation active={active} items={adminItems} admin />;
 }
 
@@ -185,7 +193,7 @@ const styles = StyleSheet.create({
   overline: { color: Design.color.accent, fontFamily: Design.font.monoMedium, fontSize: 10, letterSpacing: 2.2, textTransform: "uppercase" },
   overlineMuted: { color: Design.color.inkSoft },
   pageHeader: { alignItems: "flex-start", flexDirection: "row", gap: Design.space.md, justifyContent: "space-between", marginBottom: Design.space.xl },
-  pageHeaderCopy: { flex: 1 },
+  pageHeaderCopy: { flex: 1, minWidth: 0 },
   pageTitle: { color: Design.color.ink, fontFamily: Design.font.display, fontSize: 40, letterSpacing: -1.2, lineHeight: 41 },
   sectionHeading: { gap: 8, marginBottom: Design.space.lg },
   sectionTitle: { color: Design.color.ink, fontFamily: Design.font.display, fontSize: 28, letterSpacing: -0.9, lineHeight: 30 },
@@ -206,6 +214,7 @@ const styles = StyleSheet.create({
   desktopNavLabel: { color: Design.color.inkSoft, fontFamily: Design.font.bodyMedium, fontSize: 12 },
   desktopNavLabelSelected: { color: Design.color.surface },
   mobileNav: { alignItems: "flex-start", backgroundColor: Design.color.surface, borderTopColor: Design.color.line, borderTopWidth: StyleSheet.hairlineWidth, bottom: 0, flexDirection: "row", justifyContent: "space-around", left: 0, paddingTop: 10, position: "absolute", right: 0 },
+  mobileFlowNav: { position: "relative", flexShrink: 0 },
   mobileNavItem: { alignItems: "center", flex: 1, gap: 4, minHeight: 46 },
   mobileNavLabel: { color: Design.color.inkMuted, fontFamily: Design.font.bodyMedium, fontSize: 10 },
   mobileNavLabelSelected: { color: Design.color.ink },

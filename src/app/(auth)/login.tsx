@@ -1,6 +1,6 @@
 import { Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import {
   KeyboardAvoidingView,
   Platform,
@@ -23,16 +23,20 @@ export default function Login() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const pending = useRef(false);
   const [error, setError] = useState("");
   const { width } = useWindowDimensions();
   const isWeb = Platform.OS === "web" && width >= layout.desktopBreakpoint;
 
   const handleLogin = async () => {
+    if (pending.current) return;
     if (!email || !password) {
       setError("Please fill in all fields.");
       return;
     }
+    pending.current = true;
     setLoading(true);
+    try {
     setError("");
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
@@ -40,25 +44,26 @@ export default function Login() {
     });
 
     if (error) {
-      setLoading(false);
       setError(error.message);
       return;
     }
 
-    const { data: profile } = await supabase
+    const { data: profile, error: profileError } = await supabase
       .from("profiles")
       .select("role")
       .eq("id", data.user?.id)
       .single();
 
-    setLoading(false);
 
+    if (profileError || !profile) throw new Error("Profile unavailable");
     const role = profile?.role || data.user?.user_metadata?.role;
     if (role === "admin") {
       router.replace("/(admin)/dashboard");
     } else {
       router.replace("/(user)/home");
     }
+    } catch { setError("Could not sign in. Check your connection and try again."); }
+    finally { pending.current = false; setLoading(false); }
   };
 
   return (
