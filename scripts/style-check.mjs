@@ -1,6 +1,11 @@
+import { readFileSync } from "node:fs";
 import { chromium } from "playwright";
+import { createQaSandbox } from "./qa-sandbox.mjs";
 
-const BASE = process.env.BASE_URL || "http://localhost:8721";
+const displayFamily = readFileSync(new URL("../src/constants/design.ts", import.meta.url), "utf8").match(/display:\s*"([^"]+)"/)?.[1];
+if (!displayFamily) throw new Error("Theme display font could not be resolved");
+const sandbox = await createQaSandbox();
+const BASE = sandbox.base;
 
 let failures = 0;
 const expect = (label, cond) => {
@@ -8,12 +13,17 @@ const expect = (label, cond) => {
   else { failures++; console.log(`FAIL ${label}`); }
 };
 
-const browser = await chromium.launch({ channel: "msedge", headless: true });
+let browser;
 
 try {
-  const email = `style.qa.${Date.now()}@example.com`;
-  const password = "CarvenQA123!";
+  browser = await chromium.launch({ channel: "msedge", headless: true });
+  const { email, password } = sandbox;
   const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+  // Fail closed if the app was accidentally built with a remote backend.
+  await ctx.route("**/*", async route => {
+    if (!sandbox.allowRequest(route.request().url())) { await route.abort("blockedbyclient"); return; }
+    await route.continue();
+  });
   await ctx.addInitScript(() => {
     window.__leaf = (t) => {
       const n = [...document.querySelectorAll("div,span")].filter((x) => (x.textContent || "").trim() === t && x.children.length === 0);
@@ -44,16 +54,12 @@ try {
   expect("EST. 2026 overline is IBM Plex Mono", !!(ob.establishedFont || "").toLowerCase().match(/plex ?mono/));
   expect("EST. 2026 overline letter-spaced", parseFloat(ob.establishedLetterSpacing) >= 1);
 
-  // Sign up -> home
+  // The local fixture creates a confirmed disposable account; never sign up remotely.
   await p.getByText("Sign in", { exact: true }).first().click();
   await p.waitForURL(/\/login$/, { timeout: 25000 });
-  await p.locator('[role="button"]:visible').filter({ hasText: "Create an account" }).first().click();
-  await p.waitForURL(/\/signup$/, { timeout: 25000 });
-  await p.locator('input[placeholder="Your name"]:visible').fill("Style QA");
   await p.locator('input[placeholder="your@email.com"]:visible').fill(email);
   await p.locator('input[placeholder="Min. 8 characters"]:visible').fill(password);
-  await p.locator('input[placeholder="Re-enter password"]:visible').fill(password);
-  await p.locator('[role="button"]:visible').filter({ hasText: "Create account" }).first().click();
+  await p.getByRole("button", { name: "Sign in", exact: true }).click();
   await p.waitForURL(/\/home$/, { timeout: 25000 });
   await p.waitForTimeout(1800);
 
@@ -83,19 +89,11 @@ try {
   expect("search bar surface bg", home.searchBg === "rgb(245, 240, 228)");
   expect("ledger count callout is a number", /^\d+$/.test(String(home.ledgerValue || "").trim()));
   expect("ledger sub is IBM Plex Mono", !!(home.ledgerFont || "").toLowerCase().match(/plex ?mono/));
-  expect("hero title Archivo", (home.titleFont || "").toLowerCase().includes("archivo"));
+  expect("hero title uses configured display family", (home.titleFont || "").replace(/[^a-z0-9]/gi, "").toLowerCase().includes(displayFamily.split("_")[0].toLowerCase()));
 
-  // Product page
-  for (let attempt = 0; attempt < 3; attempt++) {
-    await p.locator('[aria-label^="View "]:not([aria-label="View saved furniture"]):not([aria-label="View cart"])').first().click().catch(() => {});
-    try {
-      await p.getByText(/ATELIER №/).first().waitFor({ state: "visible", timeout: 15000 });
-      break;
-    } catch {
-      await p.waitForTimeout(1200);
-    }
-  }
-  await p.waitForTimeout(1200);
+  // Exercise only the furniture created by this run.
+  await p.goto(`${BASE}/product?id=${sandbox.productId}`, { waitUntil: "domcontentloaded" });
+  await p.getByText(/ATELIER №/).first().waitFor({ state: "visible", timeout: 15000 });
   const prod = await p.evaluate(() => {
     const serialNode = [...document.querySelectorAll("div,span")].find((n) => /^ATELIER № /.test((n.textContent || "").trim()) && n.children.length === 0);
     const serial = serialNode ? window.__leaf(serialNode.textContent.trim()) : null;
@@ -133,7 +131,7 @@ try {
       hasPaymentCta: !!document.body.innerText.match(/CONTINUE TO PAYMENT/),
     };
   });
-  expect("checkout total Archivo display", (ck.totalFont || "").toLowerCase().includes("archivo"));
+  expect("checkout total IBM Plex Sans display", !!(ck.totalFont || "").toLowerCase().match(/plex ?sans/));
   expect("checkout CONTINUE TO PAYMENT present", ck.hasPaymentCta);
   if (!ck.hasPaymentCta) console.log("CHECKOUT DEBUG:", JSON.stringify(ck, null, 2).slice(0, 1200));
 
@@ -151,19 +149,23 @@ try {
   await p.waitForTimeout(600);
 
   await p.locator('[role="button"]:visible').filter({ hasText: "CONTINUE TO PAYMENT" }).first().click();
-  await p.waitForTimeout(3000);
-  if (!p.url().includes("/payment")) {
-    const dump = await p.evaluate(() => ({ url: location.href, body: document.body.innerText.slice(0, 700) }));
-    console.log("PAYMENT NAV FAIL ->", JSON.stringify(dump, null, 2));
-  }
-  await p.waitForURL((u) => u.pathname.endsWith("/payment"), { timeout: 15000 });
+  await p.waitForURL((u) => u.pathname.endsWith("/checkout-payment"), { timeout: 15000 });
   await p.waitForTimeout(1200);
   const pay = await p.evaluate(() => ({
-    hasCodSummary: !!document.body.innerText.match(/CASH ON DELIVERY/),
-    hasConfirmOrder: !!document.body.innerText.match(/CONFIRM ORDER/),
+    hasCodMethod: !!document.body.innerText.match(/Cash on delivery/),
+    hasContinueToReview: !!document.body.innerText.match(/CONTINUE TO REVIEW/),
   }));
-  expect("payment COD summary present", pay.hasCodSummary);
-  expect("payment CONFIRM ORDER present", pay.hasConfirmOrder);
+  expect("payment step shows COD method", pay.hasCodMethod);
+  expect("payment step CONTINUE TO REVIEW present", pay.hasContinueToReview);
+
+  await p.locator('[role="button"]:visible').filter({ hasText: "CONTINUE TO REVIEW" }).first().click();
+  await p.waitForURL((u) => u.pathname.endsWith("/checkout-review"), { timeout: 15000 });
+  await p.waitForTimeout(1200);
+  const rev = await p.evaluate(() => ({
+    hasConfirmOrder: !!document.body.innerText.match(/CONFIRM ORDER/),
+    hasMethodLabel: !!document.body.innerText.match(/METHOD/),
+  }));
+  expect("review step CONFIRM ORDER present", rev.hasConfirmOrder);
 
   await p.locator('[role="button"]:visible').filter({ hasText: "CONFIRM ORDER" }).first().click();
   await p.waitForURL((u) => u.pathname.endsWith("/order-success"), { timeout: 25000 });
@@ -182,5 +184,6 @@ try {
   console.log(failures === 0 ? "\nALL STYLE CHECKS PASS" : `\n${failures} FAILURES`);
   process.exitCode = failures === 0 ? 0 : 1;
 } finally {
-  await browser.close();
+  try { await browser?.close(); }
+  finally { await sandbox.cleanup(); }
 }

@@ -1,6 +1,7 @@
 import { AntDesign, Feather } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import { StyleSheet, Text, View } from "react-native";
+import { effectivePrice } from "../lib/pricing";
 import { Design } from "../constants/design";
 import { PressScale, Reveal, staggerDelay } from "./motion";
 
@@ -73,7 +74,7 @@ export function ProductCard({
         <View style={styles.metaOuter}>
           <View style={styles.metaLeft}>
             {item.price != null && item.price !== "" ? (
-              <Text style={styles.price}>₱{Number(item.price).toLocaleString()}</Text>
+              <Text style={styles.price}>₱{effectivePrice(item).toLocaleString()}</Text>
             ) : null}
             {item.rating != null ? (
               <View style={styles.rating}>

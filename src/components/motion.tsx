@@ -48,6 +48,7 @@ export function PressScale({
   onPressIn,
   onPressOut,
   style,
+  contentStyle,
   accessibilityRole = "button",
   accessibilityLabel,
   accessibilityState,
@@ -59,6 +60,7 @@ export function PressScale({
   onPressIn?: () => void;
   onPressOut?: () => void;
   style?: StyleProp<ViewStyle>;
+  contentStyle?: StyleProp<ViewStyle>;
   accessibilityRole?: "button" | "tab" | "link" | "radio";
   accessibilityLabel?: string;
   accessibilityState?: { selected?: boolean; checked?: boolean; disabled?: boolean };
@@ -103,7 +105,7 @@ export function PressScale({
         onPressOut?.();
       }}
     >
-      <Animated.View style={animatedStyle}>{children}</Animated.View>
+      <Animated.View style={[animatedStyle, contentStyle]}>{children}</Animated.View>
     </Pressable>
   );
 }

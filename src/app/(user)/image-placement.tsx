@@ -219,10 +219,9 @@ export default function ImagePlacement() {
               </View>
             ) : (
               <View style={styles.previewPlaceholder}>
-                <Feather name="image" size={48} color={Design.color.line} />
-                <Text style={styles.previewTitle}>No image selected</Text>
+                <Text style={styles.previewTitle}>No room image yet.</Text>
                 <Text style={styles.previewSubtext}>
-                  Upload a photo of your room to visualize furniture placement
+                  Upload a photo of your space to place furniture against it.
                 </Text>
               </View>
             )}
@@ -355,6 +354,7 @@ export default function ImagePlacement() {
               <View style={styles.extrasRow}>
                 <PressScale
                   style={[styles.flipButton, isFlipped && styles.flipButtonActive]}
+                  contentStyle={styles.captureContent}
                   onPress={toggleFlip}
                   accessibilityLabel="Flip furniture"
                 >
@@ -363,7 +363,7 @@ export default function ImagePlacement() {
                     FLIP
                   </Text>
                 </PressScale>
-                <PressScale style={styles.deleteButton} onPress={handleRemoveFurniture} accessibilityLabel="Remove furniture">
+                <PressScale style={styles.deleteButton} contentStyle={styles.captureContent} onPress={handleRemoveFurniture} accessibilityLabel="Remove furniture">
                   <Feather name="trash-2" size={14} color={Design.color.surface} />
                   <Text style={styles.deleteButtonText}>REMOVE</Text>
                 </PressScale>
@@ -407,11 +407,11 @@ export default function ImagePlacement() {
           <Text style={styles.sectionLabel}>
             {selectedImage ? "CHANGE ROOM IMAGE" : "SELECT ROOM IMAGE"}
           </Text>
-          <PressScale style={styles.primaryButton} onPress={pickImage} accessibilityLabel="Choose from gallery">
+          <PressScale style={styles.primaryButton} contentStyle={styles.captureContent} onPress={pickImage} accessibilityLabel="Choose from gallery">
             <Feather name="image" size={16} color={Design.color.surface} />
             <Text style={styles.primaryButtonText}>CHOOSE FROM GALLERY</Text>
           </PressScale>
-          <PressScale style={styles.secondaryButton} onPress={takePhoto} accessibilityLabel="Take a photo">
+          <PressScale style={styles.secondaryButton} contentStyle={styles.captureContent} onPress={takePhoto} accessibilityLabel="Take a photo">
             <Feather name="camera" size={16} color={Design.color.inkSoft} />
             <Text style={styles.secondaryButtonText}>TAKE A PHOTO</Text>
           </PressScale>
@@ -460,9 +460,9 @@ const styles = StyleSheet.create({
 
   previewContainer: { width: "100%", height: 320, backgroundColor: Design.color.surfaceMuted, borderRadius: Design.radius.card, overflow: "hidden", borderWidth: 0.5, borderColor: Design.color.line },
   previewImage: { width: "100%", height: "100%" },
-  previewPlaceholder: { flex: 1, justifyContent: "center", alignItems: "center", padding: 24, gap: 12 },
-  previewTitle: { fontSize: 15, fontWeight: "500", color: Design.color.ink },
-  previewSubtext: { fontSize: 12, color: Design.color.inkMuted, textAlign: "center", lineHeight: 20 },
+  previewPlaceholder: { flex: 1, justifyContent: "center", alignItems: "center", padding: 24, gap: 8 },
+  previewTitle: { fontFamily: Design.font.display, fontSize: 24, letterSpacing: -0.4, color: Design.color.ink },
+  previewSubtext: { fontSize: 12, color: Design.color.inkMuted, textAlign: "center", lineHeight: 20, maxWidth: 280 },
 
   canvasContainer: { flex: 1, position: "relative" },
   furnitureOverlay: { position: "absolute", width: 140, height: 140, justifyContent: "center", alignItems: "center", top: 90, left: 100, zIndex: 10 },
@@ -498,10 +498,10 @@ const styles = StyleSheet.create({
   quickRotationText: { fontSize: 10, color: Design.color.inkSoft, fontWeight: "500" },
   controlDivider: { height: 0.5, backgroundColor: Design.color.line, marginVertical: 4 },
   extrasRow: { flexDirection: "row", gap: 12, marginTop: 12 },
-  flipButton: { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, borderWidth: 1, borderColor: Design.color.accent, borderRadius: Design.radius.small, paddingVertical: 12 },
+  flipButton: { flex: 1, borderWidth: 1, borderColor: Design.color.accent, borderRadius: Design.radius.small, paddingVertical: 12 },
   flipButtonActive: { backgroundColor: Design.color.inkSoft, borderColor: Design.color.inkSoft },
   flipButtonText: { fontSize: 10, letterSpacing: 1, fontWeight: "600" },
-  deleteButton: { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, backgroundColor: Design.color.danger, borderRadius: Design.radius.small, paddingVertical: 12 },
+  deleteButton: { flex: 1, backgroundColor: Design.color.danger, borderRadius: Design.radius.small, paddingVertical: 12 },
   deleteButtonText: { color: Design.color.surface, fontSize: 10, letterSpacing: 1, fontWeight: "600" },
 
   stepCard: { backgroundColor: Design.color.surfaceMuted, borderRadius: Design.radius.card, padding: 16, borderWidth: 0.5, borderColor: Design.color.line },
@@ -513,9 +513,10 @@ const styles = StyleSheet.create({
   stepSubtext: { fontSize: 12, color: Design.color.inkMuted },
   stepDivider: { height: 0.5, backgroundColor: Design.color.line, marginVertical: 12 },
 
-  primaryButton: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, backgroundColor: Design.color.ink, borderRadius: Design.radius.small, padding: 16, marginBottom: 12 },
+  primaryButton: { backgroundColor: Design.color.ink, borderRadius: Design.radius.small, padding: 16, marginBottom: 12 },
+  captureContent: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8 },
   primaryButtonText: { color: Design.color.surface, fontSize: 11, letterSpacing: 2 },
-  secondaryButton: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, borderWidth: 1, borderColor: Design.color.accent, borderRadius: Design.radius.small, padding: 16, marginBottom: 12 },
+  secondaryButton: { borderWidth: 1, borderColor: Design.color.accent, borderRadius: Design.radius.small, padding: 16, marginBottom: 12 },
   secondaryButtonText: { color: Design.color.inkSoft, fontSize: 11, letterSpacing: 2 },
   clearButton: { borderWidth: 1, borderColor: Design.color.line, borderRadius: Design.radius.small, padding: 16, alignItems: "center" },
   clearButtonText: { color: Design.color.inkMuted, fontSize: 11, letterSpacing: 2 },

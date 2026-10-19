@@ -1,5 +1,5 @@
 import { Feather } from "@expo/vector-icons";
-import { useRouter, useLocalSearchParams } from "expo-router";
+import { useRouter } from "expo-router";
 import { useState } from "react";
 import {
     KeyboardAvoidingView,
@@ -20,7 +20,6 @@ import { ContentFrame } from "../../components/app-ui";
 
 export default function Signup() {
   const router = useRouter();
-  const { styles: stylesParam } = useLocalSearchParams<{ styles?: string }>();
   const { width } = useWindowDimensions();
   const isWeb = Platform.OS === "web" && width >= layout.desktopBreakpoint;
   const [username, setUsername] = useState("");
@@ -54,7 +53,6 @@ export default function Signup() {
         data: {
           username,
           role: "user",
-          style_preferences: stylesParam ? stylesParam.split(",") : [],
         },
       },
     });
@@ -102,7 +100,7 @@ export default function Signup() {
           <Reveal>
           <Text style={styles.title}>Create account.</Text>
           <Text style={styles.subtitle}>
-            Join us and discover luxury furniture.
+            Join us and discover furniture worth keeping.
           </Text>
 
           {error ? (

@@ -16,6 +16,7 @@ import { ContentFrame, TextLink } from "../../components/app-ui";
 import { PressScale, Reveal } from "../../components/motion";
 import { Design } from "../../constants/design";
 import { supabase } from "../../lib/supabase";
+import { parseRecoveryUrl } from "../../lib/recovery";
 
 export default function ResetPassword() {
   const router = useRouter();
@@ -28,47 +29,46 @@ export default function ResetPassword() {
   const [done, setDone] = useState(false);
 
   useEffect(() => {
-    if (!url || ready) return;
-    const currentUrl = url;
+    if (!url) return;
     let cancelled = false;
-    async function resolveLink() {
-      const { queryParams } = Linking.parse(currentUrl);
-      const accessToken = queryParams?.access_token;
-      const refreshToken = queryParams?.refresh_token;
-      if (typeof accessToken === "string" && typeof refreshToken === "string") {
-        const { error: sessionError } = await supabase.auth.setSession({ access_token: accessToken, refresh_token: refreshToken });
-        return sessionError ? "This reset link is invalid or has expired. Request a new one." : "";
-      }
-      return "This reset link is missing its verification tokens. Request a new one.";
-    }
-    async function prepare() {
-      const message = await resolveLink();
+    void (async () => {
+      await Promise.resolve();
       if (cancelled) return;
-      setReady(true);
-      if (message) setError(message);
-    }
-    void prepare();
+      setReady(false);
+      setError("");
+      try {
+        const proof = parseRecoveryUrl(url);
+        const result = proof.kind === "tokens"
+          ? await supabase.auth.setSession({ access_token: proof.access_token, refresh_token: proof.refresh_token })
+          : proof.kind === "code"
+            ? await supabase.auth.exchangeCodeForSession(proof.code)
+            : await supabase.auth.verifyOtp({ token_hash: proof.token_hash, type: "recovery" });
+        if (result.error || !result.data.session) throw new Error("This reset link is invalid or has expired.");
+        if (cancelled) return;
+        if (Platform.OS === "web") window.history.replaceState(null, "", window.location.pathname);
+        setReady(true);
+      } catch {
+        if (!cancelled) setError("This reset link is invalid or has expired. Request a new one.");
+      }
+    })();
     return () => { cancelled = true; };
-  }, [url, ready]);
+  }, [url]);
 
   const handleSubmit = async () => {
-    if (!password || password.length < 6) {
-      setError("Your new password must be at least 6 characters.");
-      return;
-    }
-    if (password !== confirm) {
-      setError("The passwords do not match.");
-      return;
-    }
+    if (!ready || loading) return;
+    if (!password || password.length < 8) { setError("Your new password must be at least 8 characters."); return; }
+    if (password !== confirm) { setError("The passwords do not match."); return; }
     setLoading(true);
     setError("");
-    const { error: updateError } = await supabase.auth.updateUser({ password });
-    setLoading(false);
-    if (updateError) {
-      setError(updateError.message);
-      return;
+    try {
+      const { error: updateError } = await supabase.auth.updateUser({ password });
+      if (updateError) throw updateError;
+      setDone(true);
+    } catch {
+      setError("Could not update your password. Please try again or request a new reset link.");
+    } finally {
+      setLoading(false);
     }
-    setDone(true);
   };
 
   return (
@@ -101,7 +101,7 @@ export default function ResetPassword() {
                   <Reveal>
                   <Text style={styles.title}>Choose a new password.</Text>
                   <Text style={styles.subtitle}>
-                    Make it at least 6 characters long, and avoid reusing it elsewhere.
+                    Make it at least 8 characters long, and avoid reusing it elsewhere.
                   </Text>
                   {error ? (
                     <View style={styles.errorBox}>

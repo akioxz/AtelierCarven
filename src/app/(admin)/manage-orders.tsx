@@ -1,6 +1,6 @@
 import { Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   FlatList,
   Modal,
@@ -12,6 +12,7 @@ import {
 } from "react-native";
 import { Design } from "../../constants/design";
 import { supabase } from "../../lib/supabase";
+import { fetchAllRows } from "../../lib/pagination";
 import { goBackOr } from "../../lib/navigation";
 import { AdminNavigation, ContentFrame, PageHeader } from "../../components/app-ui";
 import { PressScale, Reveal } from "../../components/motion";
@@ -48,56 +49,46 @@ export default function ManageOrders() {
   const [confirmUpdateOpen, setConfirmUpdateOpen] = useState(false);
   const [updateError, setUpdateError] = useState("");
 
+  const listRequest = useRef(0);
+  const detailRequest = useRef(0);
   const fetchOrders = useCallback(async () => {
-    let query = supabase
-      .from("orders")
-      .select("*, profiles(*)")
-      .order("created_at", { ascending: false });
-
-    if (selectedStatus !== "All") {
-      query = query.eq("status", selectedStatus);
-    }
-
-    const { data, error } = await query;
-    if (error) {
-      console.error("Error fetching orders:", error);
-    } else {
-      setOrders(data || []);
-    }
-    setLoading(false);
-    setRefreshing(false);
+    const request = ++listRequest.current;
+    setLoading(true);
+    try {
+      const data = await fetchAllRows((from, to) => {
+        let query = supabase.from("orders").select("*, profiles(*)", { count: "exact" });
+        if (selectedStatus !== "All") query = query.eq("status", selectedStatus);
+        return query.order("created_at", { ascending: false }).order("id").range(from, to);
+      });
+      if (request === listRequest.current) setOrders(data);
+    } catch { if (request === listRequest.current) setUpdateError("Could not load orders. Please refresh."); }
+    finally { if (request === listRequest.current) { setLoading(false); setRefreshing(false); } }
   }, [selectedStatus]);
 
   useEffect(() => {
-    void (async () => { await fetchOrders(); })();
+    let cancelled = false;
+    const tracker = listRequest;
+    void Promise.resolve().then(() => { if (!cancelled) return fetchOrders(); });
+    return () => { cancelled = true; tracker.current++; };
   }, [fetchOrders]);
-
-  const handleRefresh = () => {
-    setRefreshing(true);
-    fetchOrders();
-  };
-
+  useEffect(() => { const tracker = detailRequest; return () => { tracker.current++; }; }, []);
+  const handleRefresh = () => { setRefreshing(true); void fetchOrders(); };
   const fetchOrderItems = async (orderId: string) => {
+    const request = ++detailRequest.current;
     setLoadingItems(true);
-    const { data, error } = await supabase
-      .from("order_items")
-      .select("*, furniture(*)")
-      .eq("order_id", orderId);
-
-    if (error) {
-      console.error("Error fetching order items:", error);
-      setOrderItems([]);
-    } else {
-      setOrderItems(data || []);
-    }
-    setLoadingItems(false);
+    setOrderItems([]);
+    try {
+      const data = await fetchAllRows((from, to) => supabase.from("order_items").select("*, furniture(*)", { count: "exact" }).eq("order_id", orderId).order("id").range(from, to));
+      if (request === detailRequest.current) setOrderItems(data);
+    } catch { if (request === detailRequest.current) setUpdateError("Could not load these order items. Reopen the order to retry."); }
+    finally { if (request === detailRequest.current) setLoadingItems(false); }
   };
-
+  const closeOrderDetails = () => { detailRequest.current++; setSelectedOrder(null); setOrderItems([]); };
   const openOrderDetails = (order: any) => {
     setSelectedOrder(order);
     setModalStatus(order.status);
     setUpdateError("");
-    fetchOrderItems(order.id);
+    void fetchOrderItems(order.id);
   };
 
   const logAdminAction = async (action: string, target: string) => {
@@ -131,7 +122,7 @@ export default function ManageOrders() {
       `Updated order status to ${modalStatus}`,
       `Order #${selectedOrder.id.substring(0, 8)} (${selectedOrder.profiles?.username || "Guest"})`
     );
-    setSelectedOrder(null);
+    closeOrderDetails();
     setConfirmUpdateOpen(false);
     fetchOrders();
     setUpdating(false);
@@ -206,6 +197,7 @@ export default function ManageOrders() {
     <View style={styles.container}>
       <StatusBar barStyle="dark-content" />
       <AdminNavigation active="orders" />
+      {updateError && !selectedOrder ? <Text accessibilityRole="alert" style={{ color: Design.color.danger, padding: 12 }}>{updateError}</Text> : null}
 
       {/* Header */}
       <ContentFrame>
@@ -273,7 +265,7 @@ export default function ManageOrders() {
       </ContentFrame>
 
       {/* Order Detail Modal */}
-      <Modal visible={selectedOrder !== null} animationType="slide" transparent onRequestClose={() => setSelectedOrder(null)}>
+      <Modal visible={selectedOrder !== null} animationType="slide" transparent onRequestClose={closeOrderDetails}>
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             {selectedOrder && (
@@ -283,7 +275,7 @@ export default function ManageOrders() {
                       <Text style={styles.modalTitle}>ORDER DETAILS</Text>
                       <Text style={styles.modalSub}>#{selectedOrder.id.substring(0, 8).toUpperCase()}</Text>
                     </View>
-                    <PressScale style={styles.closeBtn} onPress={() => setSelectedOrder(null)} accessibilityLabel="Close order details">
+                    <PressScale style={styles.closeBtn} onPress={closeOrderDetails} accessibilityLabel="Close order details">
                       <Feather name="x" size={18} color={Design.color.inkSoft} />
                     </PressScale>
                   </View>
@@ -382,7 +374,7 @@ export default function ManageOrders() {
 
                 {/* Modal Buttons */}
                 <View style={styles.modalButtons}>
-                  <PressScale style={styles.cancelBtn} onPress={() => setSelectedOrder(null)} accessibilityLabel="Cancel">
+                  <PressScale style={styles.cancelBtn} onPress={closeOrderDetails} accessibilityLabel="Cancel">
                     <Text style={styles.cancelBtnText}>CANCEL</Text>
                   </PressScale>
                   <PressScale
