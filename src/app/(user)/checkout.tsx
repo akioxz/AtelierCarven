@@ -116,6 +116,7 @@ export default function Checkout() {
           </Reveal>
         </ContentFrame>
       </ScrollView>
+      <CustomerNavigation active="cart" placement="footer" />
     </View>
   );
 }
@@ -132,7 +133,7 @@ function Field({ label, value, onChangeText, placeholder, keyboardType = "defaul
 const styles = StyleSheet.create({
   screen: { backgroundColor: Design.color.canvas, flex: 1 },
   loading: { alignItems: "center", backgroundColor: Design.color.canvas, flex: 1, justifyContent: "center" },
-  scroll: { paddingBottom: 112 },
+  scroll: { paddingBottom: 24 },
   frame: { paddingHorizontal: 20, paddingTop: 30 },
   back: { alignItems: "center", backgroundColor: Design.color.surface, borderColor: Design.color.line, borderRadius: Design.radius.small, borderWidth: StyleSheet.hairlineWidth, height: 44, justifyContent: "center", width: 44 },
   section: { marginTop: 26 },

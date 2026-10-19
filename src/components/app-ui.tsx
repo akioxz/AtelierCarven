@@ -114,7 +114,7 @@ function Navigation({ active, items, admin = false }: { active: NavKey; items: t
   }
 
   return (
-    <View style={[styles.mobileNav, admin && styles.mobileAdminNav, { paddingBottom: Math.max(insets.bottom, 10) }]}>
+    <View style={[styles.mobileNav, styles.mobileFlowNav, { paddingBottom: Math.max(insets.bottom, 10) }]}>
       {items.map((item) => {
         const selected = item.key === active;
         return (
@@ -157,7 +157,10 @@ export function StepIndicator({ currentStep }: { currentStep: 1 | 2 | 3 }) {
   );
 }
 
-export function CustomerNavigation({ active }: { active: Extract<NavKey, "home" | "favorites" | "placement" | "cart" | "profile"> }) {
+export function CustomerNavigation({ active, placement = "header" }: { active: Extract<NavKey, "home" | "favorites" | "placement" | "cart" | "profile">; placement?: "header" | "footer" }) {
+  const { width } = useWindowDimensions();
+  const desktop = Platform.OS === "web" && width >= layout.desktopBreakpoint;
+  if ((placement === "header") !== desktop) return null;
   return <Navigation active={active} items={customerItems} />;
 }
 
@@ -203,7 +206,7 @@ const styles = StyleSheet.create({
   desktopNavLabel: { color: Design.color.inkSoft, fontFamily: Design.font.bodyMedium, fontSize: 12 },
   desktopNavLabelSelected: { color: Design.color.surface },
   mobileNav: { alignItems: "flex-start", backgroundColor: Design.color.surface, borderTopColor: Design.color.line, borderTopWidth: StyleSheet.hairlineWidth, bottom: 0, flexDirection: "row", justifyContent: "space-around", left: 0, paddingTop: 10, position: "absolute", right: 0 },
-  mobileAdminNav: { position: "relative", flexShrink: 0 },
+  mobileFlowNav: { position: "relative", flexShrink: 0 },
   mobileNavItem: { alignItems: "center", flex: 1, gap: 4, minHeight: 46 },
   mobileNavLabel: { color: Design.color.inkMuted, fontFamily: Design.font.bodyMedium, fontSize: 10 },
   mobileNavLabelSelected: { color: Design.color.ink },

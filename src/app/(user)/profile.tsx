@@ -311,9 +311,10 @@ export default function UserProfile() {
           </PressScale>
         </View>
         </Reveal>
-        <View style={{ height: 120 }} />
+        <View style={{ height: 24 }} />
         </ContentFrame>
       </ScrollView>
+      <CustomerNavigation active="profile" placement="footer" />
 
       {/* Order Detail Modal */}
       <Modal visible={selectedOrder !== null} animationType="slide" transparent onRequestClose={() => setSelectedOrder(null)}>

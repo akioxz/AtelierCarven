@@ -191,6 +191,7 @@ export default function Payment() {
           </Reveal>
         </ContentFrame>
       </ScrollView>
+      <CustomerNavigation active="cart" placement="footer" />
     </View>
   );
 }
@@ -198,7 +199,7 @@ export default function Payment() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Design.color.canvas },
   scrollContainer: { flex: 1 },
-  scrollContent: { paddingBottom: 112 },
+  scrollContent: { paddingBottom: 24 },
   headerRow: { alignItems: "flex-start", flexDirection: "row", gap: 12, justifyContent: "space-between", marginBottom: 8 },
   headerCopy: { flex: 1 },
   backButton: { alignItems: "center", backgroundColor: Design.color.surface, borderColor: Design.color.line, borderRadius: Design.radius.small, borderWidth: StyleSheet.hairlineWidth, height: 44, justifyContent: "center", width: 44 },

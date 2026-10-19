@@ -89,7 +89,7 @@ test('older home category response cannot replace newer data or loading state', 
   let calls = 0;
   const context = { catalogRequest: request, selectedCategory: 'All',
     fetchAllRows: () => ++calls === 1 ? first.promise : second.promise,
-    effectivePrice, setFurniture: rows => furniture.push(rows), setLoading: value => loading.push(value), setActionError() {},
+    effectivePrice, setFurniture: rows => furniture.push(rows), setLoading: value => loading.push(value), setActionError() {}, setLoadError() {},
   };
   const fetch = callback('src/app/(user)/home.tsx', 'fetchFurniture', context);
   const older = fetch(), newer = fetch();

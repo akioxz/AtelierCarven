@@ -149,7 +149,7 @@ export default function ImagePlacement() {
       <ScrollView
         ref={scrollRef}
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: 100 }}
+        contentContainerStyle={{ paddingBottom: 24 }}
         scrollEnabled={!isDragging}
       >
         {/* Header */}
@@ -444,6 +444,7 @@ export default function ImagePlacement() {
         </View>
         </Reveal>
       </ScrollView>
+      <CustomerNavigation active="placement" placement="footer" />
 
 
     </View>

@@ -164,6 +164,7 @@ export default function Favorites() {
           />
         )}
       </ContentFrame>
+      <CustomerNavigation active="favorites" placement="footer" />
     </View>
   );
 }
@@ -175,7 +176,7 @@ const styles = StyleSheet.create({
   headerCopy: { flex: 1 },
   backButton: { alignItems: "center", backgroundColor: Design.color.surface, borderColor: Design.color.line, borderRadius: Design.radius.small, borderWidth: StyleSheet.hairlineWidth, height: 44, justifyContent: "center", width: 44 },
   grid: { flexDirection: "row", flexWrap: "wrap", gap: 14, marginTop: 8 },
-  list: { paddingBottom: 100 },
+  list: { paddingBottom: 24 },
   row: { justifyContent: "space-between", marginBottom: 14 },
   cell: { width: "47.8%" },
   emptyContainer: { alignItems: "center", backgroundColor: Design.color.surface, borderRadius: Design.radius.card, gap: 10, justifyContent: "center", marginTop: 8, padding: 40, ...Design.shadow.card },

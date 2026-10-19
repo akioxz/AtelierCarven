@@ -196,6 +196,7 @@ export default function CheckoutReview() {
           </Reveal>
         </ContentFrame>
       </ScrollView>
+      <CustomerNavigation active="cart" placement="footer" />
 
       <Modal visible={alertVisible} animationType="fade" transparent onRequestClose={() => setAlertVisible(false)}>
         <View style={styles.alertOverlay}>
@@ -219,7 +220,7 @@ export default function CheckoutReview() {
 const styles = StyleSheet.create({
   screen: { backgroundColor: Design.color.canvas, flex: 1 },
   loading: { alignItems: "center", backgroundColor: Design.color.canvas, flex: 1, justifyContent: "center" },
-  scroll: { paddingBottom: 112 },
+  scroll: { paddingBottom: 24 },
   frame: { paddingHorizontal: 20, paddingTop: 30 },
   back: { alignItems: "center", backgroundColor: Design.color.surface, borderColor: Design.color.line, borderRadius: Design.radius.small, borderWidth: StyleSheet.hairlineWidth, height: 44, justifyContent: "center", width: 44 },
   section: { marginTop: 26 },

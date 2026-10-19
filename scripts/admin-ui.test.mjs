@@ -18,7 +18,7 @@ function runtime({ platform = 'android', width = 420, bottom = 34, state = [], r
   } };
   const react = {
     useState: initial => [stateIndex in state ? state[stateIndex++] : (stateIndex++, initial), () => {}],
-    useEffect: () => {}, useCallback: fn => fn, useRef: value => ({ current: value }),
+    useEffect: () => {}, useMemo: fn => fn(), useCallback: fn => fn, useRef: value => ({ current: value }),
   };
   const native = {
     Platform: { OS: platform }, StyleSheet: { create: value => value, hairlineWidth: 1 },
@@ -42,9 +42,12 @@ function runtime({ platform = 'android', width = 420, bottom = 34, state = [], r
       if (id === 'expo-haptics') return { selectionAsync: () => Promise.resolve() };
       if (id === 'expo-router') return { useRouter: () => ({ replace: route => navigation.push(route) }), Stack: 'Stack' };
       if (id === 'react-native-safe-area-context') return { SafeAreaView: 'SafeAreaView', useSafeAreaInsets: () => ({ top: 28, left: 0, right: 0, bottom }) };
-      if (id === '@expo/vector-icons') return { Feather: 'Feather' };
+      if (id === '@expo/vector-icons') return { Feather: 'Feather', AntDesign: 'AntDesign' };
       if (id === 'expo-image') return { Image: 'Image' };
       if (id.endsWith('/constants/design')) return load('src/constants/design.ts');
+      if (id.endsWith('/category-tiles')) return load('src/components/category-tiles.tsx');
+      if (id.endsWith('/product-card')) return { ProductCard: 'ProductCard' };
+      if (id.endsWith('/pricing')) return { effectivePrice: row => Number(row.price), cartTotal: rows => rows.reduce((total, row) => total + Number(row.furniture.price) * row.quantity, 0) };
       if (id.endsWith('/components/app-ui')) return load('src/components/app-ui.tsx');
       if (id.endsWith('/motion')) return load('src/components/motion.tsx');
       if (id.endsWith('/skeleton')) return { ShimmerBlock: 'ShimmerBlock' };
@@ -337,11 +340,72 @@ test('headings stay stable and tapping the active navigation item does not repla
   for (const tree of [PageHeader({ title: 'Cart', subtitle: 'Selections' }), SectionHeading({ overline: 'Collection', title: 'Pieces' })]) {
     assert.equal(descendants(tree, node => node.type?.name === 'Reveal' || node.props?.entering).length, 0);
   }
-  const navigation = CustomerNavigation({ active: 'home' });
+  const navigation = CustomerNavigation({ active: 'home', placement: 'footer' });
   const tree = navigation.type(navigation.props);
   const buttons = descendants(tree, node => node.type === 'Pressable');
   buttons.find(node => node.props.accessibilityState.selected).props.onPress();
   assert.equal(rt.navigation.length, 0);
   buttons.find(node => !node.props.accessibilityState.selected).props.onPress();
   assert.equal(rt.navigation.length, 1);
+});
+
+test('customer navigation reserves a mobile footer and keeps desktop navigation above content', () => {
+  for (const [platform, width, mobile] of [['android', 420, true], ['web', 1440, false]]) {
+    const { CustomerNavigation } = runtime({ platform, width }).load('src/components/app-ui.tsx');
+    const header = CustomerNavigation({ active: 'home' });
+    const footer = CustomerNavigation({ active: 'home', placement: 'footer' });
+    assert.equal(Boolean(header), !mobile);
+    assert.equal(Boolean(footer), mobile);
+    if (footer) assert.equal(flatten(footer.type(footer.props).props.style).position, 'relative');
+  }
+});
+
+test('mobile Home keeps the decorative placeholder out of the catalog path', () => {
+  const Screen = runtime().load('src/app/(user)/home.tsx').default;
+  const tree = Screen();
+  assert.equal(descendants(tree, node => node.props?.name === 'image').length, 0);
+  assert.equal(descendants(tree, node => node.props?.children === 'Every piece, numbered and catalogued.').length, 0);
+  const title = descendants(tree, node => node.props?.children === 'Pieces with presence, chosen for everyday living.')[0];
+  assert.equal(flatten(title.props.style).fontSize, 32);
+  assert.ok(descendants(tree, node => node.props?.placement === 'footer').length);
+});
+
+test('customer category selection and cart quantity targets are accessible', () => {
+  const { CategoryTiles } = runtime().load('src/components/category-tiles.tsx');
+  const tiles = descendants(CategoryTiles({ categories: ['All', 'Chair'], selected: 'Chair', onSelect() {} }), node => node.props?.accessibilityRole === 'tab');
+  assert.equal(tiles.length, 2);
+  assert.equal(tiles[1].props.accessibilityState.selected, true);
+  const Cart = runtime().load('src/app/(user)/cart.tsx').default;
+  const rt = runtime({ state: [[{ id: 'cart', furniture: { id: 'piece', name: 'Chair', price: 100 }, quantity: 1 }], false] });
+  const screen = rt.load('src/app/(user)/cart.tsx').default();
+  for (const label of ['Decrease quantity', 'Increase quantity']) {
+    const control = descendants(screen, node => node.props?.accessibilityLabel === label)[0];
+    assert.equal(flatten(control.props.style).width, 44);
+    assert.equal(flatten(control.props.style).height, 44);
+  }
+  assert.ok(Cart);
+});
+
+test('failed cart read has an in-place retry that clears errors on successful refresh', async () => {
+  let failure = true, error, loading, rows, actionError = 'Previous failure';
+  const fetch = callback('src/app/(user)/cart.tsx', 'fetchCart', {
+    latestCart: { current: 0 }, setLoading: value => loading = value, setLoadError: value => error = value,
+    setItems: value => rows = value, setActionError: value => actionError = value, cartTotal: () => 100,
+    supabase: { auth: { getUser: async () => ({ data: { user: { id: 'owner' } } }) } },
+    fetchAllRows: async () => { if (failure) throw new Error('Offline'); return [{ id: 'cart' }]; },
+  });
+  await fetch();
+  assert.match(error, /Could not load/);
+  assert.equal(loading, false);
+  failure = false;
+  await fetch();
+  assert.equal(error, '');
+  assert.equal(actionError, '');
+  assert.equal(rows[0].id, 'cart');
+  assert.equal(loading, false);
+  const state = [[], false, '', 0, 'Offline'];
+  const Screen = runtime({ state }).load('src/app/(user)/cart.tsx').default;
+  const tree = Screen();
+  assert.equal(descendants(tree, node => node.type?.name === 'RetryNotice').length, 1);
+  assert.equal(descendants(tree, node => node.props?.children === 'Nothing here yet.').length, 0);
 });
