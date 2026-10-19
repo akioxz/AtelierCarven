@@ -25,12 +25,15 @@ function callback(name, context) {
   return runInNewContext(code, context);
 }
 
+const deliveryModule = { exports: {} };
+runInNewContext(ts.transpileModule(readFileSync(new URL('../src/lib/delivery.ts', import.meta.url), 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS } }).outputText, { module: deliveryModule, exports: deliveryModule.exports });
+const { formatDelivery } = deliveryModule.exports;
 const orderId = '30000000-0000-0000-0000-000000000001';
 function harness(options = {}) {
   const events = { rpc: [], routes: [], alerts: [], processing: [], cancelled: 0 };
   const context = {
-    confirming: { current: false }, loading: false, cartError: false, cartItems: [{ id: 'cart-row' }],
-    orderTotal: 500, fullName: 'Test Buyer', address: 'Test address', city: 'Test city', mobile: '', notes: '', method: 'cod',
+    formatDelivery, confirming: { current: false }, loading: false, cartError: false, cartItems: [{ id: 'cart-row' }],
+    orderTotal: 500, fullName: 'Test Buyer', address: 'Test address', city: 'Test city', mobile: '09123456789', notes: '', method: 'cod',
     setProcessing: value => events.processing.push(value),
     spin: { set() {} }, withRepeat() {}, withTiming() {}, Easing: { linear() {} },
     cancelAnimation: () => { events.cancelled++; },
@@ -56,7 +59,7 @@ test('success uses one atomic RPC, validates confirmation, and releases busy sta
   const [name, args] = events.rpc[0];
   assert.equal(name, 'checkout_cart');
   assert.deepEqual(JSON.parse(JSON.stringify(args)), {
-    p_total: 500, p_address: 'Name: Test Buyer | Mobile:  | City: Test city | Address: Test address | Notes: ', p_payment_method: 'cod',
+    p_total: 500, p_address: 'Name: Test Buyer | Mobile: 09123456789 | City: Test city | Address: Test address | Notes: ', p_payment_method: 'cod',
   });
   assert.deepEqual(events.routes, ['/(user)/order-success']);
   assert.equal(events.alerts.length, 0);

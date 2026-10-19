@@ -3,7 +3,7 @@ import { useRouter } from "expo-router";
 import { useEffect, useRef, useState } from "react";
 import { Platform, ScrollView, StatusBar, StyleSheet, Text, TextInput, useWindowDimensions, View } from "react-native";
 import { CategoryTiles } from "../../components/category-tiles";
-import { ContentFrame, SectionHeading } from "../../components/app-ui";
+import { ContentFrame, SectionHeading, RetryNotice } from "../../components/app-ui";
 import { PressScale, Reveal, staggerDelay } from "../../components/motion";
 import { ProductCard } from "../../components/product-card";
 import { CardSkeleton } from "../../components/skeleton";
@@ -34,6 +34,8 @@ export default function Search() {
   const [loading, setLoading] = useState(true);
   const [favorites, setFavorites] = useState<string[]>([]);
   const [actionError, setActionError] = useState("");
+  const [loadError, setLoadError] = useState("");
+  const [reload, setReload] = useState(0);
   const pendingFavorites = useRef(new Set<string>());
   const trimmed = query.trim();
 
@@ -54,6 +56,7 @@ export default function Search() {
       const requestId = ++latestRequest.current;
       const run = async () => {
         setLoading(true);
+        setLoadError("");
         try {
           const data = await fetchAllRows((from, to) => {
             let queryBuilder = supabase.from("furniture").select("*", { count: "exact" }).eq("is_deleted", false);
@@ -61,8 +64,8 @@ export default function Search() {
             const term = query.trim().replace(/[,()]/g, " ");
             if (term) queryBuilder = queryBuilder.or(`name.ilike.%${term}%,description.ilike.%${term}%,category.ilike.%${term}%`);
             switch (sort) {
-              case "price-asc": queryBuilder = queryBuilder.order("price", { ascending: true }); break;
-              case "price-desc": queryBuilder = queryBuilder.order("price", { ascending: false }); break;
+              case "price-asc": queryBuilder = queryBuilder.order("effective_price", { ascending: true }); break;
+              case "price-desc": queryBuilder = queryBuilder.order("effective_price", { ascending: false }); break;
               case "rating": queryBuilder = queryBuilder.order("rating", { ascending: false, nullsFirst: false }).order("review_count", { ascending: false }); break;
               default: queryBuilder = queryBuilder.order("created_at", { ascending: false });
             }
@@ -71,14 +74,14 @@ export default function Search() {
           if (latestRequest.current !== requestId) return;
           data.forEach(effectivePrice);
           setFurniture(data.map(row => ({ ...row, salePrice: row.sale_price ?? null, reviewCount: row.review_count ?? null })));
-        } catch { if (latestRequest.current === requestId) setActionError("Could not load search results. Please try again."); }
+        } catch { if (latestRequest.current === requestId) setLoadError("Could not load search results. Please retry."); }
         finally { if (latestRequest.current === requestId) setLoading(false); }
       };
       run();
     }, query.trim() ? 300 : 0);
     const tracker = latestRequest;
     return () => { clearTimeout(queryTrigger); tracker.current++; };
-  }, [selectedCategory, sort, query]);
+  }, [selectedCategory, sort, query, reload]);
   useEffect(() => {
     const timer = setTimeout(() => inputRef.current?.focus(), 80);
     return () => clearTimeout(timer);
@@ -170,7 +173,7 @@ export default function Search() {
                 </View>
               ))}
             </View>
-          ) : furniture.length === 0 ? (
+          ) : loadError ? <RetryNotice message={loadError} onRetry={() => setReload(value => value + 1)} /> : furniture.length === 0 ? (
             <Reveal>
               <View style={styles.empty}>
                 <Feather name="search" size={28} color={Design.color.accent} />

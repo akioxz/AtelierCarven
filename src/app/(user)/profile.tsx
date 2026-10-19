@@ -1,7 +1,7 @@
 import { Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { Image } from "expo-image";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   Modal,
   ScrollView,
@@ -17,7 +17,7 @@ import { fetchAllRows } from "../../lib/pagination";
 import { goBackOr } from "../../lib/navigation";
 import { Design } from "../../constants/design";
 import { getStatusBadge } from "../../constants/statuses";
-import { ContentFrame, CustomerNavigation, PageHeader } from "../../components/app-ui";
+import { ContentFrame, CustomerNavigation, PageHeader, RetryNotice } from "../../components/app-ui";
 import { PressScale, Reveal, staggerDelay } from "../../components/motion";
 import { ShimmerBlock } from "../../components/skeleton";
 import ConfirmModal from "../../components/confirm-modal";
@@ -43,75 +43,72 @@ export default function UserProfile() {
   const [orderItems, setOrderItems] = useState<any[]>([]);
   const [loadingItems, setLoadingItems] = useState(false);
 
+  const [loadError, setLoadError] = useState("");
+  const [avatarError, setAvatarError] = useState("");
+  const [itemsError, setItemsError] = useState("");
+  const detailRequest = useRef(0);
+  const savePending = useRef(false);
+  const avatarPending = useRef(false);
+  const closeOrder = () => { detailRequest.current++; setSelectedOrder(null); setOrderItems([]); setItemsError(""); };
+
   const fetchProfile = useCallback(async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
-    const { data } = await supabase
-      .from("profiles")
-      .select("*")
-      .eq("id", user.id)
-      .single();
-    setProfile(data);
-    setUsername(data?.username || "");
-    setAddress(data?.address || "");
-    setMobile(data?.mobile_number || "");
-    setLoading(false);
-  }, []);
-
-  const fetchOrders = useCallback(async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
-    let data: any[] = [];
-    try { data = await fetchAllRows((from, to) => supabase.from("orders").select("*", { count: "exact" }).eq("user_id", user.id).order("created_at", { ascending: false }).order("id").range(from, to)); }
-    catch { setOrdersError("Could not load your complete order history. Reopen this page to retry."); setLoadingOrders(false); return; }
-    setOrders(data || []);
-    setLoadingOrders(false);
-  }, []);
-
-  const fetchOrderItems = async (orderId: string) => {
-    setLoadingItems(true);
-    let data: any[] = [];
-    try { data = await fetchAllRows((from, to) => supabase.from("order_items").select("*, furniture(*)", { count: "exact" }).eq("order_id", orderId).order("id").range(from, to)); }
-    catch { setOrdersError("Could not load these order items. Reopen the order to retry."); setLoadingItems(false); return; }
-    setOrderItems(data || []);
-    setLoadingItems(false);
-  };
-
-  useEffect(() => {
-    void (async () => { await fetchProfile(); await fetchOrders(); })();
-  }, [fetchOrders, fetchProfile]);
-
-  const handleAvatarUpload = async () => {
-    setUploadingAvatar(true);
+    setLoading(true); setLoadError("");
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-      const url = await pickAndUploadImage("avatars", `user-${user.id}`);
-      if (url) {
-        await supabase.from("profiles").update({ avatar_url: url }).eq("id", user.id);
-        fetchProfile();
-      }
-    } finally {
-      setUploadingAvatar(false);
-    }
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      if (authError || !user) throw new Error("Session unavailable");
+      const { data, error } = await supabase.from("profiles").select("*").eq("id", user.id).single();
+      if (error || !data) throw new Error("Profile unavailable");
+      setProfile(data); setUsername(data.username || ""); setAddress(data.address || ""); setMobile(data.mobile_number || "");
+    } catch { setLoadError("Could not load your profile. Retry, or sign in again if your session expired."); }
+    finally { setLoading(false); }
+  }, []);
+  const fetchOrders = useCallback(async () => {
+    setLoadingOrders(true); setOrdersError("");
+    try {
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      if (authError || !user) throw new Error("Session unavailable");
+      const data = await fetchAllRows((from, to) => supabase.from("orders").select("*", { count: "exact" }).eq("user_id", user.id).order("created_at", { ascending: false }).order("id").range(from, to));
+      setOrders(data);
+    } catch { setOrdersError("Could not load your order history. Please retry."); }
+    finally { setLoadingOrders(false); }
+  }, []);
+  const fetchOrderItems = async (orderId: string) => {
+    const request = ++detailRequest.current;
+    setLoadingItems(true); setItemsError(""); setOrderItems([]);
+    try {
+      const data = await fetchAllRows((from, to) => supabase.from("order_items").select("*, furniture(*)", { count: "exact" }).eq("order_id", orderId).order("id").range(from, to));
+      if (request === detailRequest.current) setOrderItems(data);
+    } catch { if (request === detailRequest.current) setItemsError("Could not load these order items. Please retry."); }
+    finally { if (request === detailRequest.current) setLoadingItems(false); }
   };
-
+  useEffect(() => { void (async () => { await Promise.all([fetchProfile(), fetchOrders()]); })(); }, [fetchOrders, fetchProfile]);
+  useEffect(() => { const tracker = detailRequest; return () => { tracker.current++; }; }, []);
+  const handleAvatarUpload = async () => {
+    if (avatarPending.current) return;
+    avatarPending.current = true; setUploadingAvatar(true); setAvatarError("");
+    try {
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      if (authError || !user) throw new Error("Session unavailable");
+      const url = await pickAndUploadImage("avatars", `user-${user.id}`, { throwOnError: true });
+      if (url) {
+        const { error, data } = await supabase.from("profiles").update({ avatar_url: url }).eq("id", user.id).select("id").single();
+        if (error || !data) throw new Error("Photo not saved");
+        await fetchProfile();
+      }
+    } catch { setAvatarError("Could not confirm your photo change. Reload your profile before retrying."); }
+    finally { avatarPending.current = false; setUploadingAvatar(false); }
+  };
   const handleSave = async () => {
-    setSaving(true);
-    setSaveError("");
-    const { data: { user } } = await supabase.auth.getUser();
-    const { error } = await supabase
-      .from("profiles")
-      .update({ username, address, mobile_number: mobile })
-      .eq("id", user!.id);
-    setSaving(false);
-    if (error) {
-      console.error("Error saving profile:", error);
-      setSaveError("Couldn't save your changes. Please try again.");
-      return;
-    }
-    setEditing(false);
-    fetchProfile();
+    if (savePending.current) return;
+    savePending.current = true; setSaving(true); setSaveError("");
+    try {
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      if (authError || !user) throw new Error("Session unavailable");
+      const { error, data } = await supabase.from("profiles").update({ username, address, mobile_number: mobile }).eq("id", user.id).select("id").single();
+      if (error || !data) throw new Error("Profile not saved");
+      setEditing(false); await fetchProfile();
+    } catch { setSaveError("Couldn't save your changes. Your draft is kept; please retry."); }
+    finally { savePending.current = false; setSaving(false); }
   };
 
   const handleLogout = () => {
@@ -126,7 +123,7 @@ export default function UserProfile() {
 
   const openOrder = (order: any) => {
     setSelectedOrder(order);
-    fetchOrderItems(order.id);
+    void fetchOrderItems(order.id);
   };
 
   if (loading)
@@ -138,11 +135,13 @@ export default function UserProfile() {
       </View>
     );
 
+  if (loadError) return <View style={styles.container}><RetryNotice message={loadError} onRetry={() => void fetchProfile()} /><PressScale accessibilityLabel="Sign in again" onPress={() => router.replace("/(auth)/login")}><Text>Sign in again</Text></PressScale></View>;
+
   return (
     <View style={styles.container}>
       <StatusBar barStyle="dark-content" />
       <CustomerNavigation active="profile" />
-      {ordersError ? <Text accessibilityRole="alert" style={{ color: Design.color.danger, padding: 12 }}>{ordersError}</Text> : null}
+      {avatarError ? <RetryNotice message={avatarError} onRetry={() => void fetchProfile()} /> : null}
       <ScrollView showsVerticalScrollIndicator={false}>
         <ContentFrame>
         <View style={styles.headerRow}>
@@ -188,7 +187,7 @@ export default function UserProfile() {
           <Text style={styles.sectionLabel}>MY ORDERS</Text>
           {loadingOrders ? (
             <View style={styles.orderSkeleton}><ShimmerBlock width="100%" height={76} radius={Design.radius.card} /><ShimmerBlock width="100%" height={76} radius={Design.radius.card} /></View>
-          ) : orders.length === 0 ? (
+          ) : ordersError ? <RetryNotice message={ordersError} onRetry={() => void fetchOrders()} /> : orders.length === 0 ? (
             <View style={styles.emptyOrders}>
               <Feather name="shopping-bag" size={32} color={Design.color.line} />
               <Text style={styles.emptyOrdersText}>No orders yet</Text>
@@ -317,7 +316,7 @@ export default function UserProfile() {
       <CustomerNavigation active="profile" placement="footer" />
 
       {/* Order Detail Modal */}
-      <Modal visible={selectedOrder !== null} animationType="slide" transparent onRequestClose={() => setSelectedOrder(null)}>
+      <Modal visible={selectedOrder !== null} animationType="slide" transparent onRequestClose={closeOrder}>
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             {selectedOrder && (() => {
@@ -331,7 +330,7 @@ export default function UserProfile() {
                         #{selectedOrder.id.substring(0, 8).toUpperCase()}
                       </Text>
                     </View>
-                    <PressScale style={styles.closeBtn} onPress={() => setSelectedOrder(null)} accessibilityLabel="Close order details">
+                    <PressScale style={styles.closeBtn} onPress={closeOrder} accessibilityLabel="Close order details">
                       <Feather name="x" size={18} color={Design.color.inkSoft} />
                     </PressScale>
                   </View>
@@ -350,10 +349,10 @@ export default function UserProfile() {
 
                   <Text style={styles.modalSectionLabel}>ITEMS ORDERED</Text>
                   <View style={styles.modalCard}>
-                    {ordersError ? <Text accessibilityRole="alert" style={{ color: Design.color.danger }}>{ordersError}</Text> : null}
+                    {itemsError ? <RetryNotice message={itemsError} onRetry={() => void fetchOrderItems(selectedOrder.id)} /> : null}
                     {loadingItems ? (
                       <View style={styles.orderSkeleton}><ShimmerBlock width="100%" height={64} radius={Design.radius.card} /></View>
-                    ) : orderItems.length === 0 ? (
+                    ) : itemsError ? null : orderItems.length === 0 ? (
                       <Text style={styles.noItemsText}>No items found.</Text>
                     ) : (
                       orderItems.map((item, index) => (

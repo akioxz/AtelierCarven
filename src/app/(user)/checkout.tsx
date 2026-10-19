@@ -7,6 +7,7 @@ import { PressScale, Reveal, staggerDelay } from "../../components/motion";
 import { ShimmerBlock } from "../../components/skeleton";
 import { Design } from "../../constants/design";
 import { goBackOr } from "../../lib/navigation";
+import { formatDelivery } from "../../lib/delivery";
 import { supabase } from "../../lib/supabase";
 import { fetchAllRows } from "../../lib/pagination";
 import { cartTotal, effectivePrice } from "../../lib/pricing";
@@ -52,7 +53,7 @@ export default function Checkout() {
 
   const continueToPayment = () => {
     if (cartItems.length === 0) return;
-    if (!fullName.trim() || !mobile.trim() || !address.trim() || !city.trim()) { setShowError(true); return; }
+    try { formatDelivery({ fullName, mobile, address, city, notes }); } catch { setShowError(true); return; }
     router.push({
       pathname: "/(user)/checkout-payment",
       params: { total: total.toString(), fullName, address, city, mobile, notes },

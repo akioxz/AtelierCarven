@@ -24,7 +24,6 @@ export default function Payment() {
   const [cardCVV, setCardCVV] = useState("");
   const [cardName, setCardName] = useState("");
   const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
 
   const handleCardNumberChange = (text: string) => {
     const cleanText = text.replace(/[^0-9]/g, "");
@@ -64,7 +63,6 @@ export default function Payment() {
       setError("CVV must be 3 or 4 digits.");
       return;
     }
-    setLoading(true);
     router.push({
       pathname: "/(user)/checkout-review",
       params: { method: "card", total, fullName, address, city, mobile, notes },
@@ -187,7 +185,7 @@ export default function Payment() {
           </Reveal>
 
           <Reveal delay={160}>
-          <PrimaryButton label={loading ? "OPENING REVIEW..." : "CONTINUE TO REVIEW"} onPress={handleContinue} disabled={loading} style={styles.continueBtn} />
+          <PrimaryButton label="CONTINUE TO REVIEW" onPress={handleContinue}  style={styles.continueBtn} />
           </Reveal>
         </ContentFrame>
       </ScrollView>

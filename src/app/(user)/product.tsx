@@ -3,7 +3,7 @@ import { Image } from "expo-image";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { FlatList, Modal, Platform, StatusBar, StyleSheet, Text, TextInput, useWindowDimensions, View } from "react-native";
-import { PrimaryButton, Overline } from "../../components/app-ui";
+import { PrimaryButton, Overline, RetryNotice } from "../../components/app-ui";
 import { PressScale, Reveal, staggerDelay } from "../../components/motion";
 import { ShimmerBlock } from "../../components/skeleton";
 import { Design, layout } from "../../constants/design";
@@ -60,6 +60,10 @@ export default function Product() {
   const [galleryImages, setGalleryImages] = useState<any[]>([]);
   const [activeImageIndex, setActiveImageIndex] = useState(0);
 
+  const [reviewsError, setReviewsError] = useState("");
+  const [reviewsLoading, setReviewsLoading] = useState(true);
+  const [galleryError, setGalleryError] = useState("");
+  const [guideError, setGuideError] = useState("");
   const fetchItem = useCallback(async () => {
     try {
       const { data, error } = await supabase.from("furniture").select("*").eq("id", id).eq("is_deleted", false).single();
@@ -70,24 +74,42 @@ export default function Product() {
     finally { setLoading(false); }
   }, [id]);
   const fetchReviews = useCallback(async () => {
-    if (typeof id !== "string") return;
-    const { data, error } = await supabase
-      .rpc("get_furniture_reviews", { p_furniture_id: id })
-      .order("created_at", { ascending: false });
-    if (error) {
-      console.error("Error fetching public reviews:", error);
-      return;
-    }
-    if (!Array.isArray(data) || !data.every(isPublicReview)) {
-      console.error("Unexpected public review response");
-      return;
-    }
-    setReviews(data);
+    setReviewsLoading(true); setReviewsError("");
+    try {
+      if (typeof id !== "string") throw new Error("Invalid product");
+      const { data, error } = await supabase.rpc("get_furniture_reviews", { p_furniture_id: id }).order("created_at", { ascending: false });
+      if (error || !Array.isArray(data) || !data.every(isPublicReview)) throw new Error("Reviews unavailable");
+      setReviews(data);
+    } catch { setReviewsError("Could not load reviews. Please retry."); }
+    finally { setReviewsLoading(false); }
   }, [id]);
-  const fetchSizeGuide = useCallback(async () => { const { data } = await supabase.from("size_guides").select("*").eq("furniture_id", id).maybeSingle(); setSizeGuide(data || null); }, [id]);
-  const fetchFavorite = useCallback(async () => { const { data: { user } } = await supabase.auth.getUser(); if (!user) return; const { data } = await supabase.from("favorites").select("id").eq("user_id", user.id).eq("furniture_id", id).single(); setIsFavorite(Boolean(data)); }, [id]);
-  const fetchGallery = useCallback(async () => { const { data } = await supabase.from("furniture_images").select("*").eq("furniture_id", id).order("display_order"); setGalleryImages(data || []); }, [id]);
-  useEffect(() => { void (async () => { await fetchItem(); await fetchFavorite(); await fetchReviews(); await fetchSizeGuide(); await fetchGallery(); })(); }, [fetchFavorite, fetchGallery, fetchItem, fetchReviews, fetchSizeGuide]);
+  const fetchSizeGuide = useCallback(async () => {
+    setGuideError("");
+    try {
+      const { data, error } = await supabase.from("size_guides").select("*").eq("furniture_id", id).maybeSingle();
+      if (error) throw error;
+      setSizeGuide(data || null);
+    } catch { setGuideError("Could not load dimensions. Please retry."); }
+  }, [id]);
+  const fetchFavorite = useCallback(async () => {
+    try {
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      if (authError) throw authError;
+      if (!user) return;
+      const { data, error } = await supabase.from("favorites").select("id").eq("user_id", user.id).eq("furniture_id", id).maybeSingle();
+      if (error) throw error;
+      setIsFavorite(Boolean(data));
+    } catch { setActionError("Could not load saved status. Reopen this piece to retry."); }
+  }, [id]);
+  const fetchGallery = useCallback(async () => {
+    setGalleryError("");
+    try {
+      const { data, error } = await supabase.from("furniture_images").select("*").eq("furniture_id", id).order("display_order");
+      if (error) throw error;
+      setGalleryImages(data || []);
+    } catch { setGalleryError("Could not load the gallery. Please retry."); }
+  }, [id]);
+  useEffect(() => { void (async () => { await Promise.all([fetchItem(), fetchFavorite(), fetchReviews(), fetchSizeGuide(), fetchGallery()]); })(); }, [fetchFavorite, fetchGallery, fetchItem, fetchReviews, fetchSizeGuide]);
   const toggleFavorite = async () => {
     if (favoritePending.current) return;
     favoritePending.current = true;
@@ -204,10 +226,10 @@ export default function Product() {
             <Text style={styles.optionLabel}>Colour</Text><View accessibilityRole="radiogroup" accessibilityLabel="Select a colour" style={styles.colorChoices}>{COLORS.map((color) => <PressScale key={color.name} accessibilityRole="radio" accessibilityLabel={`Colour: ${color.name}`} accessibilityState={{ checked: selectedColor === color.name }} onPress={() => setSelectedColor(color.name)} style={[styles.colorChoice, selectedColor === color.name && styles.colorChoiceSelected]}><View style={[styles.swatch, { backgroundColor: color.hex }, color.name === "White" && styles.whiteSwatch]} /><Text style={styles.choiceText}>{color.name}</Text></PressScale>)}</View>
             <Text style={styles.optionLabel}>Material</Text><View accessibilityRole="radiogroup" accessibilityLabel="Select a material" style={styles.materialChoices}>{MATERIALS.map((material) => <PressScale key={material} accessibilityRole="radio" accessibilityLabel={`Material: ${material}`} accessibilityState={{ checked: selectedMaterial === material }} onPress={() => setSelectedMaterial(material)} style={[styles.material, selectedMaterial === material && styles.materialSelected]}><Text style={[styles.materialText, selectedMaterial === material && styles.materialTextSelected]}>{material}</Text></PressScale>)}</View>
           </View>
-          <View style={styles.metaLinks}>{sizeGuide ? <PressScale accessibilityLabel="View size guide" onPress={() => setSizeGuideOpen(true)} style={styles.metaLink}><Feather name="maximize" size={14} color={Design.color.accent} /><Text style={styles.metaLinkText}>SIZE GUIDE</Text></PressScale> : null}<PressScale accessibilityLabel="Write a review" onPress={() => setReviewSheetOpen(true)} style={styles.metaLink}><Feather name="edit-3" size={14} color={Design.color.accent} /><Text style={styles.metaLinkText}>WRITE A REVIEW</Text></PressScale></View>
+          {galleryError ? <RetryNotice message={galleryError} onRetry={() => void fetchGallery()} /> : null}{guideError ? <RetryNotice message={guideError} onRetry={() => void fetchSizeGuide()} /> : null}<View style={styles.metaLinks}>{sizeGuide ? <PressScale accessibilityLabel="View size guide" onPress={() => setSizeGuideOpen(true)} style={styles.metaLink}><Feather name="maximize" size={14} color={Design.color.accent} /><Text style={styles.metaLinkText}>SIZE GUIDE</Text></PressScale> : null}<PressScale accessibilityLabel="Write a review" onPress={() => setReviewSheetOpen(true)} style={styles.metaLink}><Feather name="edit-3" size={14} color={Design.color.accent} /><Text style={styles.metaLinkText}>WRITE A REVIEW</Text></PressScale></View>
           <View style={styles.reviewsSection}>
             <View style={styles.reviewsHeader}><Text style={styles.reviewsTitle}>Reviews</Text>{item.rating != null ? <Text style={styles.reviewsCount}>{Number(item.rating).toFixed(1)} · {item.review_count ?? 0} review{item.review_count === 1 ? "" : "s"}</Text> : null}</View>
-            {reviews.length === 0 ? <Text style={styles.noReviews}>No reviews yet. Be the first to share your thoughts.</Text> : null}
+            {reviewsError ? <RetryNotice message={reviewsError} onRetry={() => void fetchReviews()} /> : reviewsLoading ? <Text>Loading reviews...</Text> : reviews.length === 0 ? <Text style={styles.noReviews}>No reviews yet. Be the first to share your thoughts.</Text> : null}
           </View>
 {wide ? <View style={styles.desktopActions}><PressScale accessibilityLabel="Add to cart" onPress={() => openSelection("cart")} style={styles.secondaryAction}><Text style={styles.secondaryActionText}>ADD TO CART</Text></PressScale><PrimaryButton label="BUY NOW" onPress={() => openSelection("buy")} style={styles.primaryAction} /></View> : null}
         </View>

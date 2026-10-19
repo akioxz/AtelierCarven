@@ -8,6 +8,7 @@ import { PressScale, Reveal, staggerDelay } from "../../components/motion";
 import { ShimmerBlock } from "../../components/skeleton";
 import { Design } from "../../constants/design";
 import { goBackOr } from "../../lib/navigation";
+import { formatDelivery } from "../../lib/delivery";
 import { supabase } from "../../lib/supabase";
 import { fetchAllRows } from "../../lib/pagination";
 import { cartTotal, effectivePrice } from "../../lib/pricing";
@@ -71,6 +72,9 @@ export default function CheckoutReview() {
 
   const handleConfirm = async () => {
     if (confirming.current || loading || cartError || cartItems.length === 0) return;
+    let formattedAddress: string;
+    try { formattedAddress = formatDelivery({ fullName, mobile, city, address, notes }); }
+    catch { showAlert("Delivery details required", "Return to Delivery and add your name, mobile number, city and address. Do not use ' | ' in these fields."); return; }
     confirming.current = true;
     setProcessing(true);
     try {
@@ -79,7 +83,7 @@ export default function CheckoutReview() {
       if (authError) throw authError;
       if (!user) { showAlert("Sign in required", "You need to be signed in to place an order."); return; }
 
-      const formattedAddress = `Name: ${fullName || ""} | Mobile: ${mobile || ""} | City: ${city || ""} | Address: ${address || ""} | Notes: ${notes || ""}`;
+
 
       const { data: orderId, error } = await supabase.rpc("checkout_cart", {
         p_total: orderTotal,

@@ -539,4 +539,36 @@ begin
 end;
 $test$;
 reset role;
+-- Effective-price ordering and final required delivery validation.
+\ir ../migrations/20261019050941_medium_commerce_validation.sql
+savepoint effective_sort;
+update public.furniture set sale_price=50 where id='10000000-0000-0000-0000-000000000002';
+do $test$
+begin
+ if (select id from public.furniture order by effective_price,id limit 1)<>'10000000-0000-0000-0000-000000000002'::uuid then
+  raise exception 'Effective sale price sort incorrect'; end if;
+end;
+$test$;
+rollback to savepoint effective_sort;
+set local role authenticated;
+select set_config('request.jwt.claim.sub','00000000-0000-0000-0000-000000000001',true);
+do $test$
+declare bad_address text; saved_order uuid;
+begin
+ perform public.add_cart_item('10000000-0000-0000-0000-000000000001',1,'Black','Wood');
+ foreach bad_address in array array[null::text,'','Fixture','Name:  | Mobile: 09123 | City: City | Address: Street | Notes: ',
+   'Name: Buyer | Mobile:  | City: City | Address: Street | Notes: ',
+   'Name: Buyer | Mobile: 09123 | City:   | Address: Street | Notes: ',
+   'Name: Buyer | Mobile: 09123 | City: City | Address:  | Notes: '] loop
+  begin perform public.checkout_cart(80,bad_address,'cod'); raise exception 'Missing delivery accepted';
+  exception when invalid_parameter_value then null; end;
+ end loop;
+ if (select count(*) from public.orders)<>3 or (select count(*) from public.cart)<>1 then
+  raise exception 'Rejected delivery changed data'; end if;
+ saved_order:=public.checkout_cart(80,'Name: Buyer | Mobile: 09123 | City: City | Address: Street | Notes: Gate','cod');
+ if not exists(select 1 from public.orders where id=saved_order and total=80) or exists(select 1 from public.cart) then
+  raise exception 'Valid delivery checkout broken'; end if;
+end;
+$test$;
+reset role;
 rollback;

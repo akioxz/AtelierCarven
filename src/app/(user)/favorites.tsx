@@ -14,7 +14,7 @@ import { goBackOr } from "../../lib/navigation";
 import { effectivePrice } from "../../lib/pricing";
 import { supabase } from "../../lib/supabase";
 import { fetchAllRows } from "../../lib/pagination";
-import { ContentFrame, CustomerNavigation, PageHeader, PrimaryButton } from "../../components/app-ui";
+import { ContentFrame, CustomerNavigation, PageHeader, PrimaryButton, RetryNotice } from "../../components/app-ui";
 import { PressScale, Reveal } from "../../components/motion";
 import { ProductCard } from "../../components/product-card";
 import { CardSkeleton } from "../../components/skeleton";
@@ -26,30 +26,19 @@ export default function Favorites() {
   const [refreshing, setRefreshing] = useState(false);
   const [actionError, setActionError] = useState("");
 
+  const [loadError, setLoadError] = useState("");
+
   const fetchFavorites = useCallback(async () => {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) {
-      setLoading(false);
-      setRefreshing(false);
-      router.replace("/(auth)/onboarding");
-      return;
-    }
-
-    let data: any[] = [];
-    let error: unknown = null;
-    try { data = await fetchAllRows((from, to) => supabase.from("favorites").select("*, furniture(*)", { count: "exact" }).eq("user_id", user.id).order("id").range(from, to)); data.forEach(favorite => { if (favorite.furniture) effectivePrice(favorite.furniture); }); }
-    catch (failure) { error = failure; }
-
-    if (error) {
-      setActionError("Could not load saved pieces. Please refresh.");
-    } else {
-      // Filter out favorites that might have been deleted from the database
-      setFavorites(data?.filter((fav) => fav.furniture && !fav.furniture.is_deleted) || []);
-    }
-    setLoading(false);
-    setRefreshing(false);
+    setLoadError("");
+    try {
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      if (authError) throw authError;
+      if (!user) { router.replace("/(auth)/onboarding"); return; }
+      const data = await fetchAllRows((from, to) => supabase.from("favorites").select("*, furniture(*)", { count: "exact" }).eq("user_id", user.id).order("id").range(from, to));
+      data.forEach(favorite => { if (favorite.furniture) effectivePrice(favorite.furniture); });
+      setFavorites(data.filter(favorite => favorite.furniture && !favorite.furniture.is_deleted));
+    } catch { setLoadError("Could not load saved pieces. Please retry."); }
+    finally { setLoading(false); setRefreshing(false); }
   }, [router]);
 
   useEffect(() => {
@@ -133,7 +122,7 @@ export default function Favorites() {
               </View>
             ))}
           </View>
-        ) : favorites.length === 0 ? (
+        ) : loadError ? <RetryNotice message={loadError} onRetry={() => void fetchFavorites()} /> : favorites.length === 0 ? (
           <Reveal>
             <View style={styles.emptyContainer}>
               <Feather name="heart" size={40} color={Design.color.accent} />

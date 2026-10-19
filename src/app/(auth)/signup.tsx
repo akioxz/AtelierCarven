@@ -1,6 +1,6 @@
 import { Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import {
     KeyboardAvoidingView,
     Platform,
@@ -28,9 +28,12 @@ export default function Signup() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const pending = useRef(false);
   const [error, setError] = useState("");
+  const [confirmationEmail, setConfirmationEmail] = useState("");
 
   const handleSignup = async () => {
+    if (pending.current) return;
     if (!username || !email || !password || !confirmPassword) {
       setError("Please fill in all fields.");
       return;
@@ -43,10 +46,12 @@ export default function Signup() {
       setError("Password must be at least 8 characters.");
       return;
     }
+    pending.current = true;
     setLoading(true);
+    try {
     setError("");
 
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
@@ -57,14 +62,18 @@ export default function Signup() {
       },
     });
 
-    setLoading(false);
     if (error) {
       setError(error.message);
       return;
     }
 
+    if (!data.session) { setConfirmationEmail(email.trim()); return; }
     router.replace("/(user)/home");
+    } catch { setError("Could not create your account. Check your connection and try again."); }
+    finally { pending.current = false; setLoading(false); }
   };
+
+  if (confirmationEmail) return <View style={[styles.container, { justifyContent: "center", padding: 28, gap: 20 }]}><Text style={styles.title}>Check your email</Text><Text style={styles.subtitle}>Open the confirmation link sent to {confirmationEmail}, then return to sign in.</Text><PressScale accessibilityLabel="Back to sign in" onPress={() => router.replace("/(auth)/login")}><Text>BACK TO SIGN IN</Text></PressScale></View>;
 
   return (
     <KeyboardAvoidingView
