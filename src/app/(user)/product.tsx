@@ -14,6 +14,24 @@ import { supabase } from "../../lib/supabase";
 const COLORS = [{ name: "Black", hex: "#211A16" }, { name: "White", hex: "#FFFCF8" }, { name: "Gray", hex: "#929292" }, { name: "Beige", hex: "#C6A27C" }];
 const MATERIALS = ["Wood", "Metal", "Leather", "Fabric", "Marble"];
 
+type PublicReview = {
+  id: string;
+  rating: number;
+  comment: string | null;
+  created_at: string;
+  author_username: string | null;
+};
+
+function isPublicReview(value: unknown): value is PublicReview {
+  if (typeof value !== "object" || value === null) return false;
+  const review = value as Record<string, unknown>;
+  return typeof review.id === "string"
+    && typeof review.rating === "number" && Number.isInteger(review.rating) && review.rating >= 1 && review.rating <= 5
+    && (review.comment === null || typeof review.comment === "string")
+    && typeof review.created_at === "string" && Number.isFinite(Date.parse(review.created_at))
+    && (review.author_username === null || typeof review.author_username === "string");
+}
+
 export default function Product() {
   const router = useRouter();
   const { id } = useLocalSearchParams();
@@ -28,7 +46,7 @@ export default function Product() {
   const [quantity, setQuantity] = useState(1);
   const [submitting, setSubmitting] = useState(false);
   const [intent, setIntent] = useState<"cart" | "buy">("cart");
-  const [reviews, setReviews] = useState<any[]>([]);
+  const [reviews, setReviews] = useState<PublicReview[]>([]);
   const [sizeGuide, setSizeGuide] = useState<any>(null);
   const [sizeGuideOpen, setSizeGuideOpen] = useState(false);
   const [reviewSheetOpen, setReviewSheetOpen] = useState(false);
@@ -39,7 +57,21 @@ export default function Product() {
   const [activeImageIndex, setActiveImageIndex] = useState(0);
 
   const fetchItem = useCallback(async () => { const { data } = await supabase.from("furniture").select("*").eq("id", id).single(); setItem(data); setLoading(false); }, [id]);
-  const fetchReviews = useCallback(async () => { const { data } = await supabase.from("reviews").select("id, rating, comment, created_at, profiles(username)").eq("furniture_id", id).order("created_at", { ascending: false }); setReviews(data || []); }, [id]);
+  const fetchReviews = useCallback(async () => {
+    if (typeof id !== "string") return;
+    const { data, error } = await supabase
+      .rpc("get_furniture_reviews", { p_furniture_id: id })
+      .order("created_at", { ascending: false });
+    if (error) {
+      console.error("Error fetching public reviews:", error);
+      return;
+    }
+    if (!Array.isArray(data) || !data.every(isPublicReview)) {
+      console.error("Unexpected public review response");
+      return;
+    }
+    setReviews(data);
+  }, [id]);
   const fetchSizeGuide = useCallback(async () => { const { data } = await supabase.from("size_guides").select("*").eq("furniture_id", id).maybeSingle(); setSizeGuide(data || null); }, [id]);
   const fetchFavorite = useCallback(async () => { const { data: { user } } = await supabase.auth.getUser(); if (!user) return; const { data } = await supabase.from("favorites").select("id").eq("user_id", user.id).eq("furniture_id", id).single(); setIsFavorite(Boolean(data)); }, [id]);
   const fetchGallery = useCallback(async () => { const { data } = await supabase.from("furniture_images").select("*").eq("furniture_id", id).order("display_order"); setGalleryImages(data || []); }, [id]);
@@ -83,10 +115,10 @@ export default function Product() {
     return [item.image_url, ...galleryImages.map((g: any) => g.image_url)].filter(Boolean);
   }, [item, galleryImages]);
 
-  const renderReviewItem = useCallback(({ item: review, index }: { item: any; index: number }) => (
+  const renderReviewItem = useCallback(({ item: review, index }: { item: PublicReview; index: number }) => (
     <Reveal delay={staggerDelay(index, 50, 4)}>
     <View style={styles.reviewItem}>
-      <View style={styles.reviewTop}><Text style={styles.reviewAuthor}>{review.profiles?.username || "Customer"}</Text><View accessibilityLabel={`Rating: ${review.rating} of 5 stars`} style={styles.stars}>{[1, 2, 3, 4, 5].map((star) => <Feather key={star} name="star" size={11} color={star <= review.rating ? Design.color.accent : Design.color.line} />)}</View></View>
+      <View style={styles.reviewTop}><Text style={styles.reviewAuthor}>{review.author_username || "Customer"}</Text><View accessibilityLabel={`Rating: ${review.rating} of 5 stars`} style={styles.stars}>{[1, 2, 3, 4, 5].map((star) => <Feather key={star} name="star" size={11} color={star <= review.rating ? Design.color.accent : Design.color.line} />)}</View></View>
       {review.comment ? <Text style={styles.reviewComment}>{review.comment}</Text> : null}
       <Text style={styles.reviewDate}>{new Date(review.created_at).toLocaleDateString()}</Text>
     </View>
