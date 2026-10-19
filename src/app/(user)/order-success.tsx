@@ -13,8 +13,6 @@ import Animated, {
   useAnimatedStyle,
   useReducedMotion,
   useSharedValue,
-  withDelay,
-  withSpring,
   withTiming,
 } from "react-native-reanimated";
 import { PressScale } from "../../components/motion";
@@ -25,16 +23,14 @@ const EASE_OUT = Easing.bezier(0.23, 1, 0.32, 1);
 export default function OrderSuccess() {
   const router = useRouter();
   const reduced = useReducedMotion();
-  const scale = useSharedValue(reduced ? 1 : 0.8);
+  const scale = useSharedValue(reduced ? 1 : 0.96);
   const fade = useSharedValue(0);
-  const slide = useSharedValue(reduced ? 0 : 40);
 
   useEffect(() => {
-    scale.set(withSpring(1, { duration: 420, dampingRatio: 0.65, reduceMotion: ReduceMotion.System }));
-    fade.set(withDelay(120, withTiming(1, { duration: 380, easing: EASE_OUT, reduceMotion: ReduceMotion.System })));
-    slide.set(withDelay(120, withTiming(0, { duration: 380, easing: EASE_OUT, reduceMotion: ReduceMotion.System })));
+    scale.set(withTiming(1, { duration: 160, easing: EASE_OUT, reduceMotion: ReduceMotion.System }));
+    fade.set(withTiming(1, { duration: 160, easing: EASE_OUT, reduceMotion: ReduceMotion.System }));
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-  }, [scale, fade, slide]);
+  }, [scale, fade]);
 
   const iconStyle = useAnimatedStyle(() => ({
     opacity: scale.get(),
@@ -42,7 +38,6 @@ export default function OrderSuccess() {
   }));
   const textStyle = useAnimatedStyle(() => ({
     opacity: fade.get(),
-    transform: [{ translateY: slide.get() }],
   }));
   const buttonsStyle = useAnimatedStyle(() => ({
     opacity: fade.get(),

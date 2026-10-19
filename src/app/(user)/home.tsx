@@ -2,7 +2,6 @@ import { Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Platform, ScrollView, StatusBar, StyleSheet, Text, useWindowDimensions, View } from "react-native";
-import Animated, { ZoomIn } from "react-native-reanimated";
 import { CategoryTiles } from "../../components/category-tiles";
 import { ContentFrame, CustomerNavigation, SectionHeading } from "../../components/app-ui";
 import { PressScale, Reveal, staggerDelay } from "../../components/motion";
@@ -132,18 +131,18 @@ export default function Home() {
                   <Feather name="image" size={56} color={Design.color.inkMuted} />
                 </View>
               </Reveal>
-              <Animated.View entering={ZoomIn.springify().damping(Design.motion.spring.damping).delay(staggerDelay(4))} style={[styles.callout, styles.calloutTop]}>
+              <Reveal delay={staggerDelay(4)} style={[styles.callout, styles.calloutTop]}>
                 <View style={styles.calloutDot} />
                 <View style={styles.calloutCopy}>
                   <Text style={styles.calloutText}>Every piece, numbered and catalogued.</Text>
                 </View>
-              </Animated.View>
-              <Animated.View entering={ZoomIn.springify().damping(Design.motion.spring.damping).delay(staggerDelay(5))} style={[styles.callout, styles.calloutBottom]}>
+              </Reveal>
+              <Reveal delay={staggerDelay(5)} style={[styles.callout, styles.calloutBottom]}>
                 <View style={styles.calloutCopy}>
                   <Text style={styles.calloutNumber}>{loading ? "—" : furniture.length}</Text>
                   <Text style={styles.calloutSub}>pieces in the ledger</Text>
                 </View>
-              </Animated.View>
+              </Reveal>
             </View>
           </View>
 

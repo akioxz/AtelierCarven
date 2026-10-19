@@ -10,8 +10,12 @@ const element = (type, props) => ({ type, props });
 const animation = new Proxy({}, { get: () => () => animation });
 
 // Render actual components without a native runtime or backend connections.
-function runtime({ platform = 'android', width = 420, bottom = 34, state = [] } = {}) {
+function runtime({ platform = 'android', width = 420, bottom = 34, state = [], reduced = false } = {}) {
   let stateIndex = 0;
+  const timings = [], navigation = [];
+  const fade = { duration(duration) {
+    return { config: { duration }, delay(value) { this.config.delay = value; return this; }, easing(value) { this.config.easing = value; return this; } };
+  } };
   const react = {
     useState: initial => [stateIndex in state ? state[stateIndex++] : (stateIndex++, initial), () => {}],
     useEffect: () => {}, useCallback: fn => fn, useRef: value => ({ current: value }),
@@ -23,8 +27,8 @@ function runtime({ platform = 'android', width = 420, bottom = 34, state = [] } 
   };
   const reanimated = {
     View: 'Animated.View', createAnimatedComponent: component => `Animated.${component}`,
-    useReducedMotion: () => false, useSharedValue: value => ({ value }),
-    useAnimatedStyle: fn => fn(), withSpring: value => value,
+    useReducedMotion: () => reduced, useSharedValue: value => ({ value }),
+    useAnimatedStyle: fn => fn(), withTiming: (value, config) => { timings.push({ value, ...config }); return value; },
   };
   const cache = new Map();
   function load(path) {
@@ -34,9 +38,9 @@ function runtime({ platform = 'android', width = 420, bottom = 34, state = [] } 
       if (id === 'react') return react;
       if (id === 'react/jsx-runtime') return { jsx: element, jsxs: element, Fragment: 'Fragment' };
       if (id === 'react-native') return native;
-      if (id === 'react-native-reanimated') return { __esModule: true, default: reanimated, ...reanimated, FadeIn: animation, FadeInUp: animation, ZoomIn: animation };
+      if (id === 'react-native-reanimated') return { __esModule: true, default: reanimated, ...reanimated, FadeIn: fade, FadeInUp: animation, ZoomIn: animation, Easing: { quad: 'quad', out: value => `out(${value})` } };
       if (id === 'expo-haptics') return { selectionAsync: () => Promise.resolve() };
-      if (id === 'expo-router') return { useRouter: () => ({}), Stack: 'Stack' };
+      if (id === 'expo-router') return { useRouter: () => ({ replace: route => navigation.push(route) }), Stack: 'Stack' };
       if (id === 'react-native-safe-area-context') return { SafeAreaView: 'SafeAreaView', useSafeAreaInsets: () => ({ top: 28, left: 0, right: 0, bottom }) };
       if (id === '@expo/vector-icons') return { Feather: 'Feather' };
       if (id === 'expo-image') return { Image: 'Image' };
@@ -57,7 +61,7 @@ function runtime({ platform = 'android', width = 420, bottom = 34, state = [] } 
     cache.set(path, module.exports);
     return module.exports;
   }
-  return { load };
+  return { load, timings, navigation };
 }
 
 function descendants(node, predicate) {
@@ -297,4 +301,47 @@ test('furniture dimensions have native accessible names and category selection i
   const category = descendants(tree, node => node.props?.accessibilityLabel === 'Set category to Sofa')[0];
   assert.equal(category.props.accessibilityRole, 'radio');
   assert.equal(category.props.accessibilityState.checked, true);
+});
+
+test('page entry is an opacity fade capped at 160ms with at most 120ms delay', () => {
+  const { Reveal, ScreenFade, staggerDelay } = runtime().load('src/components/motion.tsx');
+  const node = Reveal({ children: 'Content', delay: 420 });
+  assert.equal(node.props.entering.config.duration, 160);
+  assert.equal(node.props.entering.config.delay, 120);
+  assert.equal(node.props.entering.config.easing, 'out(quad)');
+  assert.equal(ScreenFade({ children: 'Page' }).props.entering.config.duration, 160);
+  assert.equal(staggerDelay(100), 96);
+  assert.equal(staggerDelay(100, 70, 6), 120);
+  for (const file of ['src/components/motion.tsx', 'src/components/app-ui.tsx', 'src/app/(user)/home.tsx', 'src/app/(user)/order-success.tsx']) {
+    assert.doesNotMatch(read(file), /springify|withSpring/);
+  }
+});
+
+test('press feedback is quick, monotonic timing and reduced motion suppresses it', () => {
+  const rt = runtime();
+  const button = rt.load('src/components/motion.tsx').PressScale({ children: 'Tap' });
+  button.props.onPressIn(); button.props.onPressOut();
+  assert.deepEqual(rt.timings.map(({ value, duration }) => [value, duration]), [[.985, 80], [1, 120]]);
+  assert.ok(rt.timings.every(timing => timing.easing === 'out(quad)'));
+  const reduced = runtime({ reduced: true });
+  const motion = reduced.load('src/components/motion.tsx');
+  const stillButton = motion.PressScale({ children: 'Tap' });
+  stillButton.props.onPressIn(); stillButton.props.onPressOut();
+  assert.equal(reduced.timings.length, 0);
+  assert.equal(motion.Reveal({ children: 'Content' }).props.entering, undefined);
+});
+
+test('headings stay stable and tapping the active navigation item does not replace the page', () => {
+  const rt = runtime();
+  const { PageHeader, SectionHeading, CustomerNavigation } = rt.load('src/components/app-ui.tsx');
+  for (const tree of [PageHeader({ title: 'Cart', subtitle: 'Selections' }), SectionHeading({ overline: 'Collection', title: 'Pieces' })]) {
+    assert.equal(descendants(tree, node => node.type?.name === 'Reveal' || node.props?.entering).length, 0);
+  }
+  const navigation = CustomerNavigation({ active: 'home' });
+  const tree = navigation.type(navigation.props);
+  const buttons = descendants(tree, node => node.type === 'Pressable');
+  buttons.find(node => node.props.accessibilityState.selected).props.onPress();
+  assert.equal(rt.navigation.length, 0);
+  buttons.find(node => !node.props.accessibilityState.selected).props.onPress();
+  assert.equal(rt.navigation.length, 1);
 });

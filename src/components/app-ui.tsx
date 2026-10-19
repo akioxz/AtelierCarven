@@ -1,10 +1,10 @@
 import { Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { Platform, Pressable, StyleSheet, Text, useWindowDimensions, View, type TextStyle, type ViewStyle } from "react-native";
-import Animated, { ZoomIn } from "react-native-reanimated";
+import Animated, { FadeIn } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Design, layout } from "../constants/design";
-import { PressScale, Reveal, staggerDelay } from "./motion";
+import { PressScale } from "./motion";
 
 type NavKey = "home" | "favorites" | "placement" | "cart" | "profile" | "dashboard" | "furniture" | "orders" | "logs";
 
@@ -37,14 +37,8 @@ export function PageHeader({ title, subtitle, right, style }: { title: string; s
   return (
     <View style={[styles.pageHeader, style]}>
       <View style={styles.pageHeaderCopy}>
-        <Reveal>
-          <Text style={styles.pageTitle}>{title}</Text>
-        </Reveal>
-        {subtitle ? (
-          <Reveal delay={staggerDelay(1)}>
-            <Text style={styles.pageSubtitle}>{subtitle}</Text>
-          </Reveal>
-        ) : null}
+        <Text style={styles.pageTitle}>{title}</Text>
+        {subtitle ? <Text style={styles.pageSubtitle}>{subtitle}</Text> : null}
       </View>
       {right}
     </View>
@@ -54,12 +48,8 @@ export function PageHeader({ title, subtitle, right, style }: { title: string; s
 export function SectionHeading({ overline, title, style }: { overline: string; title: string; style?: ViewStyle }) {
   return (
     <View style={[styles.sectionHeading, style]}>
-      <Reveal>
-        <Text style={styles.overline}>{overline}</Text>
-      </Reveal>
-      <Reveal delay={staggerDelay(1)}>
-        <Text style={styles.sectionTitle}>{title}</Text>
-      </Reveal>
+      <Text style={styles.overline}>{overline}</Text>
+      <Text style={styles.sectionTitle}>{title}</Text>
     </View>
   );
 }
@@ -112,7 +102,7 @@ function Navigation({ active, items, admin = false }: { active: NavKey; items: t
           {items.map((item) => {
             const selected = item.key === active;
             return (
-              <Pressable key={item.key} onPress={() => go(item.route)} accessibilityRole="tab" accessibilityState={{ selected }} style={({ pressed }) => [styles.desktopNavItem, selected && styles.desktopNavItemSelected, pressed && styles.buttonPressed]}>
+              <Pressable key={item.key} onPress={() => { if (!selected) go(item.route); }} accessibilityRole="tab" accessibilityState={{ selected }} style={({ pressed }) => [styles.desktopNavItem, selected && styles.desktopNavItemSelected, pressed && styles.buttonPressed]}>
                 <Feather name={item.icon} size={15} color={selected ? Design.color.surface : Design.color.inkSoft} />
                 <Text style={[styles.desktopNavLabel, selected && styles.desktopNavLabelSelected]}>{item.label}</Text>
               </Pressable>
@@ -128,10 +118,10 @@ function Navigation({ active, items, admin = false }: { active: NavKey; items: t
       {items.map((item) => {
         const selected = item.key === active;
         return (
-          <Pressable key={item.key} onPress={() => go(item.route)} accessibilityRole="tab" accessibilityState={{ selected }} style={({ pressed }) => [styles.mobileNavItem, pressed && styles.buttonPressed]} hitSlop={4}>
+          <Pressable key={item.key} onPress={() => { if (!selected) go(item.route); }} accessibilityRole="tab" accessibilityState={{ selected }} style={({ pressed }) => [styles.mobileNavItem, pressed && styles.buttonPressed]} hitSlop={4}>
             <Feather name={item.icon} size={19} color={selected ? Design.color.ink : Design.color.inkMuted} />
             <Text style={[styles.mobileNavLabel, selected && styles.mobileNavLabelSelected]}>{item.label}</Text>
-            {selected ? <Animated.View entering={ZoomIn.springify().damping(Design.motion.spring.damping)} style={styles.activeDot} /> : null}
+            {selected ? <Animated.View entering={FadeIn.duration(100)} style={styles.activeDot} /> : null}
           </Pressable>
         );
       })}

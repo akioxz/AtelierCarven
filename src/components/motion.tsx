@@ -2,24 +2,23 @@ import { useEffect } from "react";
 import { Pressable, View, type GestureResponderEvent, type StyleProp, type ViewStyle } from "react-native";
 import Animated, {
   FadeIn,
-  FadeInUp,
+  Easing,
   useAnimatedStyle,
   useReducedMotion,
   useSharedValue,
-  withSpring,
+  withTiming,
 } from "react-native-reanimated";
 import * as Haptics from "expo-haptics";
-import { Design } from "../constants/design";
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
 /** Cap stagger delays so long lists don't cascade forever. */
-export function staggerDelay(index: number, step: number = Design.motion.stagger, cap: number = 6): number {
-  return Math.min(index, cap) * step;
+export function staggerDelay(index: number, step: number = 24, cap: number = 4): number {
+  return Math.min(Math.min(index, cap) * step, 120);
 }
 
 function revealEntering(delay: number) {
-  return FadeInUp.duration(Design.motion.base).delay(delay).springify().damping(Design.motion.spring.damping);
+  return FadeIn.duration(160).delay(Math.min(delay, 120)).easing(Easing.out(Easing.quad));
 }
 
 export function Reveal({
@@ -29,11 +28,11 @@ export function Reveal({
 }: {
   children: React.ReactNode;
   delay?: number;
-  style?: ViewStyle;
+  style?: StyleProp<ViewStyle>;
 }) {
   const reduced = useReducedMotion();
   if (reduced) {
-    return <Animated.View entering={FadeIn.duration(Design.motion.quick)} style={style}>{children}</Animated.View>;
+    return <Animated.View style={style}>{children}</Animated.View>;
   }
   return <Animated.View entering={revealEntering(delay)} style={style}>{children}</Animated.View>;
 }
@@ -41,7 +40,7 @@ export function Reveal({
 export function ScreenFade({ children, style }: { children: React.ReactNode; style?: ViewStyle }) {
   const reduced = useReducedMotion();
   if (reduced) return <Animated.View style={style}>{children}</Animated.View>;
-  return <Animated.View entering={FadeIn.duration(Design.motion.base)} style={style}>{children}</Animated.View>;
+  return <Animated.View entering={FadeIn.duration(160).easing(Easing.out(Easing.quad))} style={style}>{children}</Animated.View>;
 }
 
 export function PressScale({
@@ -95,14 +94,14 @@ export function PressScale({
       onPressIn={() => {
         if (!reduced) {
           // eslint-disable-next-line react-hooks/immutability
-          scale.value = withSpring(Design.motion.pressScale, Design.motion.spring);
+          scale.value = withTiming(0.985, { duration: 80, easing: Easing.out(Easing.quad) });
         }
         onPressIn?.();
       }}
       onPressOut={() => {
         if (!reduced) {
           // eslint-disable-next-line react-hooks/immutability
-          scale.value = withSpring(1, Design.motion.spring);
+          scale.value = withTiming(1, { duration: 120, easing: Easing.out(Easing.quad) });
         }
         onPressOut?.();
       }}
